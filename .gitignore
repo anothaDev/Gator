@@ -33,6 +33,9 @@ tmp/
 # Docs (internal API refs, specs — not for public repo)
 docs/
 
+# Scripts (may contain hardcoded credentials)
+scripts/
+
 # Environment / secrets
 .env
 .env.*
