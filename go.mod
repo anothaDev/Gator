@@ -1,4 +1,4 @@
-module github.com/raul/gator
+module github.com/anothaDev/gator
 
 go 1.25.0
 

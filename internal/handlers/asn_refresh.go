@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/raul/gator/internal/storage"
+	"github.com/anothaDev/gator/internal/storage"
 )
 
 const (

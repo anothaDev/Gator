@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/raul/gator/internal/models"
+	"github.com/anothaDev/gator/internal/models"
 )
 
 type GatewayStore interface {

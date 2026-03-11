@@ -12,7 +12,7 @@ import (
 	"unicode"
 
 	"github.com/gin-gonic/gin"
-	"github.com/raul/gator/internal/models"
+	"github.com/anothaDev/gator/internal/models"
 )
 
 // splitUUIDs splits a comma-separated UUID string into individual trimmed, non-empty UUIDs.

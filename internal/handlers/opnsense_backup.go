@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/raul/gator/internal/models"
+	"github.com/anothaDev/gator/internal/models"
 )
 
 const backupDir = "data/backups"

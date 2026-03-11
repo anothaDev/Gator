@@ -2,7 +2,7 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/raul/gator/internal/handlers"
+	"github.com/anothaDev/gator/internal/handlers"
 )
 
 func registerAppRoutingRoutes(api *gin.RouterGroup, appRouting *handlers.AppRoutingHandler) {

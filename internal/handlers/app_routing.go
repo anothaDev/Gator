@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/raul/gator/internal/models"
+	"github.com/anothaDev/gator/internal/models"
 )
 
 // AppRoutingStore is the storage interface needed by AppRoutingHandler.

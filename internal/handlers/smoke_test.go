@@ -14,8 +14,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/raul/gator/internal/models"
-	"github.com/raul/gator/internal/storage"
+	"github.com/anothaDev/gator/internal/models"
+	"github.com/anothaDev/gator/internal/storage"
 )
 
 func TestSwitchInstanceSmoke(t *testing.T) {

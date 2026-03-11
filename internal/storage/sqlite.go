@@ -9,7 +9,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/raul/gator/internal/models"
+	"github.com/anothaDev/gator/internal/models"
 )
 
 type SQLiteStore struct {

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/raul/gator/internal/models"
+	"github.com/anothaDev/gator/internal/models"
 )
 
 type opnsenseAPIClient struct {

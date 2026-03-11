@@ -1,6 +1,6 @@
 package handlers
 
-import "github.com/raul/gator/internal/models"
+import "github.com/anothaDev/gator/internal/models"
 
 // builtinAppProfiles is the static list of predefined app/service port mappings.
 var builtinAppProfiles = []models.AppProfile{

@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/raul/gator/internal/handlers"
-	"github.com/raul/gator/internal/routes"
-	"github.com/raul/gator/internal/storage"
+	"github.com/anothaDev/gator/internal/handlers"
+	"github.com/anothaDev/gator/internal/routes"
+	"github.com/anothaDev/gator/internal/storage"
 )
 
 func main() {

@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/raul/gator/internal/models"
-	"github.com/raul/gator/internal/sshclient"
+	"github.com/anothaDev/gator/internal/models"
+	"github.com/anothaDev/gator/internal/sshclient"
 	"golang.org/x/crypto/curve25519"
 )
 
