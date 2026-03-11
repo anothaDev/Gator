@@ -1,0 +1,38 @@
+# Database — app creates it on first run
+data/gator.db
+data/gator.db-wal
+data/gator.db-shm
+
+# OPNsense backups (may contain secrets)
+data/backups/
+
+# IP range data (downloaded at runtime)
+data/ip-ranges/
+
+# Go binary
+tmp/
+*.exe
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+
+# Air hot-reload
+tmp/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Docs (internal API refs, specs — not for public repo)
+docs/
+
+# Environment / secrets
+.env
+.env.*

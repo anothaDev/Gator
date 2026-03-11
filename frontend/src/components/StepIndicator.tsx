@@ -1,0 +1,90 @@
+import { For } from "solid-js";
+
+type Step = {
+  label: string;
+  description: string;
+};
+
+type Props = {
+  steps: Step[];
+  current: number;
+};
+
+export default function StepIndicator(props: Props) {
+  return (
+    <div class="flex items-center gap-2">
+      <For each={props.steps}>
+        {(step, i) => {
+          const isActive = () => i() === props.current;
+          const isCompleted = () => i() < props.current;
+
+          return (
+            <>
+              <div class="flex items-center gap-3">
+                <div
+                  class={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all duration-300 ${
+                    isActive()
+                      ? "border-[var(--status-success)] bg-[var(--success-subtle)] text-[var(--status-success)] shadow-[0_0_12px_rgba(0,255,157,0.3)]"
+                      : isCompleted()
+                        ? "border-[var(--status-success)] bg-[var(--status-success)] text-[var(--bg-primary)]"
+                        : "border-[var(--border-default)] text-[var(--text-tertiary)]"
+                  }`}
+                >
+                  {isCompleted() ? (
+                    <svg
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    i() + 1
+                  )}
+                </div>
+                <div class="hidden sm:block">
+                  <p
+                    class={`text-sm font-medium leading-none ${
+                      isActive()
+                        ? "text-[var(--text-primary)]"
+                        : isCompleted()
+                          ? "text-[var(--text-secondary)]"
+                          : "text-[var(--text-muted)]"
+                    }`}
+                  >
+                    {step.label}
+                  </p>
+                  <p
+                    class={`mt-1 text-xs ${
+                      isActive()
+                        ? "text-[var(--text-secondary)]"
+                        : isCompleted()
+                          ? "text-[var(--text-tertiary)]"
+                          : "text-[var(--text-muted)]"
+                    }`}
+                  >
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+
+              {i() < props.steps.length - 1 && (
+                <div
+                  class={`mx-1 h-px flex-1 transition-colors duration-300 ${
+                    isCompleted() ? "bg-[var(--status-success)]/50" : "bg-[var(--bg-elevated)]"
+                  }`}
+                />
+              )}
+            </>
+          );
+        }}
+      </For>
+    </div>
+  );
+}
