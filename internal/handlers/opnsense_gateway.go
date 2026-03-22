@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/anothaDev/gator/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 type GatewayStore interface {
@@ -359,6 +359,7 @@ func discoverWGInterface(ctx context.Context, api *opnsenseAPIClient) (string, s
 
 // ensureGateway creates or updates a gateway on OPNsense for the VPN interface.
 // ipprotocol should be "inet" for IPv4 or "inet6" for IPv6.
+// monitorIP should be a tunnel-reachable IP (e.g. provider DNS) for health checks.
 func ensureGateway(
 	ctx context.Context,
 	api *opnsenseAPIClient,
@@ -366,22 +367,27 @@ func ensureGateway(
 	ifaceName string,
 	gatewayIP string,
 	ipprotocol string,
+	monitorIP string,
 	preferredUUID string,
 ) (string, bool, error) {
-	payload := map[string]any{
-		"gateway_item": map[string]any{
-			"disabled":        "0",
-			"name":            gwName,
-			"interface":       ifaceName,
-			"ipprotocol":      ipprotocol,
-			"gateway":         gatewayIP,
-			"fargw":           "1",
-			"monitor_disable": "1",
-			"priority":        "255",
-			"weight":          "1",
-			"descr":           "GATOR_GW (auto-managed)",
-		},
+	gwInner := map[string]any{
+		"disabled":   "0",
+		"name":       gwName,
+		"interface":  ifaceName,
+		"ipprotocol": ipprotocol,
+		"gateway":    gatewayIP,
+		"fargw":      "1",
+		"priority":   "255",
+		"weight":     "1",
+		"descr":      "GATOR_GW (auto-managed)",
 	}
+	if monitorIP != "" {
+		gwInner["monitor_disable"] = "0"
+		gwInner["monitor"] = monitorIP
+	} else {
+		gwInner["monitor_disable"] = "1"
+	}
+	payload := map[string]any{"gateway_item": gwInner}
 
 	// Try updating by preferred UUID first.
 	if preferredUUID != "" {
@@ -588,6 +594,7 @@ func ensureFilterRule(
 ) (string, bool, error) {
 	// Resolve the gateway name to the key OPNsense actually accepts.
 	gwKey := resolveGatewayKey(ctx, api, gatewayName)
+	log.Printf("[ensureFilterRule] gateway %q resolved to key %q for ipprotocol %s", gatewayName, gwKey, ipprotocol)
 
 	payload := map[string]any{
 		"rule": map[string]any{
@@ -726,7 +733,15 @@ func applyFirewallWithRollback(ctx context.Context, api *opnsenseAPIClient) erro
 	}
 
 	// Confirm (cancel rollback) — if we can still reach the API, the rules are fine.
-	_, _ = api.Post(ctx, "/api/firewall/filter/cancel_rollback/"+revision, map[string]any{})
+	// Retry once on failure; if confirmation never lands OPNsense will auto-revert
+	// the ruleset after ~60 s, silently desynchronising Gator's DB state.
+	if _, err := api.Post(ctx, "/api/firewall/filter/cancel_rollback/"+revision, map[string]any{}); err != nil {
+		log.Printf("[warn] cancel_rollback failed (attempt 1): %v — retrying", err)
+		if _, err2 := api.Post(ctx, "/api/firewall/filter/cancel_rollback/"+revision, map[string]any{}); err2 != nil {
+			log.Printf("[error] cancel_rollback failed (attempt 2): %v — OPNsense may auto-revert in ~60s", err2)
+			return err2
+		}
+	}
 
 	return nil
 }

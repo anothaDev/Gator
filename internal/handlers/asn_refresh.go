@@ -21,16 +21,27 @@ const (
 // StartASNRefreshLoop runs a background goroutine that refreshes cached ASN prefix data
 // every 24 hours. It scans the cache table for keys matching "asn_prefixes_*", extracts
 // the ASN number, re-fetches from RIPEstat, and updates the cache.
-func StartASNRefreshLoop(store *storage.SQLiteStore) {
+// The returned stop function signals the goroutine to exit.
+func StartASNRefreshLoop(store *storage.SQLiteStore) (stop func()) {
+	stopCh := make(chan struct{})
 	go func() {
 		// Wait a bit on startup before the first refresh to not compete with initial requests.
-		time.Sleep(5 * time.Minute)
+		select {
+		case <-time.After(5 * time.Minute):
+		case <-stopCh:
+			return
+		}
 
 		for {
 			refreshASNCache(store)
-			time.Sleep(asnRefreshTicker)
+			select {
+			case <-time.After(asnRefreshTicker):
+			case <-stopCh:
+				return
+			}
 		}
 	}()
+	return func() { close(stopCh) }
 }
 
 func refreshASNCache(store *storage.SQLiteStore) {

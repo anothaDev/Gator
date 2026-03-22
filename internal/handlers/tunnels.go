@@ -13,9 +13,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/curve25519"
+
 	"github.com/anothaDev/gator/internal/models"
 	"github.com/anothaDev/gator/internal/sshclient"
-	"golang.org/x/crypto/curve25519"
 )
 
 // TunnelStore defines the storage interface for site tunnels.
@@ -32,7 +33,8 @@ type TunnelStore interface {
 
 // TunnelHandler handles all site tunnel API endpoints.
 type TunnelHandler struct {
-	store TunnelStore
+	store      TunnelStore
+	reconciler *Reconciler
 }
 
 // NewTunnelHandler creates a TunnelHandler.
@@ -40,15 +42,31 @@ func NewTunnelHandler(store TunnelStore) *TunnelHandler {
 	return &TunnelHandler{store: store}
 }
 
+// SetReconciler injects the reconciler after construction (avoids init-order issues).
+func (h *TunnelHandler) SetReconciler(r *Reconciler) { h.reconciler = r }
+
+// asyncReconcile triggers a non-blocking reconciler refresh for the active instance.
+func (h *TunnelHandler) asyncReconcile(ctx context.Context) {
+	if h.reconciler == nil {
+		return
+	}
+	instanceID, _ := h.store.GetActiveInstanceID(ctx)
+	if instanceID != 0 {
+		h.reconciler.RefreshAsync(instanceID)
+	}
+}
+
 // ─── CRUD ────────────────────────────────────────────────────────
 
 // ListTunnels returns all tunnels for the active instance.
 func (h *TunnelHandler) ListTunnels(c *gin.Context) {
-	tunnels, err := h.store.ListSiteTunnels(c.Request.Context())
+	ctx := c.Request.Context()
+	tunnels, err := h.store.ListSiteTunnels(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	statuses := make([]models.SiteTunnelStatus, 0, len(tunnels))
 	for _, t := range tunnels {
 		statuses = append(statuses, tunnelStatusFromModel(t))
@@ -117,7 +135,11 @@ func (h *TunnelHandler) CreateTunnel(c *gin.Context) {
 		return
 	}
 
-	t, _ := h.store.GetSiteTunnel(ctx, id)
+	t, err := h.store.GetSiteTunnel(ctx, id)
+	if err != nil || t == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "tunnel created but failed to read back"})
+		return
+	}
 	c.JSON(http.StatusCreated, tunnelDetailFromModel(t))
 }
 
@@ -153,6 +175,9 @@ func (h *TunnelHandler) SaveTunnel(c *gin.Context) {
 	req.SSHPhase = existing.SSHPhase
 	req.SSHSocketWasActive = existing.SSHSocketWasActive
 	req.UFWWasActive = existing.UFWWasActive
+	req.OwnershipStatus = existing.OwnershipStatus
+	req.LastVerifiedAt = existing.LastVerifiedAt
+	req.DriftReason = existing.DriftReason
 
 	// Preserve tunnel addressing if not sent (frontend edit form doesn't include these).
 	if req.TunnelSubnet == "" {
@@ -190,7 +215,11 @@ func (h *TunnelHandler) SaveTunnel(c *gin.Context) {
 		return
 	}
 
-	t, _ := h.store.GetSiteTunnel(c.Request.Context(), req.ID)
+	t, err := h.store.GetSiteTunnel(c.Request.Context(), req.ID)
+	if err != nil || t == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "tunnel saved but failed to read back"})
+		return
+	}
 	c.JSON(http.StatusOK, tunnelDetailFromModel(t))
 }
 
@@ -218,6 +247,7 @@ func (h *TunnelHandler) DeleteTunnel(c *gin.Context) {
 		return
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, gin.H{"status": "deleted", "warnings": warnings})
 }
 
@@ -373,6 +403,7 @@ func (h *TunnelHandler) ImportTunnel(c *gin.Context) {
 		OPNsenseServerUUID: req.ServerUUID,
 		Deployed:           true,
 		Status:             "deployed",
+		OwnershipStatus:    models.OwnershipManagedPending,
 	}
 
 	// Compute firewall public key from private key.
@@ -406,7 +437,11 @@ func (h *TunnelHandler) ImportTunnel(c *gin.Context) {
 		return
 	}
 
-	saved, _ := h.store.GetSiteTunnel(ctx, id)
+	saved, err := h.store.GetSiteTunnel(ctx, id)
+	if err != nil || saved == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "tunnel imported but failed to read back"})
+		return
+	}
 	result := gin.H{
 		"status": "imported",
 		"tunnel": tunnelDetailFromModel(saved),
@@ -414,7 +449,89 @@ func (h *TunnelHandler) ImportTunnel(c *gin.Context) {
 	if crossCheck != nil {
 		result["cross_check"] = crossCheck
 	}
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusCreated, result)
+}
+
+// ReadoptTunnel re-links a drifted or needs-reimport tunnel to a discovered
+// OPNsense resource. Updates the tunnel's OPNsense UUIDs and re-fetches secrets.
+func (h *TunnelHandler) ReadoptTunnel(c *gin.Context) {
+	existing, ok := h.getTunnelByParam(c)
+	if !ok {
+		return
+	}
+
+	if existing.OwnershipStatus != models.OwnershipManagedDrifted &&
+		existing.OwnershipStatus != models.OwnershipNeedsReimport {
+		c.JSON(http.StatusConflict, gin.H{"error": "tunnel is " + existing.OwnershipStatus + " — re-adopt is only for drifted or needs-reimport tunnels"})
+		return
+	}
+
+	var req struct {
+		ServerUUID string `json:"server_uuid" binding:"required"`
+		PeerUUID   string `json:"peer_uuid" binding:"required"`
+		LocalCIDR  string `json:"local_cidr"`
+		Endpoint   string `json:"endpoint"`
+		ListenPort int    `json:"listen_port"`
+		PeerPubKey string `json:"peer_pubkey"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// Re-fetch the firewall private key from OPNsense.
+	firewallCfg, err := h.store.GetFirewallConfig(ctx)
+	if err != nil || firewallCfg == nil || firewallCfg.Type != "opnsense" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "firewall config not available"})
+		return
+	}
+	api := newOPNsenseAPIClient(*firewallCfg)
+
+	serverDetail, err := api.Get(ctx, "/api/wireguard/server/get_server/"+req.ServerUUID)
+	if err == nil {
+		server := asMap(serverDetail["server"])
+		if pk := asString(server["privkey"]); pk != "" {
+			existing.FirewallPrivateKey = pk
+			if pub, err := publicKeyFromPrivate(pk); err == nil {
+				existing.FirewallPublicKey = pub
+			}
+		}
+	}
+
+	// Update OPNsense bindings.
+	existing.OPNsenseServerUUID = req.ServerUUID
+	existing.OPNsensePeerUUID = req.PeerUUID
+
+	if req.PeerPubKey != "" {
+		existing.RemotePublicKey = req.PeerPubKey
+	}
+	if req.LocalCIDR != "" {
+		firewallIP := req.LocalCIDR
+		if idx := strings.Index(firewallIP, "/"); idx != -1 {
+			firewallIP = firewallIP[:idx]
+		}
+		existing.FirewallIP = firewallIP
+	}
+	if req.ListenPort > 0 {
+		existing.ListenPort = req.ListenPort
+	}
+
+	// Mark as pending verification — the reconciler will promote to managed_verified.
+	existing.Deployed = true
+	existing.Status = "deployed"
+	existing.OwnershipStatus = models.OwnershipManagedPending
+	existing.DriftReason = ""
+
+	if err := h.store.SaveSiteTunnel(ctx, *existing); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save re-adopted tunnel"})
+		return
+	}
+
+	h.asyncReconcile(ctx)
+	c.JSON(http.StatusOK, gin.H{"status": "readopted", "id": existing.ID})
 }
 
 // DiscoverTunnels returns only tunnel-type entries from OPNsense discovery.
@@ -891,14 +1008,16 @@ func (h *TunnelHandler) deployStepConfigureFirewall(c *gin.Context, ctx context.
 	// inbound states from WAN rules with reply-to from hijacking WG traffic.
 	h.killStaleWGStates(ctx, api, t)
 
-	// 6. Mark as deployed.
+	// 6. Mark as deployed — the reconciler will promote to managed_verified.
 	t.Deployed = true
 	t.Status = "deployed"
+	t.OwnershipStatus = models.OwnershipManagedPending
 	if err := h.store.SaveSiteTunnel(ctx, *t); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "save tunnel: " + err.Error()})
 		return
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, gin.H{
 		"status":      "ok",
 		"peer_uuid":   peerUUID,
@@ -1174,8 +1293,10 @@ func (h *TunnelHandler) TeardownTunnel(c *gin.Context) {
 	t.FirewallPublicKey = ""
 	t.RemotePrivateKey = ""
 	t.RemotePublicKey = ""
+	t.OwnershipStatus = models.OwnershipLocalOnly
 	_ = h.store.SaveSiteTunnel(c.Request.Context(), *t)
 
+	h.asyncReconcile(c.Request.Context())
 	c.JSON(http.StatusOK, gin.H{"status": "torn_down", "warnings": warnings})
 }
 
@@ -2171,6 +2292,10 @@ func buildRemoteWGConfig(t *models.SiteTunnel, lanSubnets []string) string {
 }
 
 func tunnelStatusFromModel(t *models.SiteTunnel) models.SiteTunnelStatus {
+	ownership := t.OwnershipStatus
+	if ownership == "" {
+		ownership = models.OwnershipLocalOnly
+	}
 	return models.SiteTunnelStatus{
 		ID:                t.ID,
 		Name:              t.Name,
@@ -2183,6 +2308,9 @@ func tunnelStatusFromModel(t *models.SiteTunnel) models.SiteTunnelStatus {
 		RemoteWGInterface: t.RemoteWGInterface,
 		Deployed:          t.Deployed,
 		Status:            t.Status,
+		OwnershipStatus:   ownership,
+		DriftReason:       t.DriftReason,
+		LastVerifiedAt:    t.LastVerifiedAt,
 		CreatedAt:         t.CreatedAt,
 	}
 }

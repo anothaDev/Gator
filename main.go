@@ -6,8 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/anothaDev/gator/internal/handlers"
 	"github.com/anothaDev/gator/internal/routes"
 	"github.com/anothaDev/gator/internal/storage"
@@ -62,8 +64,18 @@ func main() {
 	routes.Register(r, setupHandler, opnsenseHandler, vpnHandler, gatewayHandler, appRoutingHandler, ipRangesHandler, tunnelHandler)
 
 	// Start background jobs.
-	handlers.StartASNRefreshLoop(store)
-	handlers.StartPendingRevisionCleanup(store)
+	reconciler := handlers.NewReconciler(store, 60*time.Second)
+	vpnHandler.SetReconciler(reconciler)
+	tunnelHandler.SetReconciler(reconciler)
+	reconciler.Start()
+	defer reconciler.Stop()
+	defer opnsenseHandler.Stop()
+
+	stopASN := handlers.StartASNRefreshLoop(store)
+	defer stopASN()
+
+	stopRevisionCleanup := handlers.StartPendingRevisionCleanup(store)
+	defer stopRevisionCleanup()
 
 	port := os.Getenv("PORT")
 	if port == "" {

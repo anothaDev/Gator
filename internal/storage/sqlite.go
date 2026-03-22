@@ -22,6 +22,12 @@ func NewSQLiteStore(path string) (*SQLiteStore, error) {
 		return nil, fmt.Errorf("open sqlite database: %w", err)
 	}
 
+	// Enable foreign key enforcement (off by default in SQLite).
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("enable foreign keys: %w", err)
+	}
+
 	store := &SQLiteStore{db: db}
 	if err := store.migrate(context.Background()); err != nil {
 		_ = db.Close()
@@ -185,6 +191,16 @@ func (s *SQLiteStore) GetFirewallConfig(ctx context.Context) (*models.FirewallCo
 	return &cfg, nil
 }
 
+// GetFirewallConfigForInstance returns the firewall config for a specific instance ID.
+func (s *SQLiteStore) GetFirewallConfigForInstance(ctx context.Context, instanceID int64) (*models.FirewallConfig, error) {
+	inst, err := s.GetInstance(ctx, instanceID)
+	if err != nil || inst == nil {
+		return nil, err
+	}
+	cfg := inst.Config()
+	return &cfg, nil
+}
+
 // SaveFirewallConfig creates or updates an instance from a FirewallConfig.
 // If an instance with the same host exists, it updates it. Otherwise creates new.
 // Sets it as the active instance.
@@ -255,13 +271,14 @@ const vpnSelectColumns = `
 	opnsense_peer_uuid, opnsense_server_uuid,
 	opnsense_gateway_uuid, opnsense_gateway_name,
 	opnsense_snat_rule_uuids, opnsense_filter_uuids,
-	opnsense_wg_interface, opnsense_wg_device, last_applied_at, enabled, routing_applied
+	opnsense_wg_interface, opnsense_wg_device, last_applied_at, enabled, routing_applied, gateway_online,
+	ownership_status, last_verified_at, drift_reason
 `
 
 func scanVPNConfig(scanner interface{ Scan(dest ...any) error }) (*models.SimpleVPNConfig, error) {
 	var cfg models.SimpleVPNConfig
 	var instanceID int64
-	var enabled, routingApplied int
+	var enabled, routingApplied, gatewayOnline int
 	var sourceInterfacesJSON string
 	err := scanner.Scan(
 		&cfg.ID,
@@ -274,7 +291,8 @@ func scanVPNConfig(scanner interface{ Scan(dest ...any) error }) (*models.Simple
 		&cfg.OPNsenseGatewayUUID, &cfg.OPNsenseGatewayName,
 		&cfg.OPNsenseSNATRuleUUIDs, &cfg.OPNsenseFilterUUIDs,
 		&cfg.OPNsenseWGInterface, &cfg.OPNsenseWGDevice, &cfg.LastAppliedAt,
-		&enabled, &routingApplied,
+		&enabled, &routingApplied, &gatewayOnline,
+		&cfg.OwnershipStatus, &cfg.LastVerifiedAt, &cfg.DriftReason,
 	)
 	if err != nil {
 		return nil, err
@@ -282,11 +300,15 @@ func scanVPNConfig(scanner interface{ Scan(dest ...any) error }) (*models.Simple
 	cfg.InstanceID = instanceID
 	cfg.Enabled = enabled == 1
 	cfg.RoutingApplied = routingApplied == 1
+	cfg.GatewayOnline = gatewayOnline == 1
 	if cfg.IPVersion == "" {
 		cfg.IPVersion = "ipv4"
 	}
 	if cfg.RoutingMode == "" {
 		cfg.RoutingMode = "all"
+	}
+	if cfg.OwnershipStatus == "" {
+		cfg.OwnershipStatus = models.OwnershipLocalOnly
 	}
 	if sourceInterfacesJSON != "" && sourceInterfacesJSON != "[]" {
 		_ = json.Unmarshal([]byte(sourceInterfacesJSON), &cfg.SourceInterfaces)
@@ -303,6 +325,10 @@ func vpnWriteArgs(cfg models.SimpleVPNConfig) []any {
 	if cfg.RoutingApplied {
 		routingApplied = 1
 	}
+	gatewayOnline := 0
+	if cfg.GatewayOnline {
+		gatewayOnline = 1
+	}
 	ipVersion := cfg.IPVersion
 	if ipVersion == "" {
 		ipVersion = "ipv4"
@@ -310,6 +336,10 @@ func vpnWriteArgs(cfg models.SimpleVPNConfig) []any {
 	routingMode := cfg.RoutingMode
 	if routingMode == "" {
 		routingMode = "all"
+	}
+	ownershipStatus := cfg.OwnershipStatus
+	if ownershipStatus == "" {
+		ownershipStatus = models.OwnershipLocalOnly
 	}
 	sourceInterfacesJSON := "[]"
 	if len(cfg.SourceInterfaces) > 0 {
@@ -327,7 +357,8 @@ func vpnWriteArgs(cfg models.SimpleVPNConfig) []any {
 		cfg.OPNsenseGatewayUUID, cfg.OPNsenseGatewayName,
 		cfg.OPNsenseSNATRuleUUIDs, cfg.OPNsenseFilterUUIDs,
 		cfg.OPNsenseWGInterface, cfg.OPNsenseWGDevice, cfg.LastAppliedAt,
-		enabled, routingApplied,
+		enabled, routingApplied, gatewayOnline,
+		ownershipStatus, cfg.LastVerifiedAt, cfg.DriftReason,
 	}
 }
 
@@ -359,9 +390,10 @@ func (s *SQLiteStore) CreateVPNConfig(ctx context.Context, cfg models.SimpleVPNC
 			opnsense_peer_uuid, opnsense_server_uuid,
 			opnsense_gateway_uuid, opnsense_gateway_name,
 			opnsense_snat_rule_uuids, opnsense_filter_uuids,
-			opnsense_wg_interface, opnsense_wg_device, last_applied_at, enabled, routing_applied
+			opnsense_wg_interface, opnsense_wg_device, last_applied_at, enabled, routing_applied, gateway_online,
+			ownership_status, last_verified_at, drift_reason
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := s.db.ExecContext(ctx, query, vpnWriteArgs(cfg)...)
 	if err != nil {
@@ -401,7 +433,8 @@ func (s *SQLiteStore) SaveSimpleVPNConfig(ctx context.Context, cfg models.Simple
 			opnsense_peer_uuid = ?, opnsense_server_uuid = ?,
 			opnsense_gateway_uuid = ?, opnsense_gateway_name = ?,
 			opnsense_snat_rule_uuids = ?, opnsense_filter_uuids = ?,
-			opnsense_wg_interface = ?, opnsense_wg_device = ?, last_applied_at = ?, enabled = ?, routing_applied = ?,
+			opnsense_wg_interface = ?, opnsense_wg_device = ?, last_applied_at = ?, enabled = ?, routing_applied = ?, gateway_online = ?,
+			ownership_status = ?, last_verified_at = ?, drift_reason = ?,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`
@@ -545,10 +578,15 @@ func (s *SQLiteStore) DeleteAppRoutesForVPN(ctx context.Context, vpnConfigID int
 	return err
 }
 
-// ListAppRoutesByAppID returns all app routing rules matching a given app_id across all VPNs.
+// ListAppRoutesByAppID returns app routing rules matching a given app_id,
+// scoped to VPN configs belonging to the active instance.
 func (s *SQLiteStore) ListAppRoutesByAppID(ctx context.Context, appID string) ([]*models.AppRoute, error) {
-	const query = `SELECT id, vpn_config_id, app_id, enabled, opnsense_rule_uuids FROM app_routing_rules WHERE app_id = ?`
-	rows, err := s.db.QueryContext(ctx, query, appID)
+	instanceID, _ := s.GetActiveInstanceID(ctx)
+	const query = `SELECT r.id, r.vpn_config_id, r.app_id, r.enabled, r.opnsense_rule_uuids
+		FROM app_routing_rules r
+		JOIN vpn_configs v ON r.vpn_config_id = v.id
+		WHERE r.app_id = ? AND (? = 0 OR v.instance_id = ?)`
+	rows, err := s.db.QueryContext(ctx, query, appID, instanceID, instanceID)
 	if err != nil {
 		return nil, fmt.Errorf("list app routes by app_id: %w", err)
 	}
@@ -567,9 +605,14 @@ func (s *SQLiteStore) ListAppRoutesByAppID(ctx context.Context, appID string) ([
 	return routes, rows.Err()
 }
 
-// DeleteAppRoutesByAppID removes all app routing rules matching a given app_id.
+// DeleteAppRoutesByAppID removes app routing rules matching a given app_id,
+// scoped to VPN configs belonging to the active instance.
 func (s *SQLiteStore) DeleteAppRoutesByAppID(ctx context.Context, appID string) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM app_routing_rules WHERE app_id = ?`, appID)
+	instanceID, _ := s.GetActiveInstanceID(ctx)
+	_, err := s.db.ExecContext(ctx,
+		`DELETE FROM app_routing_rules WHERE app_id = ? AND vpn_config_id IN
+			(SELECT id FROM vpn_configs WHERE ? = 0 OR instance_id = ?)`,
+		appID, instanceID, instanceID)
 	return err
 }
 
@@ -737,7 +780,8 @@ const tunnelSelectColumns = `instance_id, name, description,
 	remote_wg_interface, opnsense_peer_uuid, opnsense_server_uuid,
 	original_remote_host, original_ssh_port, ssh_phase,
 	ssh_socket_was_active, ufw_was_active,
-	deployed, status, created_at, updated_at`
+	deployed, status, created_at, updated_at,
+	ownership_status, last_verified_at, drift_reason`
 
 func tunnelWriteArgs(t models.SiteTunnel) []any {
 	deployed := 0
@@ -747,6 +791,10 @@ func tunnelWriteArgs(t models.SiteTunnel) []any {
 	sshPhase := t.SSHPhase
 	if sshPhase == "" {
 		sshPhase = models.SSHPhasePublic
+	}
+	ownershipStatus := t.OwnershipStatus
+	if ownershipStatus == "" {
+		ownershipStatus = models.OwnershipLocalOnly
 	}
 	sshSocketWasActive := 0
 	if t.SSHSocketWasActive {
@@ -765,6 +813,7 @@ func tunnelWriteArgs(t models.SiteTunnel) []any {
 		t.OriginalRemoteHost, t.OriginalSSHPort, sshPhase,
 		sshSocketWasActive, ufwWasActive,
 		deployed, t.Status,
+		ownershipStatus, t.LastVerifiedAt, t.DriftReason,
 	}
 }
 
@@ -785,6 +834,7 @@ func scanTunnel(row tunnelScanner) (*models.SiteTunnel, error) {
 		&t.OriginalRemoteHost, &t.OriginalSSHPort, &t.SSHPhase,
 		&sshSocketWasActive, &ufwWasActive,
 		&deployed, &t.Status, &t.CreatedAt, &t.UpdatedAt,
+		&t.OwnershipStatus, &t.LastVerifiedAt, &t.DriftReason,
 	)
 	if err != nil {
 		return nil, err
@@ -794,6 +844,9 @@ func scanTunnel(row tunnelScanner) (*models.SiteTunnel, error) {
 	t.UFWWasActive = ufwWasActive == 1
 	if t.SSHPhase == "" {
 		t.SSHPhase = models.SSHPhasePublic
+	}
+	if t.OwnershipStatus == "" {
+		t.OwnershipStatus = models.OwnershipLocalOnly
 	}
 	return &t, nil
 }
@@ -831,8 +884,9 @@ func (s *SQLiteStore) CreateSiteTunnel(ctx context.Context, t models.SiteTunnel)
 			remote_wg_interface, opnsense_peer_uuid, opnsense_server_uuid,
 			original_remote_host, original_ssh_port, ssh_phase,
 			ssh_socket_was_active, ufw_was_active,
-			deployed, status
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			deployed, status,
+			ownership_status, last_verified_at, drift_reason
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := s.db.ExecContext(ctx, query, tunnelWriteArgs(t)...)
 	if err != nil {
@@ -863,6 +917,7 @@ func (s *SQLiteStore) SaveSiteTunnel(ctx context.Context, t models.SiteTunnel) e
 			original_remote_host = ?, original_ssh_port = ?, ssh_phase = ?,
 			ssh_socket_was_active = ?, ufw_was_active = ?,
 			deployed = ?, status = ?,
+			ownership_status = ?, last_verified_at = ?, drift_reason = ?,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`
@@ -893,6 +948,11 @@ func (s *SQLiteStore) ListSiteTunnels(ctx context.Context) ([]*models.SiteTunnel
 	if instanceID == 0 {
 		return nil, nil
 	}
+	return s.ListSiteTunnelsForInstance(ctx, instanceID)
+}
+
+// ListSiteTunnelsForInstance returns all site tunnels for a specific instance.
+func (s *SQLiteStore) ListSiteTunnelsForInstance(ctx context.Context, instanceID int64) ([]*models.SiteTunnel, error) {
 	query := `SELECT id, ` + tunnelSelectColumns + ` FROM site_tunnels WHERE instance_id = ? ORDER BY id`
 	rows, err := s.db.QueryContext(ctx, query, instanceID)
 	if err != nil {
@@ -1107,6 +1167,29 @@ func (s *SQLiteStore) migrate(ctx context.Context) error {
 
 	// Tunnel name uniqueness per instance.
 	s.addIndexSafe(ctx, "site_tunnels", "idx_site_tunnels_instance_name", "instance_id, name", true)
+
+	// ── Ownership / reconciliation columns ──
+
+	// VPN configs: ownership state for desired/observed split.
+	s.addColumnSafe(ctx, "vpn_configs", "ownership_status", "TEXT NOT NULL DEFAULT 'local_only'")
+	s.addColumnSafe(ctx, "vpn_configs", "last_verified_at", "TEXT NOT NULL DEFAULT ''")
+	s.addColumnSafe(ctx, "vpn_configs", "drift_reason", "TEXT NOT NULL DEFAULT ''")
+	// Backfill: rows with OPNsense UUIDs start as managed_drifted (reconciler promotes to managed_verified).
+	s.db.ExecContext(ctx, `UPDATE vpn_configs SET ownership_status = 'managed_drifted'
+		WHERE ownership_status = 'local_only'
+		AND (opnsense_server_uuid != '' OR opnsense_peer_uuid != '')`)
+
+	// Site tunnels: same ownership state.
+	s.addColumnSafe(ctx, "site_tunnels", "ownership_status", "TEXT NOT NULL DEFAULT 'local_only'")
+	s.addColumnSafe(ctx, "site_tunnels", "last_verified_at", "TEXT NOT NULL DEFAULT ''")
+	s.addColumnSafe(ctx, "site_tunnels", "drift_reason", "TEXT NOT NULL DEFAULT ''")
+	// Backfill: tunnels with OPNsense UUIDs start as managed_drifted.
+	s.db.ExecContext(ctx, `UPDATE site_tunnels SET ownership_status = 'managed_drifted'
+		WHERE ownership_status = 'local_only'
+		AND (opnsense_server_uuid != '' OR opnsense_peer_uuid != '')`)
+
+	// Gateway online status — runtime health, separate from routing_applied (config intent).
+	s.addColumnSafe(ctx, "vpn_configs", "gateway_online", "INTEGER NOT NULL DEFAULT 0")
 
 	// Migrate setup_config data into firewall_instances (if setup_config exists).
 	s.migrateSetupConfigToInstances(ctx)

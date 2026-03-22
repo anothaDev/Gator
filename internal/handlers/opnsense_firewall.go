@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/anothaDev/gator/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // ─── Pending Revision Tracker ──────────────────────────────────
@@ -122,11 +122,20 @@ func revertPendingDBChanges(ctx context.Context, store appRouteWriter, info *pen
 // StartPendingRevisionCleanup starts a background goroutine that expires
 // stale pending revisions (auto-reverted by OPNsense after 60s).
 // The store is needed to undo DB changes.
-func StartPendingRevisionCleanup(store appRouteWriter) {
+// StartPendingRevisionCleanup runs a background goroutine that cleans up
+// expired pending revisions. The returned stop function signals it to exit.
+func StartPendingRevisionCleanup(store appRouteWriter) (stop func()) {
+	stopCh := make(chan struct{})
 	go func() {
 		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
-		for range ticker.C {
+		for {
+			select {
+			case <-ticker.C:
+			case <-stopCh:
+				return
+			}
+
 			pendingRevisionsMu.Lock()
 			var expired []string
 			for rev, info := range pendingRevisions {
@@ -152,6 +161,7 @@ func StartPendingRevisionCleanup(store appRouteWriter) {
 			}
 		}
 	}()
+	return func() { close(stopCh) }
 }
 
 // isGatorDescription returns true if a rule description indicates it's managed by Gator.
