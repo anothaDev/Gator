@@ -1,3 +1,5 @@
+export type TunnelOwnershipStatus = "local_only" | "managed_pending" | "managed_verified" | "managed_drifted" | "needs_reimport";
+
 export type TunnelStatus = {
   id: number;
   name: string;
@@ -15,6 +17,9 @@ export type TunnelStatus = {
   transfer_tx?: string;
   remote_reachable: boolean;
   created_at: string;
+  ownership_status?: TunnelOwnershipStatus;
+  drift_reason?: string;
+  last_verified_at?: string;
 };
 
 export type TunnelDetail = TunnelStatus & {

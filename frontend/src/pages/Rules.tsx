@@ -59,12 +59,14 @@ function getActionBadge(action: string) {
   }
 }
 
-export default function Rules() {
+export default function Rules(props: { onNavigate?: (section: string) => void }) {
   const [rules, setRules] = createSignal<FilterRule[]>([]);
   const [loading, setLoading] = createSignal(true);
   const [loadError, setLoadError] = createSignal("");
   const [deleting, setDeleting] = createSignal<string | null>(null);
   const [deleteErr, setDeleteErr] = createSignal("");
+  const [legacyCount, setLegacyCount] = createSignal(0);
+  const [legacyChecked, setLegacyChecked] = createSignal(false);
 
   const loadRules = async () => {
     setLoading(true);
@@ -76,6 +78,19 @@ export default function Rules() {
       setLoadError(err instanceof Error ? err.message : "Failed to load filter rules");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkLegacyRules = async () => {
+    try {
+      const { ok, data } = await apiGet<{ legacy_count?: number; legacy_available?: boolean }>("/api/opnsense/migration/status");
+      if (ok && data.legacy_available && (data.legacy_count ?? 0) > 0) {
+        setLegacyCount(data.legacy_count ?? 0);
+      }
+    } catch {
+      // Silent — migration status check is best-effort.
+    } finally {
+      setLegacyChecked(true);
     }
   };
 
@@ -100,6 +115,7 @@ export default function Rules() {
 
   onMount(() => {
     void loadRules();
+    void checkLegacyRules();
   });
 
   const gatorCount = () => rules().filter((r) => r.is_gator).length;
@@ -141,6 +157,34 @@ export default function Rules() {
         </Card>
       </Show>
 
+      {/* Legacy rules migration banner */}
+      <Show when={legacyChecked() && legacyCount() > 0}>
+        <Card variant="elevated" class="border-l-4 border-l-[var(--status-warning)]">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <svg class="h-5 w-5 shrink-0 text-[var(--status-warning)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <div>
+                <p class="text-[var(--text-sm)] font-medium text-[var(--text-primary)]">
+                  {legacyCount()} legacy firewall rule{legacyCount() !== 1 ? "s" : ""} detected
+                </p>
+                <p class="mt-0.5 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+                  Your firewall has rules in the old format that are not visible here. Use the Migration assistant to convert them.
+                </p>
+              </div>
+            </div>
+            <Show when={props.onNavigate}>
+              <Button variant="secondary" size="sm" onClick={() => props.onNavigate!("migration")}>
+                Open Migration
+              </Button>
+            </Show>
+          </div>
+        </Card>
+      </Show>
+
       {/* Loading state */}
       <Show when={loading()}>
         <LoadingStateCard message="Loading filter rules..." />
@@ -167,37 +211,45 @@ export default function Rules() {
 
         <Show when={rules().length > 0}>
           <Card padding="none" class="overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full">
+              <table class="w-full table-fixed">
+                <colgroup>
+                  <col class="w-[24%]" />
+                  <col class="w-[8%]" />
+                  <col class="w-[8%]" />
+                  <col class="w-[10%]" />
+                  <col class="w-[18%]" />
+                  <col class="w-[10%]" />
+                  <col class="w-[12%]" />
+                  <col class="w-[6%]" />
+                  <col class="w-[4%]" />
+                </colgroup>
                 <thead>
                   <tr class="border-b border-[var(--border-strong)]">
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-3 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-3 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                       Action
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                      Interface
+                    <th class="px-3 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      Iface
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-3 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                       Source
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-3 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                       Destination
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                      Protocol
+                    <th class="px-3 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      Proto
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-3 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                       Gateway
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-3 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                       Status
                     </th>
-                    <th class="px-4 py-3 text-right text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                      Actions
-                    </th>
+                    <th class="px-3 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -221,42 +273,42 @@ export default function Rules() {
                             rule.is_gator ? "bg-[var(--success-subtle)]/30" : "",
                           ].join(" ")}
                         >
-                          <td class="px-4 py-3">
-                            <div class="flex items-center gap-2">
-                              <span class="font-medium text-[var(--text-sm)] text-[var(--text-primary)]">
+                          <td class="px-3 py-3 overflow-hidden">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                              <span class="font-medium text-[var(--text-sm)] text-[var(--text-primary)] truncate" title={rule.description}>
                                 {rule.description || "(no description)"}
                               </span>
                               <Show when={rule.is_gator}>
-                                <Badge variant="success" size="sm">Gator</Badge>
+                                <Badge variant="success" size="sm" class="shrink-0">Gator</Badge>
                               </Show>
                             </div>
                           </td>
-                          <td class="px-4 py-3">{getActionBadge(rule.action)}</td>
-                          <td class="px-4 py-3 text-[var(--text-sm)] text-[var(--text-secondary)]">{rule.interface || "-"}</td>
-                          <td class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)]">{src()}</td>
-                          <td class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)]">{dest()}</td>
-                          <td class="px-4 py-3 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+                          <td class="px-3 py-3">{getActionBadge(rule.action)}</td>
+                          <td class="px-3 py-3 text-[var(--text-sm)] text-[var(--text-secondary)] truncate overflow-hidden">{rule.interface || "-"}</td>
+                          <td class="px-3 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)] truncate overflow-hidden" title={src()}>{src()}</td>
+                          <td class="px-3 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)] truncate overflow-hidden" title={dest()}>{dest()}</td>
+                          <td class="px-3 py-3 text-[var(--text-xs)] text-[var(--text-tertiary)] truncate overflow-hidden">
                             {rule.protocol || "any"}
                             <Show when={rule.direction}>
-                              <span class="ml-1 text-[var(--text-muted)]">({rule.direction})</span>
+                              <span class="ml-0.5 text-[var(--text-muted)]">({rule.direction})</span>
                             </Show>
                           </td>
-                          <td class="px-4 py-3">
+                          <td class="px-3 py-3 overflow-hidden">
                             <Show
                               when={rule.gateway}
                               fallback={<span class="text-[var(--text-xs)] text-[var(--text-muted)]">default</span>}
                             >
-                              <span class="font-mono text-[var(--text-xs)] text-[var(--accent-primary)]">{rule.gateway}</span>
+                              <span class="font-mono text-[var(--text-xs)] text-[var(--accent-primary)] truncate block" title={rule.gateway}>{rule.gateway}</span>
                             </Show>
                           </td>
-                          <td class="px-4 py-3">
+                          <td class="px-3 py-3">
                             {rule.enabled === "1" ? (
-                              <Badge variant="success" size="sm">enabled</Badge>
+                              <span class="h-2 w-2 rounded-full bg-[var(--status-success)] inline-block" title="enabled" />
                             ) : (
-                              <Badge variant="muted" size="sm">disabled</Badge>
+                              <span class="h-2 w-2 rounded-full bg-[var(--text-muted)] inline-block" title="disabled" />
                             )}
                           </td>
-                          <td class="px-4 py-3 text-right">
+                          <td class="px-3 py-3 text-right">
                             <Show when={rule.is_gator}>
                               <IconButton
                                 variant="ghost"
@@ -288,7 +340,6 @@ export default function Rules() {
                   </For>
                 </tbody>
               </table>
-            </div>
           </Card>
         </Show>
       </Show>

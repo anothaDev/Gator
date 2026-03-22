@@ -33,6 +33,9 @@ tmp/
 # Docs (internal API refs, specs — not for public repo)
 docs/
 
+# Internal audit/dev artifacts
+frontend/UI_AUDIT_REPORT.md
+
 # Scripts (may contain hardcoded credentials)
 scripts/
 

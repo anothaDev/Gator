@@ -1,4 +1,4 @@
-import { createResource, createSignal, For, Show } from "solid-js";
+import { createResource, createSignal, For, onMount, Show } from "solid-js";
 import VPNCard from "./vpn-setup/VPNCard";
 import DiscoveryModal from "./vpn-setup/DiscoveryModal";
 import Card from "../components/Card";
@@ -23,7 +23,11 @@ type VPNStatus = {
   wg_device?: string;
   wg_interface?: string;
   interface_assigned?: boolean;
+  gateway_name?: string;
   last_applied_at?: string;
+  ownership_status?: string;
+  drift_reason?: string;
+  last_verified_at?: string;
 };
 
 type VPNForm = {
@@ -70,13 +74,30 @@ function buildWireGuardDraft(content: string, fileName: string): Partial<VPNForm
 
 // ─── Main page ───────────────────────────────────────────────────
 
-export default function VpnSetup() {
+export default function VpnSetup(props: { onNavigate?: (section: string) => void }) {
   const [vpnList, { refetch }] = createResource(fetchVPNList);
   const [expandedId, setExpandedId] = createSignal<number | "new" | null>(null);
   const [newDraft, setNewDraft] = createSignal<Partial<VPNForm> | null>(null);
   const [newDraftNotice, setNewDraftNotice] = createSignal("");
   const [pageError, setPageError] = createSignal("");
+  const [legacyCount, setLegacyCount] = createSignal(0);
+  const [legacyChecked, setLegacyChecked] = createSignal(false);
   let importInputRef: HTMLInputElement | undefined;
+
+  const checkLegacyRules = async () => {
+    try {
+      const { ok, data } = await apiGet<{ legacy_count?: number; legacy_available?: boolean }>("/api/opnsense/migration/status");
+      if (ok && data.legacy_available && (data.legacy_count ?? 0) > 0) {
+        setLegacyCount(data.legacy_count ?? 0);
+      }
+    } catch {
+      // Silent — best-effort check.
+    } finally {
+      setLegacyChecked(true);
+    }
+  };
+
+  onMount(() => void checkLegacyRules());
 
   const toggle = (id: number) => setExpandedId((prev) => (prev === id ? null : id));
   const openNew = () => {
@@ -124,6 +145,9 @@ export default function VpnSetup() {
 
   // Discovery state
   const [showDiscovery, setShowDiscovery] = createSignal(false);
+  const [readoptTarget, setReadoptTarget] = createSignal<{
+    id: number; name: string; endpoint?: string; wg_device?: string; gateway_name?: string;
+  } | null>(null);
 
   return (
     <div class="space-y-5">
@@ -181,6 +205,34 @@ export default function VpnSetup() {
         <AlertBanner tone="error">{pageError()}</AlertBanner>
       </Show>
 
+      {/* Legacy rules warning */}
+      <Show when={legacyChecked() && legacyCount() > 0}>
+        <Card variant="elevated" class="border-l-4 border-l-[var(--status-warning)]">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <svg class="h-5 w-5 shrink-0 text-[var(--status-warning)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <div>
+                <p class="text-[var(--text-sm)] font-medium text-[var(--text-primary)]">
+                  Legacy firewall rules detected
+                </p>
+                <p class="mt-0.5 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+                  Your firewall has {legacyCount()} rule{legacyCount() !== 1 ? "s" : ""} in the old format. Gator cannot manage VPN routing until these are migrated.
+                </p>
+              </div>
+            </div>
+            <Show when={props.onNavigate}>
+              <Button variant="secondary" size="sm" onClick={() => props.onNavigate!("migration")}>
+                Open Migration
+              </Button>
+            </Show>
+          </div>
+        </Card>
+      </Show>
+
       {/* Loading State */}
       <Show when={vpnList.loading}>
         <SkeletonList items={2} />
@@ -217,6 +269,15 @@ export default function VpnSetup() {
               onToggle={() => toggle(vpn.id)}
               onSaved={() => void refetch()}
               onDeleted={() => void refetch()}
+              onReadopt={() => {
+                setReadoptTarget({
+                  id: vpn.id, name: vpn.name,
+                  endpoint: vpn.endpoint, wg_device: vpn.wg_device,
+                  gateway_name: vpn.gateway_name,
+                });
+                setShowDiscovery(true);
+              }}
+              legacyRuleCount={legacyCount()}
               refetchList={refetch}
               activeVpnName={activeVpnName()}
             />
@@ -253,11 +314,20 @@ export default function VpnSetup() {
       {/* Discovery Modal */}
       <Show when={showDiscovery()}>
         <DiscoveryModal
-          onClose={() => setShowDiscovery(false)}
+          onClose={() => {
+            setShowDiscovery(false);
+            setReadoptTarget(null);
+          }}
           onImported={() => {
             setShowDiscovery(false);
+            setReadoptTarget(null);
             void refetch();
           }}
+          readoptId={readoptTarget()?.id}
+          readoptName={readoptTarget()?.name}
+          readoptEndpoint={readoptTarget()?.endpoint}
+          readoptWGDevice={readoptTarget()?.wg_device}
+          readoptGatewayName={readoptTarget()?.gateway_name}
         />
       </Show>
     </div>

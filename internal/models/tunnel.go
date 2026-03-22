@@ -58,9 +58,14 @@ type SiteTunnel struct {
 	// Remote WireGuard interface name (e.g. "wg0", "wg1")
 	RemoteWGInterface string `json:"remote_wg_interface"`
 
-	// OPNsense resource UUIDs (set during deploy)
+	// Last known OPNsense bindings — hints for reconciliation, NOT proof of live state.
 	OPNsensePeerUUID   string `json:"-"`
 	OPNsenseServerUUID string `json:"-"`
+
+	// Ownership / reconciliation state.
+	OwnershipStatus string `json:"-"` // One of Ownership* constants from vpn.go
+	LastVerifiedAt  string `json:"-"` // RFC3339 timestamp of last successful live verification
+	DriftReason     string `json:"-"` // Human-readable reason when drifted
 
 	// SSH hardening state.
 	// SSHPhase tracks where we are in the migration/lockdown lifecycle:
@@ -103,6 +108,11 @@ type SiteTunnelStatus struct {
 	TransferRx      string `json:"transfer_rx,omitempty"` // bytes received
 	TransferTx      string `json:"transfer_tx,omitempty"` // bytes sent
 	RemoteReachable bool   `json:"remote_reachable"`
+
+	// Ownership / reconciliation fields.
+	OwnershipStatus string `json:"ownership_status"`
+	DriftReason     string `json:"drift_reason,omitempty"`
+	LastVerifiedAt  string `json:"last_verified_at,omitempty"`
 
 	CreatedAt string `json:"created_at"`
 }

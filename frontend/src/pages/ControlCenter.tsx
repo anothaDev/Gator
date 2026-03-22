@@ -382,7 +382,7 @@ export default function ControlCenter(props: Props) {
         <aside
           class={[
             "fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)] w-56 shrink-0 border-r border-[var(--border-default)] bg-[var(--bg-secondary)]",
-            "transform transition-transform duration-[var(--transition-slow)] ease-out lg:relative lg:translate-x-0",
+            "transform transition-transform duration-[var(--transition-slow)] ease-out lg:translate-x-0",
             mobileNavOpen() ? "translate-x-0" : "-translate-x-full",
           ].join(" ")}
         >
@@ -425,7 +425,7 @@ export default function ControlCenter(props: Props) {
         </aside>
 
         {/* Main content area - constrained width */}
-        <main class="flex-1 min-w-0 p-4 lg:p-6">
+        <main class="flex-1 min-w-0 p-4 lg:ml-56 lg:p-6">
           <div class="mx-auto max-w-5xl min-h-[calc(100vh-7rem)]">
             <Suspense
               fallback={
@@ -439,7 +439,7 @@ export default function ControlCenter(props: Props) {
                   <Dashboard />
                 </Match>
                 <Match when={section() === "vpn"}>
-                  <VpnSetup />
+                  <VpnSetup onNavigate={(s) => setSection(s as Section)} />
                 </Match>
                 <Match when={section() === "tunnels"}>
                   <Tunnels />
@@ -460,7 +460,7 @@ export default function ControlCenter(props: Props) {
                   <Nat />
                 </Match>
                 <Match when={section() === "rules"}>
-                  <Rules />
+                  <Rules onNavigate={(s) => setSection(s as Section)} />
                 </Match>
                 <Match when={section() === "migration"}>
                   <Migration />

@@ -7,6 +7,7 @@ import RoutingToolbar from "./routing/RoutingToolbar";
 import EmptyState from "../components/EmptyState";
 import Card from "../components/Card";
 import Button from "../components/Button";
+import Select from "../components/Select";
 
 type PortRule = {
   protocol: string;
@@ -499,38 +500,29 @@ export default function Routing() {
 
         {/* VPN selector */}
         <Show when={vpnList().length > 0}>
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex items-center gap-2">
-              <label class="text-[12px] font-medium text-[var(--text-tertiary)]">Target VPN</label>
-              <select
-                value={selectedVpnId() ?? ""}
-                onChange={(e) => {
-                  const id = parseInt(e.currentTarget.value);
-                  if (!isNaN(id)) selectVPN(id);
-                }}
-                class="rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-2 text-[13px] text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
-              >
-                <For each={vpnList()}>
-                  {(vpn) => (
-                    <option value={vpn.id}>
-                      {vpn.name}{vpn.routing_applied ? " (active)" : ""}
-                    </option>
-                  )}
-                </For>
-              </select>
-            </div>
-            <div class="flex items-center gap-2">
-              <label class="text-[12px] font-medium text-[var(--text-tertiary)]">Mode</label>
-              <select
-                value={routingMode()}
-                onChange={(e) => void changeMode(e.currentTarget.value as RoutingMode)}
-                class="rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-2 text-[13px] text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
-              >
-                <option value="all">Route all traffic</option>
-                <option value="selective">Only selected apps</option>
-                <option value="bypass">All except selected</option>
-              </select>
-            </div>
+          <div class="grid grid-cols-2 gap-4 sm:max-w-lg">
+            <Select
+              label="Target VPN"
+              value={String(selectedVpnId() ?? "")}
+              options={vpnList().map((vpn) => ({
+                value: String(vpn.id),
+                label: `${vpn.name}${vpn.routing_applied ? " (active)" : ""}`,
+              }))}
+              onChange={(v) => {
+                const id = parseInt(v);
+                if (!isNaN(id)) selectVPN(id);
+              }}
+            />
+            <Select
+              label="Mode"
+              value={routingMode()}
+              options={[
+                { value: "all", label: "Route all traffic" },
+                { value: "selective", label: "Only selected apps" },
+                { value: "bypass", label: "All except selected" },
+              ]}
+              onChange={(v) => void changeMode(v as RoutingMode)}
+            />
           </div>
           <Show when={routingMode() !== "all"}>
             <p class="mt-3 text-[12px] text-[var(--text-tertiary)]">
@@ -546,12 +538,7 @@ export default function Routing() {
             <EmptyState
               variant="routing"
               title="No VPN ready for routing"
-              description="Deploy a VPN profile with a gateway enabled before you can configure app-based routing."
-              action={
-                <Button variant="secondary" size="md" onClick={() => window.location.reload()}>
-                  Go to VPN setup
-                </Button>
-              }
+              description="Deploy a VPN profile with a gateway on OPNsense before you can configure app-based routing. If your VPN shows as drifted or pending, the reconciler may still be verifying it."
             />
           </Card>
         </Show>

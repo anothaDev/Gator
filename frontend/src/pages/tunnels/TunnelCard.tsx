@@ -14,6 +14,11 @@ const inputClass =
 const labelClass = "block text-[var(--text-xs)] font-medium text-[var(--text-secondary)] mb-1.5";
 
 function getStatusBadge(t: TunnelStatus) {
+  const os = t.ownership_status ?? "local_only";
+  if (os === "needs_reimport")
+    return <Badge variant="error" size="sm">Import needed</Badge>;
+  if (os === "managed_drifted")
+    return <Badge variant="warning" size="sm">Drifted</Badge>;
   if (t.status === "deployed" && t.remote_reachable)
     return <Badge variant="success" size="sm">Connected</Badge>;
   if (t.status === "deployed")
@@ -31,12 +36,14 @@ interface ActionItem {
   onClick: () => void;
   disabled?: boolean;
   loading?: boolean;
+  title?: string;
 }
 
 function TunnelActions(props: {
   deployed: boolean;
   busy: boolean;
   crossChecking: boolean;
+  ownershipStatus: string;
   onDeploy: (mode: "full" | "setup-remote") => void;
   onRestart: () => void;
   onLockSSH: () => void;
@@ -44,6 +51,9 @@ function TunnelActions(props: {
   onCrossCheck: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onReadopt?: () => void;
+  /** When > 0, legacy rules exist — deploy/readopt actions are blocked until migration. */
+  legacyRuleCount?: number;
 }) {
   const [open, setOpen] = createSignal(false);
   let menuRef: HTMLDivElement | undefined;
@@ -59,8 +69,33 @@ function TunnelActions(props: {
 
   const actions = (): ActionItem[] => {
     const items: ActionItem[] = [];
+    const os = props.ownershipStatus;
+    const migrationBlocked = (props.legacyRuleCount ?? 0) > 0;
+    const migrateHint = "Migrate legacy firewall rules first";
+
+    // needs_reimport: re-adopt + edit + delete
+    if (os === "needs_reimport") {
+      if (props.onReadopt) {
+        items.push({ label: "Re-adopt from OPNsense", variant: "default", onClick: props.onReadopt, disabled: props.busy || migrationBlocked, title: migrationBlocked ? migrateHint : undefined });
+      }
+      items.push({ label: "Edit", variant: "default", onClick: props.onEdit, disabled: props.busy });
+      items.push({ label: "Delete", variant: "danger", onClick: props.onDelete, disabled: props.busy });
+      return items;
+    }
+
+    // managed_drifted: re-deploy + re-adopt + edit + delete
+    if (os === "managed_drifted") {
+      items.push({ label: "Re-deploy", variant: "default", onClick: () => props.onDeploy("full"), disabled: migrationBlocked, title: migrationBlocked ? migrateHint : undefined });
+      if (props.onReadopt) {
+        items.push({ label: "Re-adopt from OPNsense", variant: "default", onClick: props.onReadopt, disabled: props.busy || migrationBlocked, title: migrationBlocked ? migrateHint : undefined });
+      }
+      items.push({ label: "Edit", variant: "default", onClick: props.onEdit, disabled: props.busy });
+      items.push({ label: "Delete", variant: "danger", onClick: props.onDelete, disabled: props.busy });
+      return items;
+    }
+
     if (!props.deployed) {
-      items.push({ label: "Deploy", variant: "default", onClick: () => props.onDeploy("full") });
+      items.push({ label: "Deploy", variant: "default", onClick: () => props.onDeploy("full"), disabled: migrationBlocked, title: migrationBlocked ? migrateHint : undefined });
     } else {
       items.push({ label: "Setup Remote", variant: "default", onClick: () => props.onDeploy("setup-remote") });
       items.push({ label: "Restart", variant: "default", onClick: props.onRestart, disabled: props.busy });
@@ -92,6 +127,7 @@ function TunnelActions(props: {
               <button
                 type="button"
                 disabled={item.disabled}
+                title={item.title}
                 onClick={() => {
                   setOpen(false);
                   item.onClick();
@@ -128,6 +164,9 @@ function TunnelCard(props: {
   onUpdated: () => void;
   onMessage: (msg: string) => void;
   onError: (err: string) => void;
+  onReadopt?: () => void;
+  /** When > 0, legacy rules exist — deploy/readopt actions are blocked until migration. */
+  legacyRuleCount?: number;
 }) {
   const t = props.tunnel;
 
@@ -294,6 +333,7 @@ function TunnelCard(props: {
           deployed={t.deployed}
           busy={busy()}
           crossChecking={crossChecking()}
+          ownershipStatus={t.ownership_status ?? "local_only"}
           onDeploy={(mode) => props.onDeploy(mode)}
           onRestart={() => void restartTunnel()}
           onLockSSH={() => void lockdownSSH()}
@@ -301,8 +341,22 @@ function TunnelCard(props: {
           onCrossCheck={() => void runCrossCheck()}
           onEdit={() => void startEdit()}
           onDelete={() => void deleteTunnel()}
+          onReadopt={props.onReadopt}
+          legacyRuleCount={props.legacyRuleCount}
         />
       </div>
+
+      {/* Drift / reimport warning */}
+      <Show when={t.ownership_status === "managed_drifted"}>
+        <div class="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          OPNsense state has drifted from Gator config{t.drift_reason ? ` (${t.drift_reason})` : ""}. Re-deploy to fix.
+        </div>
+      </Show>
+      <Show when={t.ownership_status === "needs_reimport"}>
+        <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+          OPNsense resources not found. Re-scan OPNsense or delete this tunnel.
+        </div>
+      </Show>
 
       {/* Connection details */}
       <div class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-[var(--text-sm)] md:grid-cols-4">

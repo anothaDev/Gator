@@ -1,15 +1,17 @@
 import { createSignal, For, onMount, Show } from "solid-js";
 import { apiGet } from "../lib/api";
 import TunnelDeployModal from "./tunnels/TunnelDeployModal";
-import TunnelImportForm from "./tunnels/TunnelImportForm";
+import TunnelDiscoveryModal from "./tunnels/TunnelDiscoveryModal";
 import TunnelCard from "./tunnels/TunnelCard";
 import CreateTunnelForm from "./tunnels/CreateTunnelForm";
-import type { TunnelStatus, DiscoveredTunnel } from "./tunnels/types";
+import type { TunnelStatus } from "./tunnels/types";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import AlertBanner from "../components/AlertBanner";
 import EmptyState from "../components/EmptyState";
 import { SkeletonList } from "../components/Skeleton";
+
+// ─── Legacy rule check (same pattern as VpnSetup.tsx) ────────────
 
 // ─── Main Component ──────────────────────────────────────────────
 
@@ -28,12 +30,30 @@ export default function Tunnels() {
   const [actionMsg, setActionMsg] = createSignal("");
   const [actionErr, setActionErr] = createSignal("");
 
+  // Legacy rules state.
+  const [legacyCount, setLegacyCount] = createSignal(0);
+  const [legacyChecked, setLegacyChecked] = createSignal(false);
+
+  const checkLegacyRules = async () => {
+    try {
+      const { ok, data } = await apiGet<{ legacy_count?: number; legacy_available?: boolean }>("/api/opnsense/migration/status");
+      if (ok && data.legacy_available && (data.legacy_count ?? 0) > 0) {
+        setLegacyCount(data.legacy_count ?? 0);
+      }
+    } catch {
+      // Silent — best-effort check.
+    } finally {
+      setLegacyChecked(true);
+    }
+  };
+
   // Import/discover state.
   const [showImport, setShowImport] = createSignal(false);
-  const [discovered, setDiscovered] = createSignal<DiscoveredTunnel[]>([]);
-  const [discovering, setDiscovering] = createSignal(false);
-  const [discoverError, setDiscoverError] = createSignal("");
-  const [importTarget, setImportTarget] = createSignal<DiscoveredTunnel | null>(null);
+
+  // Re-adopt state: when set, the discovery modal opens in readopt mode.
+  const [readoptTarget, setReadoptTarget] = createSignal<{
+    id: number; name: string; remote_host?: string; listen_port?: number; firewall_ip?: string;
+  } | null>(null);
 
   const loadTunnels = async () => {
     setLoading(true);
@@ -51,27 +71,8 @@ export default function Tunnels() {
 
   onMount(() => {
     void loadTunnels();
+    void checkLegacyRules();
   });
-
-  const discoverTunnels = async () => {
-    setDiscovering(true);
-    setDiscoverError("");
-    try {
-      const { ok, data } = await apiGet<{ tunnels: DiscoveredTunnel[] }>("/api/tunnels/discover");
-      if (ok) {
-        setDiscovered(data.tunnels ?? []);
-        if ((data.tunnels ?? []).length === 0) {
-          setDiscoverError("No importable tunnels found on OPNsense.");
-        }
-      } else {
-        setDiscoverError((data as { error?: string }).error ?? "Discovery failed");
-      }
-    } catch {
-      setDiscoverError("Discovery failed");
-    } finally {
-      setDiscovering(false);
-    }
-  };
 
   return (
     <div class="space-y-5">
@@ -100,7 +101,7 @@ export default function Tunnels() {
           <Button
             variant="secondary"
             size="md"
-            onClick={() => { setShowImport(true); void discoverTunnels(); }}
+            onClick={() => setShowImport(true)}
           >
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -131,6 +132,27 @@ export default function Tunnels() {
         <AlertBanner tone="error">{actionErr()}</AlertBanner>
       </Show>
 
+      {/* Legacy rules warning */}
+      <Show when={legacyChecked() && legacyCount() > 0}>
+        <Card variant="elevated" class="border-l-4 border-l-[var(--status-warning)]">
+          <div class="flex items-center gap-3">
+            <svg class="h-5 w-5 shrink-0 text-[var(--status-warning)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <div>
+              <p class="text-[var(--text-sm)] font-medium text-[var(--text-primary)]">
+                Legacy firewall rules detected
+              </p>
+              <p class="mt-0.5 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+                Your firewall has {legacyCount()} rule{legacyCount() !== 1 ? "s" : ""} in the old format. Deploy and re-adopt actions are blocked until migration is complete.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </Show>
+
       {/* Loading */}
       <Show when={loading()}>
         <SkeletonList items={2} />
@@ -158,7 +180,7 @@ export default function Tunnels() {
                     </svg>
                     Create tunnel
                   </Button>
-                  <Button variant="secondary" size="md" onClick={() => { setShowImport(true); void discoverTunnels(); }}>
+                  <Button variant="secondary" size="md" onClick={() => setShowImport(true)}>
                     Import from OPNsense
                   </Button>
                 </div>
@@ -175,6 +197,14 @@ export default function Tunnels() {
               onUpdated={() => void loadTunnels()}
               onMessage={setActionMsg}
               onError={setActionErr}
+              legacyRuleCount={legacyCount()}
+              onReadopt={() => {
+                setReadoptTarget({
+                  id: t.id, name: t.name,
+                  remote_host: t.remote_host, listen_port: t.listen_port, firewall_ip: t.firewall_ip,
+                });
+                setShowImport(true);
+              }}
             />
           )}
         </For>
@@ -188,14 +218,16 @@ export default function Tunnels() {
         />
       </Show>
 
-      {/* Import from OPNsense Modal */}
+      {/* Import / Re-adopt from OPNsense Modal */}
       <Show when={showImport()}>
-        <TunnelImportForm
-          discovering={discovering()}
-          discoverError={discoverError()}
-          discovered={discovered()}
-          onClose={() => setShowImport(false)}
-          onImported={() => { setShowImport(false); void loadTunnels(); }}
+        <TunnelDiscoveryModal
+          onClose={() => { setShowImport(false); setReadoptTarget(null); }}
+          onImported={() => { setShowImport(false); setReadoptTarget(null); void loadTunnels(); }}
+          readoptId={readoptTarget()?.id}
+          readoptName={readoptTarget()?.name}
+          readoptEndpoint={readoptTarget()?.remote_host}
+          readoptListenPort={readoptTarget()?.listen_port}
+          readoptFirewallIP={readoptTarget()?.firewall_ip}
         />
       </Show>
 

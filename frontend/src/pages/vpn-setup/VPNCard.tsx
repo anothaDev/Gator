@@ -3,8 +3,11 @@ import { apiDelete, apiGet, apiPost, apiPut } from "../../lib/api";
 import { parseWireGuardConfig as parseWireGuardFields, wireGuardStemFromFile } from "../../lib/wireguard";
 import DeployModal from "./DeployModal";
 import ConfirmModal from "../../components/ConfirmModal";
+import Select from "../../components/Select";
 
 type IPVersion = "ipv4" | "ipv6";
+
+type OwnershipStatus = "local_only" | "managed_pending" | "managed_verified" | "managed_drifted" | "needs_reimport";
 
 type VPNStatus = {
   id: number;
@@ -20,6 +23,7 @@ type VPNStatus = {
   has_pre_shared_key: boolean;
   applied: boolean;
   routing_applied: boolean;
+  gateway_online: boolean;
   gateway_applied: boolean;
   nat_applied: boolean;
   policy_applied: boolean;
@@ -29,6 +33,9 @@ type VPNStatus = {
   interface_assigned: boolean;
   gateway_name?: string;
   last_applied_at?: string;
+  ownership_status?: OwnershipStatus;
+  drift_reason?: string;
+  last_verified_at?: string;
 };
 
 type SelectableInterface = {
@@ -155,7 +162,7 @@ function formFromDetail(vpn: VPNDetail): VPNForm {
   };
 }
 
-function vpnStateMeta(vpn: Pick<VPNStatus, "applied" | "policy_applied" | "routing_applied" | "gateway_applied">): {
+function vpnStateMeta(vpn: Pick<VPNStatus, "applied" | "policy_applied" | "routing_applied" | "gateway_applied" | "ownership_status" | "drift_reason">): {
   key: VPNStateKey;
   label: string;
   summary: string;
@@ -164,6 +171,33 @@ function vpnStateMeta(vpn: Pick<VPNStatus, "applied" | "policy_applied" | "routi
   panelClass: string;
   deployLabel: string;
 } {
+  const os = vpn.ownership_status ?? "local_only";
+
+  // Ownership-based states take priority over deployment flags.
+  if (os === "needs_reimport") {
+    return {
+      key: "draft",
+      label: "Import needed",
+      summary: "OPNsense resources not found. Re-scan or delete this profile.",
+      badgeClass: "bg-red-500/15 text-red-300",
+      dotClass: "bg-red-400",
+      panelClass: "border-red-500/30 bg-red-500/10 text-red-200",
+      deployLabel: "Deploy to OPNsense",
+    };
+  }
+  if (os === "managed_drifted") {
+    const reason = vpn.drift_reason ? ` (${vpn.drift_reason})` : "";
+    return {
+      key: "draft",
+      label: "Drifted",
+      summary: `OPNsense state has drifted from Gator config${reason}. Re-deploy to fix.`,
+      badgeClass: "bg-amber-500/15 text-amber-300",
+      dotClass: "bg-amber-400",
+      panelClass: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+      deployLabel: "Re-deploy to OPNsense",
+    };
+  }
+
   // Externally managed: has gateway but no Gator filter rules.
   const externallyManaged = vpn.gateway_applied && !vpn.policy_applied;
 
@@ -250,10 +284,13 @@ function VPNCard(props: {
   onSaved: (newId?: number) => void;
   onCancel?: () => void;
   onDeleted?: () => void;
+  onReadopt?: () => void;
   refetchList: () => void;
   activeVpnName?: string;
   initialForm?: Partial<VPNForm> | null;
   initialNotice?: string;
+  /** When > 0, legacy rules exist — deploy/readopt actions are blocked until migration. */
+  legacyRuleCount?: number;
 }) {
   const isNew = () => props.vpn === null;
   const vpn = () => props.vpn;
@@ -467,8 +504,13 @@ function VPNCard(props: {
     }
   };
 
-  // Can toggle = has Gator-managed filter rules
-  const canToggle = () => vpn()?.policy_applied === true;
+  // Can toggle = has Gator-managed filter rules AND ownership is managed (verified or pending).
+  const canToggle = () => {
+    const v = vpn();
+    if (!v?.policy_applied) return false;
+    const os = v.ownership_status ?? "local_only";
+    return os === "managed_verified" || os === "managed_pending";
+  };
   const toggleLabel = () => (vpn()?.routing_applied ? "Deactivate route" : "Make active route");
 
   // ── Collapsed header ──
@@ -677,18 +719,37 @@ function VPNCard(props: {
             onCleanup(() => document.removeEventListener("mousedown", handleClickOutside));
           }
 
-          type ActionItem = { label: string; variant: "default" | "primary" | "danger"; onClick: () => void; disabled?: boolean };
+          type ActionItem = { label: string; variant: "default" | "primary" | "danger"; onClick: () => void; disabled?: boolean; title?: string };
+          const migrationBlocked = () => (props.legacyRuleCount ?? 0) > 0;
           const items = (): ActionItem[] => {
-            const list: ActionItem[] = [
-              { label: saving() ? "Saving..." : "Save changes", variant: "default", onClick: () => { const form = menuRef?.closest("form"); form?.requestSubmit(); }, disabled: busy() || !detailReady() },
-              { label: vpnStateMeta(vpn()!).deployLabel, variant: "primary", onClick: startDeploy, disabled: busy() || !detailReady() },
-            ];
+            const v = vpn()!;
+            const os = v.ownership_status ?? "local_only";
+            const list: ActionItem[] = [];
+            const migrateHint = "Migrate legacy firewall rules first";
+
+            // needs_reimport: only delete — no save/deploy/activate
+            if (os !== "needs_reimport") {
+              list.push(
+                { label: saving() ? "Saving..." : "Save changes", variant: "default", onClick: () => { const form = menuRef?.closest("form"); form?.requestSubmit(); }, disabled: busy() || !detailReady() },
+                { label: vpnStateMeta(v).deployLabel, variant: "primary", onClick: startDeploy, disabled: busy() || !detailReady() || migrationBlocked(), title: migrationBlocked() ? migrateHint : undefined },
+              );
+            }
             if (canToggle()) {
               list.push({
-                label: vpn()!.routing_applied ? "Deactivate route" : "Make active route",
-                variant: vpn()!.routing_applied ? "danger" : "default",
+                label: v.routing_applied ? "Deactivate route" : "Make active route",
+                variant: v.routing_applied ? "danger" : "default",
                 onClick: () => void toggleActive(),
                 disabled: busy(),
+              });
+            }
+            // Re-adopt action for drifted or needs-reimport profiles
+            if ((os === "managed_drifted" || os === "needs_reimport") && props.onReadopt) {
+              list.push({
+                label: "Re-adopt from OPNsense",
+                variant: "primary",
+                onClick: props.onReadopt,
+                disabled: busy() || migrationBlocked(),
+                title: migrationBlocked() ? migrateHint : undefined,
               });
             }
             return list;
@@ -713,6 +774,7 @@ function VPNCard(props: {
                       <button
                         type={item.variant === "default" && item.label.includes("Sav") ? "submit" : "button"}
                         disabled={item.disabled}
+                        title={item.title}
                         onClick={() => { setActionsOpen(false); item.onClick(); }}
                         class={[
                           "flex w-full items-center gap-2 px-3 py-2 text-left text-[var(--text-sm)] font-medium transition-colors",
@@ -775,22 +837,26 @@ function VPNCard(props: {
 
         <div class="mt-4 grid gap-3 sm:grid-cols-3">
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Protocol</label>
-            <select
+            <Select
+              label="Protocol"
               value={form().protocol}
-              onChange={(e) => update("protocol", e.currentTarget.value as "wireguard" | "openvpn")}
-              class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
-            >
-              <option value="wireguard">WireGuard</option>
-              <option value="openvpn">OpenVPN</option>
-            </select>
+              options={[
+                { value: "wireguard", label: "WireGuard" },
+                { value: "openvpn", label: "OpenVPN" },
+              ]}
+              onChange={(v) => update("protocol", v as "wireguard" | "openvpn")}
+            />
           </div>
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">IP version</label>
-            <select
+            <Select
+              label="IP version"
               value={form().ipVersion}
-              onChange={(e) => {
-                const newVersion = e.currentTarget.value as IPVersion;
+              options={[
+                { value: "ipv4", label: "IPv4" },
+                { value: "ipv6", label: "IPv6" },
+              ]}
+              onChange={(v) => {
+                const newVersion = v as IPVersion;
                 setForm((prev) => {
                   const updated = { ...prev, ipVersion: newVersion };
                   if (prev._parsedAddresses) {
@@ -805,11 +871,7 @@ function VPNCard(props: {
                   return updated;
                 });
               }}
-              class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
-            >
-              <option value="ipv4">IPv4</option>
-              <option value="ipv6">IPv6</option>
-            </select>
+            />
           </div>
           <div>
             <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Remote endpoint</label>

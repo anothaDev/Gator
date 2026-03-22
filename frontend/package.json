@@ -1,6 +1,9 @@
 {
   "name": "gator-frontend",
+  "private": true,
   "version": "0.0.1",
+  "description": "SolidJS frontend for Gator firewall manager",
+  "license": "GPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "vite",

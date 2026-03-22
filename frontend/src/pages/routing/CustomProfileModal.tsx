@@ -1,5 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
 import { apiPost } from "../../lib/api";
+import Select from "../../components/Select";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -93,22 +94,22 @@ function CustomProfileModal(props: {
           </div>
 
           <div>
-            <label class="text-xs font-medium text-[var(--text-tertiary)]">Category</label>
-            <select
+            <Select
+              label="Category"
               value={customCategory()}
-              onChange={(e) => setCustomCategory(e.currentTarget.value)}
-              class="mt-1 w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
-            >
-              <option value="custom">Custom</option>
-              <option value="gaming">Gaming</option>
-              <option value="streaming">Streaming</option>
-              <option value="communication">Communication</option>
-              <option value="file_sharing">File Sharing</option>
-              <option value="browsing">Browsing</option>
-              <option value="remote_access">Remote Access</option>
-              <option value="home_iot">Home & IoT</option>
-              <option value="mail">Mail</option>
-            </select>
+              options={[
+                { value: "custom", label: "Custom" },
+                { value: "gaming", label: "Gaming" },
+                { value: "streaming", label: "Streaming" },
+                { value: "communication", label: "Communication" },
+                { value: "file_sharing", label: "File Sharing" },
+                { value: "browsing", label: "Browsing" },
+                { value: "remote_access", label: "Remote Access" },
+                { value: "home_iot", label: "Home & IoT" },
+                { value: "mail", label: "Mail" },
+              ]}
+              onChange={(v) => setCustomCategory(v)}
+            />
           </div>
 
           <div>
@@ -126,15 +127,16 @@ function CustomProfileModal(props: {
               <For each={customRules()}>
                 {(rule, idx) => (
                   <div class="flex items-center gap-2">
-                    <select
+                    <Select
                       value={rule.protocol}
-                      onChange={(e) => updateRuleRow(idx(), "protocol", e.currentTarget.value)}
-                      class="w-28 rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-2 py-1.5 text-xs text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
-                    >
-                      <option value="TCP">TCP</option>
-                      <option value="UDP">UDP</option>
-                      <option value="TCP/UDP">TCP/UDP</option>
-                    </select>
+                      options={[
+                        { value: "TCP", label: "TCP" },
+                        { value: "UDP", label: "UDP" },
+                        { value: "TCP/UDP", label: "TCP/UDP" },
+                      ]}
+                      onChange={(v) => updateRuleRow(idx(), "protocol", v)}
+                      class="w-28"
+                    />
                     <input
                       type="text"
                       placeholder="e.g. 8080 or 3000-3100"

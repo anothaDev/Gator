@@ -7,6 +7,17 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      "/api/opnsense/overview/stream": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        // SSE requires no response buffering and no timeout.
+        configure: (proxy) => {
+          proxy.on("proxyRes", (proxyRes) => {
+            proxyRes.headers["cache-control"] = "no-cache";
+            proxyRes.headers["x-accel-buffering"] = "no";
+          });
+        },
+      },
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,

@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -9,36 +11,53 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/anothaDev/gator/internal/models"
 )
 
 type OPNsenseStore interface {
 	GetFirewallConfig(ctx context.Context) (*models.FirewallConfig, error)
 	GetSimpleVPNConfig(ctx context.Context) (*models.SimpleVPNConfig, error)
+	ListVPNConfigs(ctx context.Context) ([]*models.SimpleVPNConfig, error)
+	ListSiteTunnels(ctx context.Context) ([]*models.SiteTunnel, error)
 	GetCache(ctx context.Context, key string) (string, error)
 	SetCache(ctx context.Context, key, value string) error
 }
 
 type OPNsenseHandler struct {
-	store OPNsenseStore
+	store  OPNsenseStore
+	stopCh chan struct{}
 }
 
 func NewOPNsenseHandler(store OPNsenseStore) *OPNsenseHandler {
-	h := &OPNsenseHandler{store: store}
-	// Start background firmware cache refresh.
+	h := &OPNsenseHandler{store: store, stopCh: make(chan struct{})}
 	go h.refreshFirmwareLoop()
 	return h
 }
 
+// Stop signals the background firmware cache loop to exit.
+func (h *OPNsenseHandler) Stop() {
+	close(h.stopCh)
+}
+
 func (h *OPNsenseHandler) refreshFirmwareLoop() {
 	// Initial fetch after a short delay to let the server start.
-	time.Sleep(2 * time.Second)
+	select {
+	case <-time.After(2 * time.Second):
+	case <-h.stopCh:
+		return
+	}
 	h.refreshFirmwareCache()
 
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
-	for range ticker.C {
-		h.refreshFirmwareCache()
+	for {
+		select {
+		case <-ticker.C:
+			h.refreshFirmwareCache()
+		case <-h.stopCh:
+			return
+		}
 	}
 }
 
@@ -71,33 +90,100 @@ func (h *OPNsenseHandler) refreshFirmwareCache() {
 	_ = h.store.SetCache(ctx, "firmware_version", version)
 }
 
+// Overview returns a single snapshot of the dashboard data.
 func (h *OPNsenseHandler) Overview(c *gin.Context) {
-	overview := models.OPNsenseOverview{}
-	ctx := c.Request.Context()
+	overview := h.buildOverview(c.Request.Context())
+	c.JSON(http.StatusOK, overview)
+}
 
-	vpnCfg, err := h.store.GetSimpleVPNConfig(ctx)
-	if err == nil && vpnCfg != nil {
+// OverviewStream provides a Server-Sent Events stream of dashboard data.
+// The client connects once and receives updates every 5 seconds until
+// the connection is closed. Uses Gin's c.Stream for proper chunked
+// streaming that works through reverse proxies and the Vite dev proxy.
+func (h *OPNsenseHandler) OverviewStream(c *gin.Context) {
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	// c.Stream handles flushing after each callback invocation and
+	// exits when the callback returns false or the client disconnects.
+	first := true
+	c.Stream(func(w io.Writer) bool {
+		if first {
+			first = false
+			h.writeSSEEvent(c)
+			return true
+		}
+		select {
+		case <-h.stopCh:
+			return false
+		case <-ticker.C:
+			h.writeSSEEvent(c)
+			return true
+		}
+	})
+}
+
+func (h *OPNsenseHandler) writeSSEEvent(c *gin.Context) {
+	overview := h.buildOverview(c.Request.Context())
+	data, _ := json.Marshal(overview)
+	c.SSEvent("message", string(data))
+}
+
+// buildOverview collects all dashboard data from the DB and OPNsense API.
+func (h *OPNsenseHandler) buildOverview(ctx context.Context) models.OPNsenseOverview {
+	overview := models.OPNsenseOverview{}
+
+	// Pick the most relevant VPN for the dashboard: active route > managed > any.
+	vpnConfigs, err := h.store.ListVPNConfigs(ctx)
+	if err == nil && len(vpnConfigs) > 0 {
+		overview.VPNCount = len(vpnConfigs)
 		overview.VPN.Configured = true
+		vpnCfg := vpnConfigs[0]
+		for _, cfg := range vpnConfigs {
+			managed := models.IsOwnershipManaged(cfg.OwnershipStatus)
+			if managed && cfg.RoutingApplied {
+				vpnCfg = cfg
+				break
+			}
+			if managed && !models.IsOwnershipManaged(vpnCfg.OwnershipStatus) {
+				vpnCfg = cfg
+			}
+		}
 		overview.VPN.Name = vpnCfg.Name
-		overview.VPN.Applied = vpnCfg.OPNsenseServerUUID != ""
-		overview.VPN.RoutingApplied = vpnCfg.RoutingApplied
+		managed := models.IsOwnershipManaged(vpnCfg.OwnershipStatus)
+		overview.VPN.Applied = managed
+		overview.VPN.RoutingApplied = managed && vpnCfg.RoutingApplied
 		overview.VPN.LastAppliedAt = vpnCfg.LastAppliedAt
 	}
 
+	// Tunnel summary for the dashboard.
+	if tunnels, tErr := h.store.ListSiteTunnels(ctx); tErr == nil {
+		overview.Tunnels.Total = len(tunnels)
+		for _, t := range tunnels {
+			switch t.Status {
+			case "deployed":
+				overview.Tunnels.Deployed++
+			case "error":
+				overview.Tunnels.Errors++
+			}
+		}
+	}
+
 	firewallCfg, err := h.store.GetFirewallConfig(ctx)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read firewall setup"})
-		return
-	}
-	if firewallCfg == nil {
+	if err != nil || firewallCfg == nil {
 		overview.Error = "Firewall setup is not configured."
-		c.JSON(http.StatusOK, overview)
-		return
+		return overview
 	}
+	overview.Host = firewallCfg.Host
+	overview.FirewallType = firewallCfg.Type
 	if firewallCfg.Type != "opnsense" {
 		overview.Error = "Dashboard overview is currently available for OPNsense only."
-		c.JSON(http.StatusOK, overview)
-		return
+		return overview
 	}
 
 	api := newOPNsenseAPIClient(*firewallCfg)
@@ -182,6 +268,15 @@ func (h *OPNsenseHandler) Overview(c *gin.Context) {
 		if overview.Memory.UsedMB == 0 {
 			overview.Memory.UsedMB = parseInt(memory["used"]) / 1024 / 1024
 		}
+		// CPU core count from the cpu.used field ("N/M" format) or cpu object.
+		cpu := asMap(r.data["cpu"])
+		if total := parseInt(cpu["total"]); total > 0 {
+			overview.CPUCount = total
+		}
+		// Fallback: count from top-level cpu_count or headers.
+		if overview.CPUCount == 0 {
+			overview.CPUCount = parseInt(r.data["cpu_count"])
+		}
 	} else {
 		addPermWarn(r.err)
 	}
@@ -259,7 +354,7 @@ func (h *OPNsenseHandler) Overview(c *gin.Context) {
 		overview.Error = "Connected with limited API permissions. Grant Diagnostics/Routes read access for full dashboard stats."
 	}
 
-	c.JSON(http.StatusOK, overview)
+	return overview
 }
 
 func asMap(value any) map[string]any {

@@ -1,5 +1,5 @@
 import { createSignal, For, Show, onMount } from "solid-js";
-import { apiGet, apiPost } from "../../lib/api";
+import { apiGet, apiPost, apiPut } from "../../lib/api";
 import Modal from "../../components/Modal";
 import Button from "../../components/Button";
 import AlertBanner from "../../components/AlertBanner";
@@ -29,7 +29,34 @@ type DiscoveredVPN = {
   source_interfaces: string[] | null;
 };
 
-export default function DiscoveryModal(props: { onClose: () => void; onImported: () => void }) {
+/** Compute which fingerprint fields match between a discovered VPN and the readopt target.
+ *  Returns labels of matched fields and total score. */
+function matchDetails(vpn: DiscoveredVPN, endpoint?: string, wgDevice?: string, gatewayName?: string): { score: number; matched: string[] } {
+  const matched: string[] = [];
+  let score = 0;
+  if (endpoint && vpn.endpoint === endpoint) { score += 3; matched.push("endpoint"); }
+  if (wgDevice && vpn.wg_device === wgDevice) { score += 1; matched.push("wg_device"); }
+  if (gatewayName && vpn.gateway_name === gatewayName) { score += 1; matched.push("gateway"); }
+  return { score, matched };
+}
+
+/** Require at least 2 matched fields for "Suggested match" status. */
+function isSuggestedMatch(details: { score: number; matched: string[] }): boolean {
+  return details.matched.length >= 2;
+}
+
+export default function DiscoveryModal(props: {
+  onClose: () => void;
+  onImported: () => void;
+  /** When set, the modal is in "re-adopt" mode — clicking a discovered entry
+   *  re-links it to this existing VPN profile instead of creating a new one. */
+  readoptId?: number;
+  readoptName?: string;
+  /** Fingerprint fields from the drifted profile, used to suggest matches. */
+  readoptEndpoint?: string;
+  readoptWGDevice?: string;
+  readoptGatewayName?: string;
+}) {
   const [scanning, setScanning] = createSignal(true);
   const [scanError, setScanError] = createSignal("");
   const [discovered, setDiscovered] = createSignal<DiscoveredVPN[]>([]);
@@ -37,6 +64,21 @@ export default function DiscoveryModal(props: { onClose: () => void; onImported:
   const [importError, setImportError] = createSignal("");
   const [importName, setImportName] = createSignal("");
   const [importTarget, setImportTarget] = createSignal<DiscoveredVPN | null>(null);
+  const [failedUUID, setFailedUUID] = createSignal<string | null>(null);
+  const isReadopt = () => props.readoptId !== undefined;
+  const hasFingerprint = () => !!(props.readoptEndpoint || props.readoptWGDevice || props.readoptGatewayName);
+
+  const [confirmTarget, setConfirmTarget] = createSignal<DiscoveredVPN | null>(null);
+
+  /** In readopt mode, sort discovered VPNs by fingerprint match (best first). */
+  const sortedDiscovered = () => {
+    const list = discovered();
+    if (!isReadopt() || !hasFingerprint()) return list;
+    return [...list].sort((a, b) =>
+      matchDetails(b, props.readoptEndpoint, props.readoptWGDevice, props.readoptGatewayName).score -
+      matchDetails(a, props.readoptEndpoint, props.readoptWGDevice, props.readoptGatewayName).score
+    );
+  };
 
   onMount(async () => {
     try {
@@ -54,6 +96,44 @@ export default function DiscoveryModal(props: { onClose: () => void; onImported:
     setImportTarget(vpn);
     setImportName(vpn.server_name || vpn.peer_name || "Imported VPN");
     setImportError("");
+  };
+
+  const doReadopt = async (vpn: DiscoveredVPN) => {
+    setImporting(vpn.server_uuid);
+    setImportError("");
+    setFailedUUID(null);
+
+    try {
+      const { ok, data } = await apiPut(`/api/opnsense/vpn/${props.readoptId}/readopt`, {
+        server_uuid: vpn.server_uuid,
+        peer_uuid: vpn.peer_uuid,
+        local_cidr: vpn.local_cidr,
+        remote_cidr: vpn.remote_cidr,
+        endpoint: vpn.endpoint,
+        peer_pubkey: vpn.peer_pubkey,
+        dns: vpn.dns,
+        wg_iface: vpn.wg_iface,
+        wg_device: vpn.wg_device,
+        gateway_uuid: vpn.gateway_uuid,
+        gateway_name: vpn.gateway_name,
+        filter_uuids: vpn.filter_uuids ?? [],
+        snat_uuids: vpn.snat_uuids ?? [],
+        source_interfaces: vpn.source_interfaces ?? [],
+      });
+
+      if (!ok) {
+        setImportError((data as { error?: string })?.error ?? "Re-adopt failed");
+        setFailedUUID(vpn.server_uuid);
+        setImporting(null);
+        return;
+      }
+
+      props.onImported();
+    } catch {
+      setImportError("Network error");
+      setFailedUUID(vpn.server_uuid);
+      setImporting(null);
+    }
   };
 
   const doImport = async () => {
@@ -102,9 +182,13 @@ export default function DiscoveryModal(props: { onClose: () => void; onImported:
 
   return (
     <Modal size="lg" onBackdropClick={props.onClose}>
-      <h2 class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]">Scan OPNsense</h2>
+      <h2 class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]">
+        {isReadopt() ? `Re-adopt: ${props.readoptName}` : "Scan OPNsense"}
+      </h2>
       <p class="mt-1 text-[var(--text-xs)] text-[var(--text-tertiary)]">
-        Discover existing WireGuard VPN setups and import them into Gator.
+        {isReadopt()
+          ? "Select the OPNsense resource to link to this profile."
+          : "Discover existing WireGuard VPN setups and import them into Gator."}
       </p>
 
       <Show when={scanning()}>
@@ -131,12 +215,27 @@ export default function DiscoveryModal(props: { onClose: () => void; onImported:
 
       <Show when={!scanning() && discovered().length > 0}>
         <div class="mt-4 space-y-3 max-h-80 overflow-y-auto">
-          <For each={discovered()}>
-            {(vpn) => (
-              <div class="rounded-lg border border-[var(--border-strong)] bg-[var(--bg-tertiary)] p-3">
+          <For each={sortedDiscovered()}>
+            {(vpn) => {
+              const details = () => isReadopt() && hasFingerprint()
+                ? matchDetails(vpn, props.readoptEndpoint, props.readoptWGDevice, props.readoptGatewayName)
+                : { score: 0, matched: [] as string[] };
+              const suggested = () => isSuggestedMatch(details());
+              return (
+              <div class={`rounded-lg border p-3 ${suggested() ? "border-[var(--status-success)]/50 bg-[var(--status-success)]/5" : "border-[var(--border-strong)] bg-[var(--bg-tertiary)]"}`}>
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0 flex-1">
-                    <p class="font-medium text-[var(--text-primary)]">{vpn.server_name || vpn.peer_name || "Unknown"}</p>
+                    <div class="flex items-center gap-2">
+                      <p class="font-medium text-[var(--text-primary)]">{vpn.server_name || vpn.peer_name || "Unknown"}</p>
+                      <Show when={suggested()}>
+                        <Badge variant="success" size="sm">Suggested match</Badge>
+                      </Show>
+                      <Show when={isReadopt() && details().matched.length > 0}>
+                        <span class="text-[var(--text-xs)] text-[var(--text-muted)]">
+                          matched: {details().matched.join(", ")}
+                        </span>
+                      </Show>
+                    </div>
                     <p class="mt-0.5 text-[var(--text-xs)] text-[var(--text-tertiary)]">
                       {vpn.endpoint}
                       <Show when={vpn.local_cidr}>
@@ -166,18 +265,62 @@ export default function DiscoveryModal(props: { onClose: () => void; onImported:
                       </Show>
                     </div>
                   </div>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => startImport(vpn)}
-                    disabled={importing() !== null}
-                  >
-                    Import
-                  </Button>
+                  <Show when={isReadopt()} fallback={
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => startImport(vpn)}
+                      disabled={importing() !== null}
+                    >
+                      Import
+                    </Button>
+                  }>
+                    <Show when={confirmTarget()?.server_uuid !== vpn.server_uuid}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setConfirmTarget(vpn)}
+                        disabled={importing() !== null}
+                      >
+                        Link to {props.readoptName}
+                      </Button>
+                    </Show>
+                  </Show>
                 </div>
 
-                {/* Import name input (shown when this VPN is the import target) */}
-                <Show when={importTarget()?.server_uuid === vpn.server_uuid}>
+                {/* Re-adopt confirmation (shown when this VPN is selected for re-adopt) */}
+                <Show when={isReadopt() && confirmTarget()?.server_uuid === vpn.server_uuid}>
+                  <div class="mt-3 border-t border-[var(--border-default)] pt-3">
+                    <p class="text-[var(--text-xs)] text-[var(--text-secondary)]">
+                      Re-link <strong>{props.readoptName}</strong> to this OPNsense entry? This will update all stored UUIDs.
+                    </p>
+                    <Show when={importError() && failedUUID() === vpn.server_uuid}>
+                      <p class="mt-1 text-[var(--text-xs)] text-[var(--status-error)]">{importError()}</p>
+                    </Show>
+                    <div class="mt-2 flex justify-end gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => setConfirmTarget(null)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => void doReadopt(vpn)}
+                        disabled={importing() !== null}
+                        loading={importing() === vpn.server_uuid}
+                      >
+                        Confirm re-adopt
+                      </Button>
+                    </div>
+                  </div>
+                </Show>
+
+                {/* Re-adopt error (scoped, shown only when NOT in confirmation panel) */}
+                <Show when={isReadopt() && importError() && failedUUID() === vpn.server_uuid && confirmTarget()?.server_uuid !== vpn.server_uuid}>
+                  <p class="mt-2 text-[var(--text-xs)] text-[var(--status-error)]">{importError()}</p>
+                </Show>
+
+                {/* Import name input (shown when this VPN is the import target, not in readopt mode) */}
+                <Show when={!isReadopt() && importTarget()?.server_uuid === vpn.server_uuid}>
                   <div class="mt-3 border-t border-[var(--border-default)] pt-3">
                     <label class="text-[var(--text-xs)] font-medium text-[var(--text-secondary)]">
                       Name for this VPN profile
@@ -213,7 +356,8 @@ export default function DiscoveryModal(props: { onClose: () => void; onImported:
                   </div>
                 </Show>
               </div>
-            )}
+              );
+            }}
           </For>
         </div>
       </Show>

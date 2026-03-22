@@ -117,8 +117,14 @@ export default function Aliases() {
 
         <Show when={aliases().length > 0}>
           <Card padding="none" class="overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full">
+              <table class="w-full table-fixed">
+                <colgroup>
+                  <col class="w-[28%]" />
+                  <col class="w-[10%]" />
+                  <col class="w-[25%]" />
+                  <col class="w-[27%]" />
+                  <col class="w-[10%]" />
+                </colgroup>
                 <thead>
                   <tr class="border-b border-[var(--border-strong)]">
                     <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
@@ -147,23 +153,23 @@ export default function Aliases() {
                           alias.is_gator ? "bg-[var(--success-subtle)]/30" : "",
                         ].join(" ")}
                       >
-                        <td class="px-4 py-3">
-                          <div class="flex items-center gap-2">
-                            <span class="font-mono text-[var(--text-sm)] text-[var(--text-primary)]">{alias.name}</span>
+                        <td class="px-4 py-3 overflow-hidden">
+                          <div class="flex items-center gap-2 min-w-0">
+                            <span class="font-mono text-[var(--text-sm)] text-[var(--text-primary)] truncate">{alias.name}</span>
                             <Show when={alias.is_gator}>
-                              <Badge variant="success" size="sm">Gator</Badge>
+                              <Badge variant="success" size="sm" class="shrink-0">Gator</Badge>
                             </Show>
                           </div>
                         </td>
                         <td class="px-4 py-3">{getTypeBadge(alias.type)}</td>
                         <td
-                          class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)] max-w-xs truncate"
+                          class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)] truncate overflow-hidden"
                           title={alias.content}
                         >
                           {formatContent(alias.content)}
                         </td>
                         <td
-                          class="px-4 py-3 text-[var(--text-xs)] text-[var(--text-tertiary)] max-w-xs truncate"
+                          class="px-4 py-3 text-[var(--text-xs)] text-[var(--text-tertiary)] truncate overflow-hidden"
                           title={alias.description}
                         >
                           {alias.description || "-"}
@@ -180,7 +186,6 @@ export default function Aliases() {
                   </For>
                 </tbody>
               </table>
-            </div>
           </Card>
         </Show>
       </Show>

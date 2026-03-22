@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/anothaDev/gator/internal/handlers"
+	"github.com/gin-gonic/gin"
 )
 
 func registerTunnelRoutes(api *gin.RouterGroup, tunnels *handlers.TunnelHandler) {
@@ -12,6 +12,7 @@ func registerTunnelRoutes(api *gin.RouterGroup, tunnels *handlers.TunnelHandler)
 		g.POST("", tunnels.CreateTunnel)
 		g.GET("/discover", tunnels.DiscoverTunnels)
 		g.POST("/import", tunnels.ImportTunnel)
+		g.PUT("/:id/readopt", tunnels.ReadoptTunnel)
 		g.GET("/next-subnet", tunnels.NextSubnet)
 		g.POST("/test-ssh", tunnels.TestSSH)
 		g.GET("/:id", tunnels.GetTunnel)

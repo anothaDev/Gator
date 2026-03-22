@@ -1,16 +1,19 @@
 package models
 
 type OPNsenseOverview struct {
-	Connected   bool   `json:"connected"`
-	Error       string `json:"error,omitempty"`
-	ErrorDetail string `json:"error_detail,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Version     string `json:"version,omitempty"`
-	Updates     string `json:"updates,omitempty"`
-	Uptime      string `json:"uptime,omitempty"`
-	DateTime    string `json:"datetime,omitempty"`
-	LoadAvg     string `json:"load_avg,omitempty"`
-	Memory      struct {
+	Connected    bool   `json:"connected"`
+	Error        string `json:"error,omitempty"`
+	ErrorDetail  string `json:"error_detail,omitempty"`
+	Host         string `json:"host,omitempty"`
+	FirewallType string `json:"firewall_type,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Version      string `json:"version,omitempty"`
+	Updates      string `json:"updates,omitempty"`
+	Uptime       string `json:"uptime,omitempty"`
+	DateTime     string `json:"datetime,omitempty"`
+	LoadAvg      string `json:"load_avg,omitempty"`
+	CPUCount     int    `json:"cpu_count,omitempty"`
+	Memory       struct {
 		UsedMB  int `json:"used_mb"`
 		TotalMB int `json:"total_mb"`
 	} `json:"memory"`
@@ -35,4 +38,10 @@ type OPNsenseOverview struct {
 		Name           string `json:"name,omitempty"`
 		LastAppliedAt  string `json:"last_applied_at,omitempty"`
 	} `json:"vpn"`
+	Tunnels struct {
+		Total    int `json:"total"`
+		Deployed int `json:"deployed"`
+		Errors   int `json:"errors"`
+	} `json:"tunnels"`
+	VPNCount int `json:"vpn_count"`
 }

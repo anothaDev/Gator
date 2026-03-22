@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/netip"
@@ -12,6 +13,7 @@ import (
 	"unicode"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/anothaDev/gator/internal/models"
 )
 
@@ -46,11 +48,26 @@ type VPNConfigStore interface {
 }
 
 type VPNHandler struct {
-	store VPNConfigStore
+	store      VPNConfigStore
+	reconciler *Reconciler
 }
 
 func NewVPNHandler(store VPNConfigStore) *VPNHandler {
 	return &VPNHandler{store: store}
+}
+
+// SetReconciler injects the reconciler after construction (avoids init-order issues).
+func (h *VPNHandler) SetReconciler(r *Reconciler) { h.reconciler = r }
+
+// asyncReconcile triggers a non-blocking reconciler refresh for the active instance.
+func (h *VPNHandler) asyncReconcile(ctx context.Context) {
+	if h.reconciler == nil {
+		return
+	}
+	instanceID, _ := h.store.GetActiveInstanceID(ctx)
+	if instanceID != 0 {
+		h.reconciler.RefreshAsync(instanceID)
+	}
 }
 
 func vpnStatusFromConfig(cfg *models.SimpleVPNConfig) models.SimpleVPNStatus {
@@ -58,6 +75,22 @@ func vpnStatusFromConfig(cfg *models.SimpleVPNConfig) models.SimpleVPNStatus {
 	if routingMode == "" {
 		routingMode = "all"
 	}
+	ownership := cfg.OwnershipStatus
+	if ownership == "" {
+		ownership = models.OwnershipLocalOnly
+	}
+
+	// Applied is true when OPNsense bindings (may) exist: verified, pending, or
+	// drifted. Drifted means partial mismatch — resources are still present.
+	// Only needs_reimport means everything is gone.
+	applied := models.IsOwnershipManaged(ownership)
+
+	// Routing, gateway, NAT, policy are only meaningful when managed.
+	routingApplied := applied && cfg.RoutingApplied
+	gatewayApplied := applied && cfg.OPNsenseGatewayUUID != ""
+	natApplied := applied && cfg.OPNsenseSNATRuleUUIDs != ""
+	policyApplied := applied && cfg.OPNsenseFilterUUIDs != ""
+
 	return models.SimpleVPNStatus{
 		ID:                cfg.ID,
 		Name:              cfg.Name,
@@ -71,17 +104,21 @@ func vpnStatusFromConfig(cfg *models.SimpleVPNConfig) models.SimpleVPNStatus {
 		HasPrivateKey:     cfg.PrivateKey != "",
 		HasPeerPublicKey:  cfg.PeerPublicKey != "",
 		HasPreSharedKey:   cfg.PreSharedKey != "",
-		Applied:           cfg.OPNsenseServerUUID != "",
-		RoutingApplied:    cfg.RoutingApplied,
-		GatewayApplied:    cfg.OPNsenseGatewayUUID != "",
-		NATApplied:        cfg.OPNsenseSNATRuleUUIDs != "",
-		PolicyApplied:     cfg.OPNsenseFilterUUIDs != "",
+		Applied:           applied,
+		RoutingApplied:    routingApplied,
+		GatewayOnline:     applied && cfg.GatewayOnline,
+		GatewayApplied:    gatewayApplied,
+		NATApplied:        natApplied,
+		PolicyApplied:     policyApplied,
 		SourceInterfaces:  cfg.SourceInterfaces,
 		WGInterface:       cfg.OPNsenseWGInterface,
 		WGDevice:          cfg.OPNsenseWGDevice,
 		InterfaceAssigned: cfg.OPNsenseWGInterface != "" && cfg.OPNsenseWGInterface != cfg.OPNsenseWGDevice,
 		GatewayName:       cfg.OPNsenseGatewayName,
 		LastAppliedAt:     cfg.LastAppliedAt,
+		OwnershipStatus:   ownership,
+		DriftReason:       cfg.DriftReason,
+		LastVerifiedAt:    cfg.LastVerifiedAt,
 	}
 }
 
@@ -175,6 +212,7 @@ func (h *VPNHandler) ImportFromOPNsense(c *gin.Context) {
 		OPNsenseWGInterface:   req.WGIface,
 		OPNsenseWGDevice:      req.WGDevice,
 		LastAppliedAt:         time.Now().UTC().Format(time.RFC3339),
+		OwnershipStatus:       models.OwnershipManagedPending,
 	}
 
 	id, err := h.store.CreateVPNConfig(ctx, cfg)
@@ -187,7 +225,118 @@ func (h *VPNHandler) ImportFromOPNsense(c *gin.Context) {
 		return
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusCreated, gin.H{"status": "imported", "id": id})
+}
+
+// ReadoptVPN re-links a drifted or needs-reimport VPN profile to a discovered
+// OPNsense resource. Updates the profile's OPNsense UUIDs and re-fetches secrets.
+func (h *VPNHandler) ReadoptVPN(c *gin.Context) {
+	existing, ok := h.getVPNByParam(c)
+	if !ok {
+		return
+	}
+
+	// Only allow re-adoption for drifted or needs-reimport profiles.
+	if existing.OwnershipStatus != models.OwnershipManagedDrifted &&
+		existing.OwnershipStatus != models.OwnershipNeedsReimport {
+		c.JSON(http.StatusConflict, gin.H{"error": "VPN is " + existing.OwnershipStatus + " — re-adopt is only for drifted or needs-reimport profiles"})
+		return
+	}
+
+	var req struct {
+		ServerUUID       string   `json:"server_uuid" binding:"required"`
+		PeerUUID         string   `json:"peer_uuid" binding:"required"`
+		LocalCIDR        string   `json:"local_cidr"`
+		RemoteCIDR       string   `json:"remote_cidr"`
+		Endpoint         string   `json:"endpoint"`
+		PeerPubKey       string   `json:"peer_pubkey"`
+		DNS              string   `json:"dns"`
+		WGIface          string   `json:"wg_iface"`
+		WGDevice         string   `json:"wg_device"`
+		GatewayUUID      string   `json:"gateway_uuid"`
+		GatewayName      string   `json:"gateway_name"`
+		FilterUUIDs      []string `json:"filter_uuids"`
+		SNATUUIDs        []string `json:"snat_uuids"`
+		SourceInterfaces []string `json:"source_interfaces"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request: " + err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// Re-fetch secrets from OPNsense.
+	firewallCfg, err := h.store.GetFirewallConfig(ctx)
+	if err != nil || firewallCfg == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read firewall setup"})
+		return
+	}
+	api := newOPNsenseAPIClient(*firewallCfg)
+
+	serverResp, err := api.Get(ctx, "/api/wireguard/server/get_server/"+req.ServerUUID)
+	if err == nil {
+		server := asMap(serverResp["server"])
+		if pk := asString(server["privkey"]); pk != "" {
+			existing.PrivateKey = pk
+		}
+	}
+	peerResp, err := api.Get(ctx, "/api/wireguard/client/get_client/"+req.PeerUUID)
+	if err == nil {
+		peer := asMap(peerResp["client"])
+		if psk := asString(peer["psk"]); psk != "" {
+			existing.PreSharedKey = psk
+		}
+		if req.PeerPubKey == "" {
+			req.PeerPubKey = asString(peer["pubkey"])
+		}
+	}
+
+	// Update OPNsense bindings.
+	existing.OPNsensePeerUUID = req.PeerUUID
+	existing.OPNsenseServerUUID = req.ServerUUID
+	existing.OPNsenseGatewayUUID = req.GatewayUUID
+	existing.OPNsenseGatewayName = req.GatewayName
+	existing.OPNsenseWGInterface = req.WGIface
+	existing.OPNsenseWGDevice = req.WGDevice
+	// Always overwrite rule/interface bindings — stale UUIDs from the old
+	// resource must not survive readopt (they'd cause immediate drift).
+	existing.OPNsenseFilterUUIDs = strings.Join(req.FilterUUIDs, ",")
+	existing.OPNsenseSNATRuleUUIDs = strings.Join(req.SNATUUIDs, ",")
+	existing.SourceInterfaces = req.SourceInterfaces
+
+	// Update config fields if provided (discovery may have newer values).
+	if req.PeerPubKey != "" {
+		existing.PeerPublicKey = req.PeerPubKey
+	}
+	if req.LocalCIDR != "" {
+		existing.LocalCIDR = strings.TrimSpace(req.LocalCIDR)
+	}
+	if req.RemoteCIDR != "" {
+		existing.RemoteCIDR = strings.TrimSpace(req.RemoteCIDR)
+	}
+	if req.Endpoint != "" {
+		existing.Endpoint = strings.TrimSpace(req.Endpoint)
+	}
+	if req.DNS != "" {
+		existing.DNS = strings.TrimSpace(req.DNS)
+	}
+
+	// Mark as pending verification — the reconciler will promote to managed_verified.
+	now := time.Now().UTC().Format(time.RFC3339)
+	existing.OwnershipStatus = models.OwnershipManagedPending
+	existing.LastAppliedAt = now
+	existing.DriftReason = ""
+	existing.RoutingApplied = req.GatewayUUID != ""
+
+	if err := h.store.SaveSimpleVPNConfig(ctx, *existing); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save re-adopted VPN config"})
+		return
+	}
+
+	h.asyncReconcile(ctx)
+	c.JSON(http.StatusOK, gin.H{"status": "readopted", "id": existing.ID})
 }
 
 // ListConfigs returns all VPN configurations.
@@ -300,6 +449,9 @@ func (h *VPNHandler) SaveConfig(c *gin.Context) {
 	cfg.OPNsenseWGDevice = existing.OPNsenseWGDevice
 	cfg.LastAppliedAt = existing.LastAppliedAt
 	cfg.RoutingApplied = existing.RoutingApplied
+	cfg.OwnershipStatus = existing.OwnershipStatus
+	cfg.LastVerifiedAt = existing.LastVerifiedAt
+	cfg.DriftReason = existing.DriftReason
 
 	if err := validateSimpleVPNConfig(cfg); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -427,6 +579,7 @@ func (h *VPNHandler) DeleteConfig(c *gin.Context) {
 		return
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, gin.H{"status": "deleted", "warnings": warnings})
 }
 
@@ -547,50 +700,80 @@ func (h *VPNHandler) ApplyToOPNsense(c *gin.Context) {
 	}
 	serverPayload["server"].(map[string]any)["peers"] = peerUUID
 
-	serverUUID, serverCreated, err := ensureWireGuardServer(
-		ctx,
-		apiClient,
-		serverPayload,
-		serverName,
-		vpnCfg.PrivateKey,
-		vpnCfg.OPNsenseServerUUID,
-		peerUUID,
-	)
-	if err != nil {
-		if peerCreated {
-			_, _ = apiClient.Post(ctx, "/api/wireguard/client/del_client/"+peerUUID, map[string]any{})
+	// Check if another deployed VPN already owns a WG server we should share.
+	var reuseServerUUID string
+	allVPNs, listErr := h.store.ListVPNConfigs(ctx)
+	if listErr == nil {
+		for _, other := range allVPNs {
+			if other.ID != vpnCfg.ID && other.OPNsenseServerUUID != "" {
+				reuseServerUUID = other.OPNsenseServerUUID
+				if other.OPNsenseWGInterface != "" {
+					vpnCfg.OPNsenseWGInterface = other.OPNsenseWGInterface
+					vpnCfg.OPNsenseWGDevice = other.OPNsenseWGDevice
+				}
+				break
+			}
 		}
-		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to apply wireguard local instance: " + err.Error()})
-		return
 	}
 
-	generalResp, err := apiClient.Post(ctx, "/api/wireguard/general/set", map[string]any{
-		"general": map[string]any{"enabled": "1"},
-	})
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to enable wireguard: " + err.Error()})
-		return
-	}
-	if err := expectOPNsenseResult(generalResp, "saved", "ok"); err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "wireguard enable failed: " + err.Error()})
-		return
-	}
+	var serverUUID string
+	var serverCreated bool
 
-	reconfigResp, err := apiClient.Post(ctx, "/api/wireguard/service/reconfigure", map[string]any{})
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to reconfigure wireguard: " + err.Error()})
-		return
-	}
-	if err := expectOPNsenseResult(reconfigResp, "saved", "ok"); err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "wireguard reconfigure failed: " + err.Error()})
-		return
-	}
+	if reuseServerUUID != "" {
+		// Another VPN owns the WG server — don't touch it during deploy.
+		// Just store its UUID. Full reconfiguration happens on ActivateVPN.
+		serverUUID = reuseServerUUID
+		serverCreated = false
+		log.Printf("[Deploy] reusing existing WG server %s from another VPN", reuseServerUUID)
+	} else {
+		// First VPN to deploy — create the server normally.
+		serverUUID, serverCreated, err = ensureWireGuardServer(
+			ctx,
+			apiClient,
+			serverPayload,
+			serverName,
+			vpnCfg.PrivateKey,
+			vpnCfg.OPNsenseServerUUID,
+			peerUUID,
+		)
+		if err != nil {
+			if peerCreated {
+				_, _ = apiClient.Post(ctx, "/api/wireguard/client/del_client/"+peerUUID, map[string]any{})
+			}
+			c.JSON(http.StatusBadGateway, gin.H{"error": "failed to apply wireguard local instance: " + err.Error()})
+			return
+		}
 
-	_, _ = apiClient.Post(ctx, "/api/wireguard/service/start", map[string]any{})
+		generalResp, err := apiClient.Post(ctx, "/api/wireguard/general/set", map[string]any{
+			"general": map[string]any{"enabled": "1"},
+		})
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "failed to enable wireguard: " + err.Error()})
+			return
+		}
+		if err := expectOPNsenseResult(generalResp, "saved", "ok"); err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "wireguard enable failed: " + err.Error()})
+			return
+		}
+
+		reconfigResp, err := apiClient.Post(ctx, "/api/wireguard/service/reconfigure", map[string]any{})
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "failed to reconfigure wireguard: " + err.Error()})
+			return
+		}
+		if err := expectOPNsenseResult(reconfigResp, "saved", "ok"); err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "wireguard reconfigure failed: " + err.Error()})
+			return
+		}
+
+		_, _ = apiClient.Post(ctx, "/api/wireguard/service/start", map[string]any{})
+	}
 
 	vpnCfg.OPNsensePeerUUID = peerUUID
 	vpnCfg.OPNsenseServerUUID = serverUUID
 	vpnCfg.LastAppliedAt = time.Now().UTC().Format(time.RFC3339)
+	vpnCfg.OwnershipStatus = models.OwnershipManagedPending
+	vpnCfg.DriftReason = ""
 	if err := h.store.SaveSimpleVPNConfig(ctx, *vpnCfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "wireguard applied but failed to persist status"})
 		return
@@ -606,6 +789,7 @@ func (h *VPNHandler) ApplyToOPNsense(c *gin.Context) {
 		applyMessage = "VPN applied by updating existing WireGuard entries on OPNsense."
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, gin.H{
 		"status":          applyStatus,
 		"message":         applyMessage,
@@ -719,7 +903,8 @@ func (h *VPNHandler) ApplyGatewayToOPNsense(c *gin.Context) {
 		gatewayIP = prefix
 	}
 
-	gwUUID, gwCreated, err := ensureGateway(ctx, apiClient, gwName, wgIface, gatewayIP, opnsenseIPProtocol(vpnCfg.IPVersion), vpnCfg.OPNsenseGatewayUUID)
+	monitorIP := deriveMonitorIP(vpnCfg.DNS, vpnCfg.IPVersion)
+	gwUUID, gwCreated, err := ensureGateway(ctx, apiClient, gwName, wgIface, gatewayIP, opnsenseIPProtocol(vpnCfg.IPVersion), monitorIP, vpnCfg.OPNsenseGatewayUUID)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to create VPN gateway: " + err.Error()})
 		return
@@ -735,6 +920,8 @@ func (h *VPNHandler) ApplyGatewayToOPNsense(c *gin.Context) {
 	vpnCfg.OPNsenseWGInterface = wgIface
 	vpnCfg.OPNsenseWGDevice = wgDevice
 	vpnCfg.LastAppliedAt = time.Now().UTC().Format(time.RFC3339)
+	vpnCfg.OwnershipStatus = models.OwnershipManagedPending
+	vpnCfg.DriftReason = ""
 
 	if err := h.store.SaveSimpleVPNConfig(ctx, *vpnCfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "gateway applied but failed to persist status"})
@@ -748,6 +935,7 @@ func (h *VPNHandler) ApplyGatewayToOPNsense(c *gin.Context) {
 		msg = "Existing VPN gateway updated and routing reconfigured."
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, gin.H{
 		"status":       status,
 		"message":      msg,
@@ -819,6 +1007,8 @@ func (h *VPNHandler) ApplyNATToOPNsense(c *gin.Context) {
 	vpnCfg.OPNsenseWGInterface = wgIface
 	vpnCfg.OPNsenseWGDevice = wgDevice
 	vpnCfg.LastAppliedAt = time.Now().UTC().Format(time.RFC3339)
+	vpnCfg.OwnershipStatus = models.OwnershipManagedPending
+	vpnCfg.DriftReason = ""
 
 	if err := h.store.SaveSimpleVPNConfig(ctx, *vpnCfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "NAT rules applied but failed to persist status"})
@@ -832,6 +1022,7 @@ func (h *VPNHandler) ApplyNATToOPNsense(c *gin.Context) {
 		msg = fmt.Sprintf("Existing outbound NAT rules updated for %d interface(s) and firewall applied.", len(snatUUIDs))
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, gin.H{
 		"status":     status,
 		"message":    msg,
@@ -894,6 +1085,8 @@ func (h *VPNHandler) ApplyPolicyRuleToOPNsense(c *gin.Context) {
 	vpnCfg.OPNsenseFilterUUIDs = filterUUID
 	vpnCfg.LastAppliedAt = time.Now().UTC().Format(time.RFC3339)
 	vpnCfg.RoutingApplied = true
+	vpnCfg.OwnershipStatus = models.OwnershipManagedPending
+	vpnCfg.DriftReason = ""
 
 	if err := h.store.SaveSimpleVPNConfig(ctx, *vpnCfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "policy rule applied but failed to persist status"})
@@ -907,6 +1100,7 @@ func (h *VPNHandler) ApplyPolicyRuleToOPNsense(c *gin.Context) {
 		msg = "Existing policy routing rule updated and firewall applied."
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, gin.H{
 		"status":        status,
 		"message":       msg,
@@ -1000,6 +1194,26 @@ func (h *VPNHandler) ActivateVPN(c *gin.Context) {
 		return
 	}
 
+	// Verify OPNsense state is current before mutating.
+	if h.reconciler != nil {
+		instanceID, _ := h.store.GetActiveInstanceID(ctx)
+		if err := h.reconciler.EnsureFresh(ctx, instanceID, 5*time.Second); err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "cannot verify OPNsense state: " + err.Error()})
+			return
+		}
+		// Re-read after reconcile may have updated ownership.
+		vpnCfg, ok = h.getVPNByParam(c)
+		if !ok {
+			return
+		}
+		if vpnCfg.OwnershipStatus != models.OwnershipManagedVerified &&
+			vpnCfg.OwnershipStatus != models.OwnershipManagedPending &&
+			vpnCfg.OwnershipStatus != "" {
+			c.JSON(http.StatusConflict, gin.H{"error": "VPN is " + vpnCfg.OwnershipStatus + " — re-deploy or re-import required"})
+			return
+		}
+	}
+
 	// For imported VPNs with no Gator-managed filter rules (legacy setup),
 	// just toggle the status flag — we don't own the rules.
 	if vpnCfg.OPNsenseFilterUUIDs == "" {
@@ -1009,6 +1223,8 @@ func (h *VPNHandler) ActivateVPN(c *gin.Context) {
 		}
 		vpnCfg.RoutingApplied = true
 		vpnCfg.LastAppliedAt = time.Now().UTC().Format(time.RFC3339)
+		vpnCfg.OwnershipStatus = models.OwnershipManagedPending
+		vpnCfg.DriftReason = ""
 		if err := h.store.SaveSimpleVPNConfig(ctx, *vpnCfg); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to persist status"})
 			return
@@ -1027,6 +1243,48 @@ func (h *VPNHandler) ActivateVPN(c *gin.Context) {
 
 	// Deactivate other VPNs.
 	warnings := h.deactivateOtherVPNs(ctx, api, vpnCfg.ID)
+
+	// Reconfigure the shared WG server to this VPN's keys/tunnel/peer.
+	if vpnCfg.OPNsenseServerUUID != "" && vpnCfg.OPNsensePeerUUID != "" {
+		serverPayload := map[string]any{
+			"server": map[string]any{
+				"enabled":       "1",
+				"name":          sanitizeOPNsenseName(vpnCfg.Name+"_local", "gator_wg_local"),
+				"privkey":       vpnCfg.PrivateKey,
+				"tunneladdress": vpnCfg.LocalCIDR,
+				"peers":         vpnCfg.OPNsensePeerUUID,
+				"disableroutes": "1",
+			},
+		}
+		if vpnCfg.DNS != "" {
+			serverPayload["server"].(map[string]any)["dns"] = vpnCfg.DNS
+		}
+		if gw := deriveTunnelGateway(vpnCfg.LocalCIDR); gw != "" {
+			serverPayload["server"].(map[string]any)["gateway"] = gw
+		}
+		_, err := api.Post(ctx, "/api/wireguard/server/set_server/"+vpnCfg.OPNsenseServerUUID, serverPayload)
+		if err != nil {
+			warnings = append(warnings, "failed to reconfigure WG server: "+err.Error())
+		}
+		if _, err := api.Post(ctx, "/api/wireguard/service/reconfigure", map[string]any{}); err != nil {
+			warnings = append(warnings, "failed to reconfigure wireguard service: "+err.Error())
+		}
+
+		// Update the gateway IP for the new tunnel address.
+		if vpnCfg.OPNsenseGatewayUUID != "" {
+			gatewayIP := deriveTunnelGateway(vpnCfg.LocalCIDR)
+			if gatewayIP != "" {
+				monitorIP := deriveMonitorIP(vpnCfg.DNS, vpnCfg.IPVersion)
+				_, _, gwErr := ensureGateway(ctx, api, vpnCfg.OPNsenseGatewayName, vpnCfg.OPNsenseWGInterface, gatewayIP, opnsenseIPProtocol(vpnCfg.IPVersion), monitorIP, vpnCfg.OPNsenseGatewayUUID)
+				if gwErr != nil {
+					warnings = append(warnings, "failed to update gateway IP: "+gwErr.Error())
+				}
+				if _, err := api.Post(ctx, "/api/routing/settings/reconfigure", map[string]any{}); err != nil {
+					warnings = append(warnings, "failed to reconfigure routing: "+err.Error())
+				}
+			}
+		}
+	}
 
 	// Switch this VPN's filter rules back to the VPN gateway.
 	gwName := vpnCfg.OPNsenseGatewayName
@@ -1051,11 +1309,14 @@ func (h *VPNHandler) ActivateVPN(c *gin.Context) {
 
 	vpnCfg.RoutingApplied = true
 	vpnCfg.LastAppliedAt = time.Now().UTC().Format(time.RFC3339)
+	vpnCfg.OwnershipStatus = models.OwnershipManagedPending
+	vpnCfg.DriftReason = ""
 	if err := h.store.SaveSimpleVPNConfig(ctx, *vpnCfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "activated but failed to persist status"})
 		return
 	}
 
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, gin.H{"status": "activated", "warnings": warnings})
 }
 
@@ -1068,11 +1329,32 @@ func (h *VPNHandler) DeactivateVPN(c *gin.Context) {
 		return
 	}
 
+	// Verify OPNsense state is current before mutating.
+	if h.reconciler != nil {
+		instanceID, _ := h.store.GetActiveInstanceID(ctx)
+		if err := h.reconciler.EnsureFresh(ctx, instanceID, 5*time.Second); err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": "cannot verify OPNsense state: " + err.Error()})
+			return
+		}
+		vpnCfg, ok = h.getVPNByParam(c)
+		if !ok {
+			return
+		}
+		if vpnCfg.OwnershipStatus != models.OwnershipManagedVerified &&
+			vpnCfg.OwnershipStatus != models.OwnershipManagedPending &&
+			vpnCfg.OwnershipStatus != "" {
+			c.JSON(http.StatusConflict, gin.H{"error": "VPN is " + vpnCfg.OwnershipStatus + " — re-deploy or re-import required"})
+			return
+		}
+	}
+
 	// For imported VPNs with no Gator-managed filter rules (legacy setup),
 	// just toggle the status flag.
 	if vpnCfg.OPNsenseFilterUUIDs == "" {
 		vpnCfg.RoutingApplied = false
 		vpnCfg.LastAppliedAt = time.Now().UTC().Format(time.RFC3339)
+		vpnCfg.OwnershipStatus = models.OwnershipManagedPending
+		vpnCfg.DriftReason = ""
 		if err := h.store.SaveSimpleVPNConfig(ctx, *vpnCfg); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to persist status"})
 			return
@@ -1112,6 +1394,8 @@ func (h *VPNHandler) DeactivateVPN(c *gin.Context) {
 
 	vpnCfg.RoutingApplied = false
 	vpnCfg.LastAppliedAt = time.Now().UTC().Format(time.RFC3339)
+	vpnCfg.OwnershipStatus = models.OwnershipManagedPending
+	vpnCfg.DriftReason = ""
 	if err := h.store.SaveSimpleVPNConfig(ctx, *vpnCfg); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "deactivated but failed to persist status"})
 		return
@@ -1121,6 +1405,7 @@ func (h *VPNHandler) DeactivateVPN(c *gin.Context) {
 	if len(appWarnings) > 0 {
 		resp["app_route_warnings"] = appWarnings
 	}
+	h.asyncReconcile(ctx)
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -1176,11 +1461,18 @@ func sanitizeGatewayName(input string) string {
 }
 
 func parsePrefix(cidr string) (string, error) {
-	prefix, err := netip.ParsePrefix(cidr)
-	if err != nil {
-		return "", err
+	for _, entry := range strings.Split(cidr, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		prefix, err := netip.ParsePrefix(entry)
+		if err != nil {
+			continue
+		}
+		return prefix.Addr().String(), nil
 	}
-	return prefix.Addr().String(), nil
+	return "", fmt.Errorf("no valid CIDR in %q", cidr)
 }
 
 func validateCIDRList(value string) bool {
@@ -1206,7 +1498,7 @@ func validateSimpleVPNConfig(cfg models.SimpleVPNConfig) error {
 	}
 
 	if cfg.Endpoint == "" {
-		return errInvalidField("endpoint", "is required (example: 146.70.124.130:51820)")
+		return errInvalidField("endpoint", "is required (example: 198.51.100.1:51820)")
 	}
 
 	if cfg.PreSharedKey != "" && len(cfg.PreSharedKey) < 8 {
@@ -1309,30 +1601,61 @@ func sanitizeOPNsenseName(input, fallback string) string {
 }
 
 func deriveTunnelGateway(localCIDR string) string {
-	prefix, err := netip.ParsePrefix(localCIDR)
-	if err != nil {
-		return ""
-	}
-	addr := prefix.Addr()
-	if !addr.Is4() {
-		return ""
-	}
+	for _, cidr := range strings.Split(localCIDR, ",") {
+		cidr = strings.TrimSpace(cidr)
+		if cidr == "" {
+			continue
+		}
+		prefix, err := netip.ParsePrefix(cidr)
+		if err != nil {
+			continue
+		}
+		addr := prefix.Addr()
+		if !addr.Is4() {
+			continue
+		}
 
-	raw := addr.As4()
-	value := uint32(raw[0])<<24 | uint32(raw[1])<<16 | uint32(raw[2])<<8 | uint32(raw[3])
-	if value == 0 {
-		return ""
-	}
-	value--
+		raw := addr.As4()
+		value := uint32(raw[0])<<24 | uint32(raw[1])<<16 | uint32(raw[2])<<8 | uint32(raw[3])
+		if value == 0 {
+			continue
+		}
+		value--
 
-	gateway := [4]byte{
-		byte(value >> 24),
-		byte(value >> 16),
-		byte(value >> 8),
-		byte(value),
-	}
+		gateway := [4]byte{
+			byte(value >> 24),
+			byte(value >> 16),
+			byte(value >> 8),
+			byte(value),
+		}
 
-	return netip.AddrFrom4(gateway).String()
+		return netip.AddrFrom4(gateway).String()
+	}
+	return ""
+}
+
+// deriveMonitorIP picks a tunnel-reachable IP for gateway health monitoring.
+// It uses the VPN's DNS server (which is inside the tunnel) as the monitor target.
+// Falls back to empty string if no suitable IP is found.
+func deriveMonitorIP(dns string, ipVersion string) string {
+	wantV4 := ipVersion != "ipv6"
+	for _, entry := range strings.Split(dns, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		addr, err := netip.ParseAddr(entry)
+		if err != nil {
+			continue
+		}
+		if wantV4 && addr.Is4() {
+			return addr.String()
+		}
+		if !wantV4 && addr.Is6() {
+			return addr.String()
+		}
+	}
+	return ""
 }
 
 func ensureWireGuardPeer(

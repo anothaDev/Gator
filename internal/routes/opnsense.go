@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/anothaDev/gator/internal/handlers"
+	"github.com/gin-gonic/gin"
 )
 
 func registerOPNsenseRoutes(
@@ -17,6 +17,7 @@ func registerOPNsenseRoutes(
 	{
 		opnsense.POST("/test-connection", setup.TestOPNsenseConnection)
 		opnsense.GET("/overview", opnsenseHandler.Overview)
+		opnsense.GET("/overview/stream", opnsenseHandler.OverviewStream)
 		opnsense.POST("/vpn/:id/apply", vpn.ApplyToOPNsense)
 		opnsense.POST("/vpn/:id/apply-gateway", vpn.ApplyGatewayToOPNsense)
 		opnsense.POST("/vpn/:id/apply-nat", vpn.ApplyNATToOPNsense)
@@ -24,6 +25,7 @@ func registerOPNsenseRoutes(
 		opnsense.POST("/vpn/:id/source-interfaces", vpn.SetSourceInterfaces)
 		opnsense.GET("/vpn/discover", gateway.DiscoverVPNs)
 		opnsense.POST("/vpn/import", vpn.ImportFromOPNsense)
+		opnsense.PUT("/vpn/:id/readopt", vpn.ReadoptVPN)
 		opnsense.POST("/vpn/:id/activate", vpn.ActivateVPN)
 		opnsense.POST("/vpn/:id/deactivate", vpn.DeactivateVPN)
 

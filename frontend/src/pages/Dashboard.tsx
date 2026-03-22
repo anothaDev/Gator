@@ -8,12 +8,15 @@ type Overview = {
   connected: boolean;
   error?: string;
   error_detail?: string;
+  host?: string;
+  firewall_type?: string;
   name?: string;
   version?: string;
   updates?: string;
   uptime?: string;
   datetime?: string;
   load_avg?: string;
+  cpu_count?: number;
   memory?: {
     used_mb: number;
     total_mb: number;
@@ -39,6 +42,12 @@ type Overview = {
     name?: string;
     last_applied_at?: string;
   };
+  tunnels?: {
+    total: number;
+    deployed: number;
+    errors: number;
+  };
+  vpn_count?: number;
 };
 
 async function fetchOverview(): Promise<Overview> {
@@ -54,50 +63,39 @@ function formatBytes(mb: number): string {
   return `${mb} MB`;
 }
 
-// Compact metric display
-function Metric(props: { label: string; value: string; unit?: string }) {
-  return (
-    <div class="flex items-baseline gap-1.5">
-      <span class="text-[24px] font-semibold tracking-tight text-[var(--text-primary)]">
-        {props.value}
-      </span>
-      {props.unit && (
-        <span class="text-[13px] text-[var(--text-tertiary)]">{props.unit}</span>
-      )}
-      <span class="ml-1.5 text-[11px] uppercase tracking-[0.15em] text-[var(--text-muted)]">
-        {props.label}
-      </span>
-    </div>
-  );
+// Interpret load average relative to CPU cores.
+// load_avg is "1m, 5m, 15m" comma-separated. We use the 1-minute value.
+function formatLoad(raw: string | undefined, cpuCount: number | undefined): { label: string; color: string } {
+  if (!raw) return { label: "N/A", color: "text-[var(--text-muted)]" };
+  const first = parseFloat(raw.split(",")[0]?.trim() || "0");
+  const cores = cpuCount || 1;
+  const ratio = first / cores;
+  if (ratio < 0.3) return { label: "Idle", color: "text-[var(--status-success)]" };
+  if (ratio < 0.7) return { label: "Low", color: "text-[var(--status-success)]" };
+  if (ratio < 1.0) return { label: "Moderate", color: "text-[var(--status-warning)]" };
+  if (ratio < 2.0) return { label: "High", color: "text-[var(--status-warning)]" };
+  return { label: "Critical", color: "text-[var(--status-error)]" };
 }
 
-// Resource bar with clean design
-function ResourceBar(props: {
-  label: string;
-  used: number;
-  total: number;
-  color?: string;
-}) {
-  const pct = Math.min(100, Math.round((props.used / props.total) * 100));
-  const color = props.color || "bg-[var(--accent-primary)]";
-  
-  return (
-    <div class="space-y-1.5">
-      <div class="flex items-center justify-between">
-        <span class="text-[12px] text-[var(--text-secondary)]">{props.label}</span>
-        <span class="text-[12px] font-mono text-[var(--text-primary)]">{pct}%</span>
-      </div>
-      <div class="h-1.5 overflow-hidden rounded-full bg-[var(--bg-hover)]">
-        <div 
-          class={`h-full rounded-full ${color} transition-all duration-700 ease-out`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
+function formatUptime(raw: string | undefined): { value: string; unit: string } {
+  if (!raw) return { value: "--", unit: "" };
+  // OPNsense returns "HH:MM:SS" or "D days, HH:MM:SS" or similar
+  const parts = raw.split(" ");
+  if (parts.length >= 2 && parts[1]?.startsWith("day")) {
+    return { value: parts[0], unit: parseInt(parts[0]) === 1 ? "day" : "days" };
+  }
+  // Just a time string like "01:02:30"
+  const timeParts = (parts[0] || "").split(":");
+  if (timeParts.length === 3) {
+    const h = parseInt(timeParts[0]);
+    const m = parseInt(timeParts[1]);
+    if (h > 0) return { value: `${h}h ${m}m`, unit: "" };
+    return { value: `${m}m`, unit: "" };
+  }
+  return { value: parts[0] || "--", unit: parts[1] || "" };
 }
 
-// Status indicator
+// Pulsing status dot
 function StatusDot(props: { status: "success" | "warning" | "error" | "neutral"; pulse?: boolean }) {
   const colors = {
     success: "bg-[var(--status-success)]",
@@ -105,9 +103,97 @@ function StatusDot(props: { status: "success" | "warning" | "error" | "neutral";
     error: "bg-[var(--status-error)]",
     neutral: "bg-[var(--text-muted)]",
   };
-
   return (
     <span class={`inline-block h-2 w-2 rounded-full ${colors[props.status]} ${props.pulse ? "animate-pulse-subtle" : ""}`} />
+  );
+}
+
+// Resource bar
+function ResourceBar(props: {
+  label: string;
+  pct: number;
+  detail?: string;
+  color?: string;
+}) {
+  const pct = Math.min(100, Math.round(props.pct));
+  const barColor = pct > 90 ? "bg-[var(--status-error)]" : pct > 70 ? "bg-[var(--status-warning)]" : (props.color || "bg-[var(--accent-primary)]");
+
+  return (
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-[12px] text-[var(--text-secondary)]">{props.label}</span>
+        <div class="flex items-center gap-2">
+          <Show when={props.detail}>
+            <span class="text-[11px] text-[var(--text-muted)]">{props.detail}</span>
+          </Show>
+          <span class="text-[12px] font-mono text-[var(--text-primary)]">{pct}%</span>
+        </div>
+      </div>
+      <div class="h-1.5 overflow-hidden rounded-full bg-[var(--bg-hover)]">
+        <div
+          class={`h-full rounded-full ${barColor} transition-all duration-700 ease-out`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Stat tile for the top row
+function StatTile(props: {
+  icon: string;
+  iconColor: string;
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: boolean;
+  children?: any;
+}) {
+  const icons: Record<string, () => any> = {
+    clock: () => (
+      <svg class={`h-5 w-5 ${props.iconColor}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12,6 12,12 16,14" />
+      </svg>
+    ),
+    gateway: () => (
+      <svg class={`h-5 w-5 ${props.iconColor}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+        <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+        <circle cx="12" cy="20" r="1" />
+      </svg>
+    ),
+    wireguard: () => (
+      <svg class={`h-5 w-5 ${props.iconColor}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+    tunnel: () => (
+      <svg class={`h-5 w-5 ${props.iconColor}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+      </svg>
+    ),
+  };
+
+  const IconComponent = icons[props.icon];
+
+  return (
+    <div class="flex items-start gap-3">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-hover)]">
+        {IconComponent && <IconComponent />}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{props.label}</div>
+        <div class="mt-0.5 text-[20px] font-semibold tracking-tight text-[var(--text-primary)] leading-tight">
+          {props.value}
+        </div>
+        <Show when={props.sub}>
+          <div class="mt-1 text-[12px] text-[var(--text-tertiary)]">{props.sub}</div>
+        </Show>
+        {props.children}
+      </div>
+    </div>
   );
 }
 
@@ -115,31 +201,49 @@ export default function Dashboard() {
   const [overview, setOverview] = createSignal<Overview | null>(null);
   const [loading, setLoading] = createSignal(true);
   const [loadError, setLoadError] = createSignal(false);
-  let pollTimer: ReturnType<typeof setInterval> | undefined;
+  const [live, setLive] = createSignal(false);
+  let eventSource: EventSource | null = null;
 
-  const stopPolling = () => {
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = undefined;
+  const connectSSE = () => {
+    if (eventSource) return;
+    eventSource = new EventSource("/api/opnsense/overview/stream");
+
+    const handleEvent = (event: MessageEvent) => {
+      try {
+        // Gin's c.SSEvent wraps the JSON in quotes — parse the outer string then the JSON.
+        let raw = event.data;
+        if (typeof raw === "string" && raw.startsWith('"')) {
+          raw = JSON.parse(raw);
+        }
+        const data: Overview = typeof raw === "string" ? JSON.parse(raw) : raw;
+        setOverview(data);
+        setLoading(false);
+        setLoadError(false);
+        setLive(true);
+      } catch { /* ignore malformed events */ }
+    };
+
+    // Gin's c.SSEvent("message", ...) sends named events, so we need addEventListener.
+    // Also listen on onmessage for unnamed events as fallback.
+    eventSource.addEventListener("message", handleEvent);
+
+    eventSource.onerror = () => {
+      // EventSource auto-reconnects, but mark as disconnected until next message.
+      setLive(false);
+    };
+  };
+
+  const disconnectSSE = () => {
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+      setLive(false);
     }
   };
 
-  const startPolling = () => {
-    if (pollTimer || document.hidden) return;
-    pollTimer = setInterval(() => void loadOverview(true), POLL_INTERVAL);
-  };
-
-  const handleVisibilityChange = () => {
-    if (document.hidden) {
-      stopPolling();
-      return;
-    }
-    void loadOverview(true);
-    startPolling();
-  };
-
-  const loadOverview = async (silent = false) => {
-    if (!silent) setLoading(true);
+  // Manual refresh: do a one-shot fetch (useful if SSE is lagging).
+  const loadOverview = async () => {
+    setLoading(true);
     setLoadError(false);
     try {
       const data = await fetchOverview();
@@ -151,25 +255,59 @@ export default function Dashboard() {
     }
   };
 
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      disconnectSSE();
+    } else {
+      connectSSE();
+    }
+  };
+
   onMount(() => {
-    void loadOverview();
-    startPolling();
+    connectSSE();
     document.addEventListener("visibilitychange", handleVisibilityChange);
   });
 
   onCleanup(() => {
-    stopPolling();
+    disconnectSSE();
     document.removeEventListener("visibilitychange", handleVisibilityChange);
   });
 
+  const memPct = () => {
+    const d = overview();
+    if (!d?.memory?.total_mb) return 0;
+    return Math.round((d.memory.used_mb / d.memory.total_mb) * 100);
+  };
+
+  const gwStatus = () => {
+    const d = overview();
+    if (!d?.gateways?.total) return "neutral" as const;
+    if (d.gateways.offline > 0) return "warning" as const;
+    return "success" as const;
+  };
+
+  const wgStatus = () => {
+    const d = overview();
+    if (!d?.wireguard?.peers) return "neutral" as const;
+    if (d.wireguard.online === d.wireguard.peers) return "success" as const;
+    if (d.wireguard.online === 0) return "error" as const;
+    return "warning" as const;
+  };
+
   return (
-    <div class="space-y-6">
-      {/* Header - clean and minimal */}
+    <div class="space-y-5">
+      {/* Header */}
       <div class="flex items-center justify-between">
-        <div>
+        <div class="flex items-center gap-3">
           <h1 class="text-[24px] font-semibold tracking-tight text-[var(--text-primary)]">
             Overview
           </h1>
+          <Show when={live()}>
+            <span class="flex items-center gap-1.5 rounded-full bg-[var(--success-subtle)] px-2 py-0.5">
+              <span class="h-1.5 w-1.5 rounded-full bg-[var(--status-success)] animate-pulse-subtle" />
+              <span class="text-[10px] font-medium text-[var(--status-success)]">LIVE</span>
+            </span>
+          </Show>
         </div>
         <Button
           variant="secondary"
@@ -192,191 +330,244 @@ export default function Dashboard() {
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-[14px] text-[var(--status-error)]">Connection failed</span>
+            <span class="text-[14px] text-[var(--status-error)]">Failed to reach OPNsense API</span>
           </div>
         </Card>
       </Show>
 
-      {/* Main content */}
       <Show when={!loading() && !loadError() && overview()}>
         {(data) => (
           <>
-            {/* Top row - System status */}
-            <div class="grid gap-4 lg:grid-cols-3">
-              {/* System Info */}
-              <Card class="relative overflow-hidden">
-                <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[var(--accent-primary)] to-transparent" />
-                <div class="flex items-start justify-between">
-                  <div class="flex items-start gap-3">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-hover)]">
-                      <svg class="h-5 w-5 text-[var(--accent-primary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                        <line x1="8" y1="21" x2="16" y2="21" />
-                        <line x1="12" y1="17" x2="12" y2="21" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div class="flex items-center gap-2">
-                        <h2 class="text-[18px] font-semibold text-[var(--text-primary)]">
-                          {data().name || "Unknown"}
-                        </h2>
-                        <Show when={data().connected}>
-                          <StatusDot status="success" pulse />
-                        </Show>
-                      </div>
-                      <p class="mt-0.5 text-[13px] text-[var(--text-tertiary)]">
-                        {data().version || "Version unknown"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div class="mt-4 flex items-center gap-2">
-                  <Badge variant={data().updates ? "warning" : "muted"} size="sm">
-                    {data().updates || "No updates"}
-                  </Badge>
-                </div>
-              </Card>
-
-              {/* Runtime */}
-              <Card>
-                <div class="flex items-start gap-3">
+            {/* Firewall identity card */}
+            <Card class="relative overflow-hidden">
+              <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[var(--accent-primary)] to-transparent" />
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-3">
                   <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-hover)]">
-                    <svg class="h-5 w-5 text-[var(--status-success)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12,6 12,12 16,14" />
+                    <svg class="h-5 w-5 text-[var(--accent-primary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                      <line x1="8" y1="21" x2="16" y2="21" />
+                      <line x1="12" y1="17" x2="12" y2="21" />
                     </svg>
                   </div>
-                  <div class="flex-1">
-                    <Metric label="Uptime" value={data().uptime?.split(" ")[0] || "--"} unit={data().uptime?.split(" ")[1] || ""} />
-                    <div class="mt-2 flex items-center gap-4 text-[12px] text-[var(--text-tertiary)]">
-                      <span>Load: {data().load_avg || "--"}</span>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h2 class="text-[18px] font-semibold text-[var(--text-primary)]">
+                        {(data().host || "Firewall").replace(/^https?:\/\//, "")}
+                      </h2>
+                      <StatusDot status={data().connected ? "success" : "error"} pulse={data().connected} />
                     </div>
+                    <p class="text-[12px] text-[var(--text-tertiary)]">
+                      {data().name || "OPNsense"}{data().version ? ` ${data().version}` : ""}
+                    </p>
                   </div>
                 </div>
-              </Card>
-
-              {/* Network */}
-              <Card>
-                <div class="flex items-start gap-3">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-hover)]">
-                    <svg class="h-5 w-5 text-[var(--status-info)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                      <circle cx="12" cy="20" r="1" />
-                    </svg>
-                  </div>
-                  <div class="flex-1">
-                    <Metric 
-                      label="Gateways" 
-                      value={`${data().gateways?.online || 0}/${data().gateways?.total || 0}`} 
-                    />
-                    <div class="mt-2 flex items-center gap-4 text-[12px] text-[var(--text-tertiary)]">
-                      <span class="flex items-center gap-1.5">
-                        <StatusDot status={data().wireguard?.online === data().wireguard?.peers ? "success" : "warning"} />
-                        {data().wireguard?.online || 0}/{data().wireguard?.peers || 0} peers
-                      </span>
-                    </div>
-                  </div>
+                <div class="flex items-center gap-2">
+                  <Show when={data().updates}>
+                    <Badge variant="warning" size="sm">{data().updates}</Badge>
+                  </Show>
+                  <Show when={!data().updates}>
+                    <Badge variant="muted" size="sm">Up to date</Badge>
+                  </Show>
                 </div>
-              </Card>
-            </div>
-
-            {/* Resources */}
-            <Card>
-              <div class="flex items-center gap-2 mb-4">
-                <svg class="h-4 w-4 text-[var(--accent-primary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                </svg>
-                <span class="text-[11px] uppercase tracking-[0.15em] text-[var(--text-muted)]">Resources</span>
-              </div>
-              <div class="grid gap-6 md:grid-cols-2">
-                <ResourceBar
-                  label="Memory"
-                  used={data().memory?.used_mb || 0}
-                  total={data().memory?.total_mb || 1}
-                />
-                <ResourceBar
-                  label="Disk"
-                  used={data().disk?.used_pct || 0}
-                  total={100}
-                  color="bg-[var(--status-success)]"
-                />
               </div>
             </Card>
 
-            {/* VPN Status - Feature card */}
+            {/* Stats grid -- 2 cols on mobile, 4 on desktop */}
+            <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {/* Uptime */}
+              <Card padding="sm">
+                {(() => {
+                  const up = formatUptime(data().uptime);
+                  const load = formatLoad(data().load_avg, data().cpu_count);
+                  return (
+                    <StatTile
+                      icon="clock"
+                      iconColor="text-[var(--status-success)]"
+                      label="Uptime"
+                      value={up.value}
+                      sub={up.unit || undefined}
+                    >
+                      <Show when={data().load_avg}>
+                        <div class="mt-1 flex items-center gap-1.5">
+                          <span class={`text-[11px] font-medium ${load.color}`}>{load.label}</span>
+                          <span class="text-[11px] text-[var(--text-muted)]" title={`Load: ${data().load_avg}`}>
+                            {data().cpu_count ? `${data().cpu_count}-core` : ""}
+                          </span>
+                        </div>
+                      </Show>
+                    </StatTile>
+                  );
+                })()}
+              </Card>
+
+              {/* Gateways */}
+              <Card padding="sm">
+                <StatTile
+                  icon="gateway"
+                  iconColor="text-[var(--status-info)]"
+                  label="Gateways"
+                  value={`${data().gateways?.online || 0}/${data().gateways?.total || 0}`}
+                >
+                  <Show when={(data().gateways?.total || 0) > 0}>
+                    <div class="mt-1 flex items-center gap-1.5">
+                      <StatusDot status={gwStatus()} />
+                      <span class="text-[11px] text-[var(--text-tertiary)]">
+                        {data().gateways?.offline ? `${data().gateways.offline} offline` : "All online"}
+                      </span>
+                    </div>
+                  </Show>
+                </StatTile>
+              </Card>
+
+              {/* WireGuard peers */}
+              <Card padding="sm">
+                <StatTile
+                  icon="wireguard"
+                  iconColor="text-[var(--status-warning)]"
+                  label="WireGuard"
+                  value={`${data().wireguard?.online || 0}/${data().wireguard?.peers || 0}`}
+                  sub={`${data().wireguard?.interfaces || 0} interface${(data().wireguard?.interfaces || 0) !== 1 ? "s" : ""}`}
+                >
+                  <Show when={(data().wireguard?.peers || 0) > 0}>
+                    <div class="mt-1 flex items-center gap-1.5">
+                      <StatusDot status={wgStatus()} />
+                      <span class="text-[11px] text-[var(--text-tertiary)]">
+                        {data().wireguard?.online === data().wireguard?.peers ? "All peers up" : `${(data().wireguard?.peers || 0) - (data().wireguard?.online || 0)} peer${((data().wireguard?.peers || 0) - (data().wireguard?.online || 0)) !== 1 ? "s" : ""} down`}
+                      </span>
+                    </div>
+                  </Show>
+                </StatTile>
+              </Card>
+
+              {/* Tunnels */}
+              <Card padding="sm">
+                <StatTile
+                  icon="tunnel"
+                  iconColor="text-[var(--accent-primary)]"
+                  label="Tunnels"
+                  value={String(data().tunnels?.total || 0)}
+                >
+                  <Show when={(data().tunnels?.total || 0) > 0}>
+                    <div class="mt-1 flex items-center gap-1.5">
+                      <StatusDot status={data().tunnels?.errors ? "error" : data().tunnels?.deployed === data().tunnels?.total ? "success" : "warning"} />
+                      <span class="text-[11px] text-[var(--text-tertiary)]">
+                        {data().tunnels?.errors
+                          ? `${data().tunnels!.errors} error${data().tunnels!.errors !== 1 ? "s" : ""}`
+                          : `${data().tunnels?.deployed || 0} deployed`}
+                      </span>
+                    </div>
+                  </Show>
+                  <Show when={(data().tunnels?.total || 0) === 0}>
+                    <div class="mt-1 text-[11px] text-[var(--text-muted)]">No tunnels</div>
+                  </Show>
+                </StatTile>
+              </Card>
+            </div>
+
+            {/* Resources row */}
+            <div class="grid gap-3 sm:grid-cols-2">
+              <Card padding="sm">
+                <ResourceBar
+                  label="Memory"
+                  pct={memPct()}
+                  detail={data().memory?.total_mb ? `${formatBytes(data().memory!.used_mb)} / ${formatBytes(data().memory!.total_mb)}` : undefined}
+                />
+              </Card>
+              <Card padding="sm">
+                <ResourceBar
+                  label="Disk"
+                  pct={data().disk?.used_pct || 0}
+                  detail={data().disk?.mountpoint || undefined}
+                  color="bg-[var(--status-info)]"
+                />
+              </Card>
+            </div>
+
+            {/* VPN Status */}
             <Card class="relative overflow-hidden">
-              {/* Subtle gradient background */}
-              <div class="absolute right-0 top-0 h-full w-2/3 bg-gradient-to-l from-[var(--accent-primary-subtle)] to-transparent opacity-30" />
-              
-              <div class="relative">
-                <div class="flex items-start gap-5">
-                  {/* Large status icon */}
+              <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-[var(--accent-primary-subtle)] to-transparent opacity-20 pointer-events-none" />
+              <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4">
                   <div class={[
-                    "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl",
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
                     data().vpn?.routing_applied
                       ? "bg-[var(--success-subtle)]"
                       : data().vpn?.applied
                         ? "bg-[var(--warning-subtle)]"
                         : "bg-[var(--bg-hover)]"
                   ].join(" ")}>
-                    <svg 
+                    <svg
                       class={[
-                        "h-7 w-7",
+                        "h-6 w-6",
                         data().vpn?.routing_applied
                           ? "text-[var(--status-success)]"
                           : data().vpn?.applied
                             ? "text-[var(--status-warning)]"
                             : "text-[var(--text-muted)]"
                       ].join(" ")}
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
                       stroke-width="1.5"
                     >
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                   </div>
-
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-3">
-                      <h2 class="text-[20px] font-semibold text-[var(--text-primary)]">
+                  <div>
+                    <div class="flex items-center gap-2.5">
+                      <h2 class="text-[18px] font-semibold text-[var(--text-primary)]">
                         {data().vpn?.name || "VPN"}
                       </h2>
                       {data().vpn?.routing_applied ? (
-                        <Badge variant="success" size="sm">
-                          <StatusDot status="success" pulse />
-                          Active
-                        </Badge>
+                        <Badge variant="success" size="sm">Active</Badge>
                       ) : data().vpn?.applied ? (
                         <Badge variant="warning" size="sm">Partial</Badge>
                       ) : data().vpn?.configured ? (
-                        <Badge variant="info" size="sm">Configured</Badge>
+                        <Badge variant="info" size="sm">Ready</Badge>
                       ) : (
-                        <Badge variant="muted" size="sm">Not set</Badge>
+                        <Badge variant="muted" size="sm">Not configured</Badge>
                       )}
                     </div>
-
-                    <p class="mt-1.5 text-[14px] text-[var(--text-secondary)]">
+                    <p class="mt-1 text-[13px] text-[var(--text-tertiary)]">
                       {data().vpn?.configured
                         ? data().vpn?.applied
                           ? data().vpn?.routing_applied
-                            ? "Routing traffic securely through OPNsense"
+                            ? "Routing traffic through VPN"
                             : "Tunnel connected, routing pending"
-                          : "Configuration saved, deployment needed"
-                        : "No VPN configured"}
+                          : "Deployed to OPNsense, activation needed"
+                        : "Import a WireGuard config to get started"}
                     </p>
-
-                    <Show when={data().vpn?.last_applied_at}>
-                      <p class="mt-3 text-[12px] font-mono text-[var(--text-muted)]">
-                        {new Date(data().vpn!.last_applied_at!).toLocaleString()}
-                      </p>
-                    </Show>
                   </div>
+                </div>
+                <div class="flex flex-col items-end gap-1.5">
+                  <Show when={(data().vpn_count || 0) > 1}>
+                    <span class="text-[11px] text-[var(--text-muted)]">
+                      {data().vpn_count} VPN profile{data().vpn_count !== 1 ? "s" : ""}
+                    </span>
+                  </Show>
+                  <Show when={data().vpn?.last_applied_at}>
+                    <span class="text-[11px] font-mono text-[var(--text-muted)]">
+                      {new Date(data().vpn!.last_applied_at!).toLocaleDateString()}
+                    </span>
+                  </Show>
                 </div>
               </div>
             </Card>
+
+            {/* Permission warning */}
+            <Show when={data().error && data().connected}>
+              <Card class="border-l-2 border-l-[var(--status-warning)]">
+                <div class="flex items-start gap-3">
+                  <svg class="mt-0.5 h-4 w-4 shrink-0 text-[var(--status-warning)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  <span class="text-[12px] text-[var(--text-secondary)]">{data().error}</span>
+                </div>
+              </Card>
+            </Show>
           </>
         )}
       </Show>
