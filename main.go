@@ -31,7 +31,11 @@ func main() {
 	}
 	defer store.Close()
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		SkipPaths: []string{"/api/opnsense/overview/stream"},
+	}))
 	r.Use(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/assets/") {
 			c.Header("Cache-Control", "public, max-age=31536000, immutable")
