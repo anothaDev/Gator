@@ -10,6 +10,8 @@ Website: https://usegator.dev
 
 Gator gives you a clean dashboard to deploy WireGuard VPN configs, set up per-protocol/per-service selective routing (e.g. route only Netflix or gaming traffic through your VPN), manage site-to-site tunnels to remote VPS nodes, and keep track of what's happening on your firewall -- all through a browser UI instead of clicking through OPNsense menus.
 
+Some documentation is still missing while the project is moving quickly. More setup, deployment, and operational guides will be added soon.
+
 ## Features
 
 - **VPN Management** -- Import WireGuard configs (e.g. from Mullvad), deploy to OPNsense with one click
