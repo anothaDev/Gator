@@ -149,7 +149,13 @@ For site-to-site tunnels, Gator also SSHs into remote Linux servers to configure
 
 ## Security Note
 
-Gator is designed to run on your **local network** alongside your firewall. It has no built-in authentication -- anyone who can reach the web UI has full control. Do not expose it to the internet.
+Gator is designed to run on your **local network** alongside your firewall. It now includes a built-in admin password and session-based auth middleware, and all management routes require authentication after initial setup.
+
+That said, it is still best treated as a trusted-network tool:
+
+- On first run, setup and auth bootstrap are intentionally open so the first admin password can be created.
+- Gator currently has a single local admin account, not a full multi-user or internet-hardened auth system.
+- If you deploy it with Docker or behind a reverse proxy, set the admin password immediately and avoid exposing it directly to the public internet unless you add your own outer access controls.
 
 ## License
 
