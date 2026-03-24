@@ -38,6 +38,30 @@ go run main.go
 
 Open `http://localhost:8080` and connect your OPNsense instance.
 
+## Build
+
+### Standard build
+
+For local builds that serve the frontend from `frontend/dist` on disk:
+
+```bash
+cd frontend && npm install && npm run build && cd ..
+go build -o gator .
+./gator
+```
+
+### Single binary release
+
+For end users, Gator can be shipped as a single Go binary with the built frontend embedded inside it:
+
+```bash
+cd frontend && npm install && npm run build && cd ..
+go build -tags release -o gator .
+./gator
+```
+
+That release binary serves the frontend directly from the executable, so users do not need Node.js or a separate frontend process at runtime.
+
 ## Development
 
 For hot-reload during development, run the Go backend and Vite dev server separately:
@@ -51,6 +75,8 @@ cd frontend && npm run dev
 ```
 
 The frontend dev server runs on `http://localhost:3000` and proxies `/api/*` requests to the Go backend on `:8080`.
+
+Default builds still serve the frontend from `frontend/dist` on disk, while `-tags release` builds use the embedded assets.
 
 ## Environment Variables
 

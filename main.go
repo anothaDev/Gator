@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,21 +50,9 @@ func main() {
 	ipRangesHandler := handlers.NewIPRangesHandler(store)
 	tunnelHandler := handlers.NewTunnelHandler(store)
 
-	// Serve the SolidJS frontend static files
-	r.Static("/assets", "./frontend/dist/assets")
-	r.StaticFile("/", "./frontend/dist/index.html")
-
-	// Catch-all: return JSON 404 for API paths, serve index.html for SPA client-side routing.
-	r.NoRoute(func(c *gin.Context) {
-		if strings.HasPrefix(c.Request.URL.Path, "/api/") {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-			return
-		}
-		c.File("./frontend/dist/index.html")
-	})
-
 	// Register API routes
 	routes.Register(r, setupHandler, opnsenseHandler, vpnHandler, gatewayHandler, appRoutingHandler, ipRangesHandler, tunnelHandler)
+	serveFrontend(r)
 
 	// Start background jobs.
 	reconciler := handlers.NewReconciler(store, 60*time.Second)
