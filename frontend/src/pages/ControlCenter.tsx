@@ -1,4 +1,4 @@
-import { Suspense, createSignal, For, Match, Show, Switch, lazy, onMount } from "solid-js";
+import { Suspense, createEffect, createSignal, For, Match, Show, Switch, lazy, onMount } from "solid-js";
 import type { JSX } from "solid-js";
 import Button from "../components/Button";
 import IconButton from "../components/IconButton";
@@ -15,6 +15,11 @@ const Routing = lazy(() => import("./Routing"));
 const Rules = lazy(() => import("./Rules"));
 const Tunnels = lazy(() => import("./Tunnels"));
 const VpnSetup = lazy(() => import("./VpnSetup"));
+
+type InstanceRuntimeState = {
+  connected: boolean;
+  message?: string;
+};
 
 type Props = {
   onReconfigure: () => void;
@@ -173,8 +178,17 @@ export default function ControlCenter(props: Props) {
   const [switcherOpen, setSwitcherOpen] = createSignal(false);
   const [switching, setSwitching] = createSignal(false);
   const [mobileNavOpen, setMobileNavOpen] = createSignal(false);
+  const [runtimeState, setRuntimeState] = createSignal<InstanceRuntimeState | null>(null);
 
   const activeInstance = () => instances().find((i) => i.active);
+  const instanceUnavailable = () => runtimeState()?.connected === false;
+  const isSectionDisabled = (item: Section) => item !== "dashboard" && instanceUnavailable();
+
+  createEffect(() => {
+    if (instanceUnavailable() && section() !== "dashboard") {
+      setSection("dashboard");
+    }
+  });
 
   const loadInstances = async () => {
     try {
@@ -193,6 +207,7 @@ export default function ControlCenter(props: Props) {
       const { ok } = await apiPost(`/api/instances/${id}/activate`);
       if (ok) {
         setInstances((prev) => prev.map((inst) => ({ ...inst, active: inst.id === id })));
+        setRuntimeState(null);
         props.onInstanceSwitched();
       }
     } catch {}
@@ -271,6 +286,9 @@ export default function ControlCenter(props: Props) {
                   class={[
                     "flex items-center gap-2 rounded-[var(--radius-lg)] border px-3 py-1.5",
                     "text-[var(--text-sm)] font-medium transition-all duration-[var(--transition-base)]",
+                    instanceUnavailable()
+                      ? "border-[var(--status-error)]/40 bg-[var(--error-subtle)] text-[var(--status-error)]"
+                      : "",
                     switcherOpen()
                       ? "border-[var(--accent-primary)] bg-[var(--accent-primary-subtle)] text-[var(--accent-primary)]"
                       : "border-[var(--border-strong)] bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]",
@@ -280,6 +298,11 @@ export default function ControlCenter(props: Props) {
                   <span class="hidden max-w-[140px] truncate sm:inline">
                     {activeInstance()?.label ?? "No instance"}
                   </span>
+                  <Show when={instanceUnavailable()}>
+                    <span class="hidden rounded-full bg-[var(--status-error)]/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--status-error)] sm:inline">
+                      Down
+                    </span>
+                  </Show>
                   <Show when={instances().length > 1}>
                     <svg
                       class={[
@@ -376,6 +399,26 @@ export default function ControlCenter(props: Props) {
         </div>
       </header>
 
+      <Show when={instanceUnavailable()}>
+        <div class="border-b border-[var(--status-error)]/20 bg-[var(--error-subtle)]/70">
+          <div class="mx-auto flex max-w-7xl items-start gap-3 px-4 py-3 text-[13px] lg:px-6">
+            <svg class="mt-0.5 h-4 w-4 shrink-0 text-[var(--status-error)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              <p class="font-medium text-[var(--status-error)]">
+                {activeInstance()?.label ?? "This instance"} is currently unreachable.
+              </p>
+              <p class="mt-0.5 text-[var(--text-secondary)]">
+                {runtimeState()?.message ?? "Gator cannot manage this firewall until it comes back online."}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Show>
+
       {/* Click outside to close switcher */}
       <Show when={switcherOpen()}>
         <div class="fixed inset-0 z-40" onClick={() => setSwitcherOpen(false)} />
@@ -414,10 +457,12 @@ export default function ControlCenter(props: Props) {
                       class={[
                         "relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5",
                         "text-[var(--text-sm)] font-medium transition-all duration-200",
+                        isSectionDisabled(item.id) ? "cursor-not-allowed opacity-40" : "",
                         isActive()
                           ? "bg-[var(--accent-primary)]/8 text-[var(--accent-primary)]"
                           : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
                       ].join(" ")}
+                      disabled={isSectionDisabled(item.id)}
                     >
                       <span class={[
                         "transition-colors duration-200",
@@ -449,7 +494,7 @@ export default function ControlCenter(props: Props) {
             >
               <Switch>
                 <Match when={section() === "dashboard"}>
-                  <Dashboard />
+                  <Dashboard onConnectionStateChange={setRuntimeState} />
                 </Match>
                 <Match when={section() === "vpn"}>
                   <VpnSetup onNavigate={(s) => setSection(s as Section)} />

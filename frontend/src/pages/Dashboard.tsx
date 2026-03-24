@@ -1,8 +1,12 @@
-import { For, Show, createSignal, onMount, onCleanup } from "solid-js";
+import { For, Show, createSignal, createEffect, onMount, onCleanup } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { apiGet } from "../lib/api";
+
+type Props = {
+  onConnectionStateChange?: (state: { connected: boolean; message?: string }) => void;
+};
 
 type Overview = {
   connected: boolean;
@@ -197,12 +201,21 @@ function StatTile(props: {
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard(props: Props) {
   const [overview, setOverview] = createSignal<Overview | null>(null);
   const [loading, setLoading] = createSignal(true);
   const [loadError, setLoadError] = createSignal(false);
   const [live, setLive] = createSignal(false);
   let eventSource: EventSource | null = null;
+
+  createEffect(() => {
+    const data = overview();
+    if (!data) return;
+    props.onConnectionStateChange?.({
+      connected: !!data.connected,
+      message: data.error || data.error_detail,
+    });
+  });
 
   const connectSSE = () => {
     if (eventSource) return;
@@ -250,6 +263,10 @@ export default function Dashboard() {
       setOverview(data);
     } catch {
       setLoadError(true);
+      props.onConnectionStateChange?.({
+        connected: false,
+        message: "Gator could not reach the active firewall instance.",
+      });
     } finally {
       setLoading(false);
     }
@@ -339,12 +356,12 @@ export default function Dashboard() {
         {(data) => (
           <>
             {/* Firewall identity card */}
-            <Card class="relative overflow-hidden">
-              <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[var(--accent-primary)] to-transparent" />
+            <Card class={["relative overflow-hidden", !data().connected ? "border border-[var(--status-error)]/25 bg-[var(--error-subtle)]/40" : ""].join(" ")}>
+              <div class={["absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r", data().connected ? "from-[var(--accent-primary)] to-transparent" : "from-[var(--status-error)] to-transparent"].join(" ")} />
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-hover)]">
-                    <svg class="h-5 w-5 text-[var(--accent-primary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <div class={["flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", data().connected ? "bg-[var(--bg-hover)]" : "bg-[var(--status-error)]/10"].join(" ")}>
+                    <svg class={["h-5 w-5", data().connected ? "text-[var(--accent-primary)]" : "text-[var(--status-error)]"].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                       <line x1="8" y1="21" x2="16" y2="21" />
                       <line x1="12" y1="17" x2="12" y2="21" />
@@ -363,15 +380,49 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
-                  <Show when={data().updates}>
+                  <Show when={!data().connected}>
+                    <Badge variant="danger" size="sm">Instance down</Badge>
+                  </Show>
+                  <Show when={data().connected && data().updates}>
                     <Badge variant="warning" size="sm">{data().updates}</Badge>
                   </Show>
-                  <Show when={!data().updates}>
+                  <Show when={data().connected && !data().updates}>
                     <Badge variant="muted" size="sm">Up to date</Badge>
                   </Show>
                 </div>
               </div>
             </Card>
+
+            <Show when={!data().connected}>
+              <Card class="border-l-2 border-l-[var(--status-error)] bg-[var(--bg-secondary)]">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="flex items-start gap-3">
+                    <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--status-error)]/10">
+                      <svg class="h-5 w-5 text-[var(--status-error)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 9v4" />
+                        <path d="M12 17h.01" />
+                        <path d="M5 3h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 4v-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="text-[16px] font-semibold text-[var(--text-primary)]">This firewall is offline</h3>
+                      <p class="mt-1 text-[13px] text-[var(--text-secondary)]">
+                        Gator can see the saved instance, but it cannot reach the live firewall right now. Start the VM or switch to another instance before making changes.
+                      </p>
+                      <Show when={data().error}>
+                        <p class="mt-2 text-[12px] text-[var(--status-error)]">{data().error}</p>
+                      </Show>
+                    </div>
+                  </div>
+                  <div class="rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)] px-3 py-2 text-[12px] text-[var(--text-tertiary)]">
+                    Management actions are temporarily disabled
+                  </div>
+                </div>
+              </Card>
+            </Show>
+
+            <Show when={data().connected}>
+              <>
 
             {/* Stats grid -- 2 cols on mobile, 4 on desktop */}
             <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -567,6 +618,8 @@ export default function Dashboard() {
                   <span class="text-[12px] text-[var(--text-secondary)]">{data().error}</span>
                 </div>
               </Card>
+            </Show>
+              </>
             </Show>
           </>
         )}
