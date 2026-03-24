@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="frontend/public/gator128px.svg" alt="Gator logo" width="128" height="128" />
+</p>
+
 # Gator
 
 A self-hosted web app for managing VPN routing, site-to-site WireGuard tunnels, and firewall rules on OPNsense.
+
+Website: https://usegator.dev
 
 Gator gives you a clean dashboard to deploy WireGuard VPN configs, set up per-protocol/per-service selective routing (e.g. route only Netflix or gaming traffic through your VPN), manage site-to-site tunnels to remote VPS nodes, and keep track of what's happening on your firewall -- all through a browser UI instead of clicking through OPNsense menus.
 
