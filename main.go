@@ -50,6 +50,10 @@ func main() {
 	ipRangesHandler := handlers.NewIPRangesHandler(store)
 	tunnelHandler := handlers.NewTunnelHandler(store)
 
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
 	// Register API routes
 	routes.Register(r, setupHandler, opnsenseHandler, vpnHandler, gatewayHandler, appRoutingHandler, ipRangesHandler, tunnelHandler)
 	serveFrontend(r)

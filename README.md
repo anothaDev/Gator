@@ -62,6 +62,38 @@ go build -tags release -o gator .
 
 That release binary serves the frontend directly from the executable, so users do not need Node.js or a separate frontend process at runtime.
 
+### Docker
+
+Gator also ships cleanly as a single-container deployment.
+
+```bash
+docker compose up -d
+```
+
+The default container port is `8080`, and persistent app data is stored in the `gator-data` volume.
+
+To run Gator on a custom port, set `GATOR_PORT` before starting the container:
+
+```bash
+GATOR_PORT=9090 docker compose up --build -d
+```
+
+If you need absolute callback URLs for routing features, also set `GATOR_URL`:
+
+```bash
+GATOR_PORT=9090 GATOR_URL=http://192.168.1.50:9090 docker compose up -d
+```
+
+The default `compose.yaml` pulls the prebuilt image from `ghcr.io/anothadev/gator:latest`, which is published automatically from GitHub Actions.
+
+If you want to build the Docker image from source yourself, build the frontend first so `frontend/dist` exists, then run:
+
+```bash
+cd frontend && npm install && npm run build && cd ..
+docker build -t gator:local .
+docker run --rm -p 8080:8080 -v gator-data:/data gator:local
+```
+
 ## Development
 
 For hot-reload during development, run the Go backend and Vite dev server separately:
@@ -77,6 +109,11 @@ cd frontend && npm run dev
 The frontend dev server runs on `http://localhost:3000` and proxies `/api/*` requests to the Go backend on `:8080`.
 
 Default builds still serve the frontend from `frontend/dist` on disk, while `-tags release` builds use the embedded assets.
+
+On GitHub, container builds are automated too:
+
+- `CI` validates backend tests, frontend build, and embedded release builds
+- `Container` builds the Docker image on pull requests and automatically publishes it to `ghcr.io/anothadev/gator` on pushes to `main` and version tags
 
 ## Environment Variables
 
