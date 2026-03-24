@@ -104,7 +104,21 @@ docker run --rm -p 8080:8080 -v gator-data:/data gator:local
 
 ## Development
 
-For hot-reload during development, run the Go backend and Vite dev server separately:
+Gator supports two development flows:
+
+### Air only
+
+If you already have a built frontend in `frontend/dist`, you can run the app entirely through Go with Air:
+
+```bash
+air
+```
+
+That serves the frontend from Go on `http://localhost:8080` and hot-reloads backend changes.
+
+### Air + Vite
+
+If you want frontend hot-reload while editing the UI, run the Go backend and Vite dev server separately:
 
 ```bash
 # Terminal 1: Go backend with Air hot-reload
