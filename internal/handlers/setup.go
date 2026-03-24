@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/anothaDev/gator/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 type SetupHandler struct {
@@ -22,6 +22,7 @@ type SetupHandler struct {
 type SetupConfigStore interface {
 	SaveFirewallConfig(ctx context.Context, cfg models.FirewallConfig) error
 	GetFirewallConfig(ctx context.Context) (*models.FirewallConfig, error)
+	HasAdminPassword(ctx context.Context) (bool, error)
 	ListInstances(ctx context.Context) ([]models.FirewallInstance, error)
 	GetInstance(ctx context.Context, id int64) (*models.FirewallInstance, error)
 	GetActiveInstanceID(ctx context.Context) (int64, error)
@@ -148,17 +149,29 @@ func (h *SetupHandler) GetStatus(c *gin.Context) {
 	}
 
 	if inst == nil {
-		c.JSON(http.StatusOK, gin.H{"configured": false})
+		authConfigured, err := h.store.HasAdminPassword(ctx)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read auth config"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"configured": false, "auth_configured": authConfigured})
+		return
+	}
+
+	authConfigured, err := h.store.HasAdminPassword(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read auth config"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"configured":     true,
-		"type":           inst.Type,
-		"host":           inst.Host,
-		"skip_tls":       inst.SkipTLS,
-		"instance_id":    inst.ID,
-		"instance_label": inst.Label,
+		"configured":      true,
+		"auth_configured": authConfigured,
+		"type":            inst.Type,
+		"host":            inst.Host,
+		"skip_tls":        inst.SkipTLS,
+		"instance_id":     inst.ID,
+		"instance_label":  inst.Label,
 	})
 }
 

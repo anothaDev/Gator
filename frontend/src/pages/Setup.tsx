@@ -5,6 +5,8 @@ import ConnectionForm, {
   type ConnectionDetails,
 } from "../components/ConnectionForm";
 import ConnectionTest from "../components/ConnectionTest";
+import Input from "../components/Input";
+import { apiPost } from "../lib/api";
 
 const STEPS = [
   { label: "Platform", description: "Choose your firewall" },
@@ -20,6 +22,8 @@ export default function Setup(props: Props) {
   const [step, setStep] = createSignal(0);
   const [firewallType, setFirewallType] = createSignal<string | null>(null);
   const [saveError, setSaveError] = createSignal("");
+  const [adminPassword, setAdminPassword] = createSignal("");
+  const [confirmAdminPassword, setConfirmAdminPassword] = createSignal("");
   const [connection, setConnection] = createSignal<ConnectionDetails>({
     host: "",
     apiKey: "",
@@ -43,6 +47,16 @@ export default function Setup(props: Props) {
 
   const handleComplete = async () => {
     setSaveError("");
+
+    if (adminPassword().trim().length < 8) {
+      setSaveError("Admin password must be at least 8 characters.");
+      return;
+    }
+
+    if (adminPassword() !== confirmAdminPassword()) {
+      setSaveError("Admin passwords do not match.");
+      return;
+    }
 
     try {
       const res = await fetch("/api/setup/save", {
@@ -69,6 +83,15 @@ export default function Setup(props: Props) {
           // Keep default message when response is not JSON.
         }
         setSaveError(message);
+        return;
+      }
+
+      const bootstrap = await apiPost<{ error?: string }>("/api/auth/bootstrap", {
+        password: adminPassword(),
+      });
+
+      if (!bootstrap.ok) {
+        setSaveError(bootstrap.data.error ?? "Failed to enable authentication.");
         return;
       }
 
@@ -139,11 +162,35 @@ export default function Setup(props: Props) {
               />
             </Match>
             <Match when={step() === 2}>
-              <ConnectionTest
-                firewallType={firewallType()!}
-                connection={connection()}
-                onComplete={handleComplete}
-              />
+              <div class="space-y-6">
+                <ConnectionTest
+                  firewallType={firewallType()!}
+                  connection={connection()}
+                  onComplete={handleComplete}
+                />
+
+                <div class="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] p-4">
+                  <h4 class="mb-1 text-sm font-semibold text-[var(--text-primary)]">Create admin password</h4>
+                  <p class="mb-4 text-sm text-[var(--text-tertiary)]">Gator will require authentication for the UI and API after setup.</p>
+
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <Input
+                      label="Password"
+                      type="password"
+                      value={adminPassword()}
+                      onInput={setAdminPassword}
+                      placeholder="Minimum 8 characters"
+                    />
+                    <Input
+                      label="Confirm password"
+                      type="password"
+                      value={confirmAdminPassword()}
+                      onInput={setConfirmAdminPassword}
+                      placeholder="Re-enter password"
+                    />
+                  </div>
+                </div>
+              </div>
             </Match>
           </Switch>
 

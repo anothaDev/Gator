@@ -19,6 +19,7 @@ const VpnSetup = lazy(() => import("./VpnSetup"));
 type Props = {
   onReconfigure: () => void;
   onInstanceSwitched: () => void;
+  onLogout: () => void;
 };
 
 type Section =
@@ -201,6 +202,11 @@ export default function ControlCenter(props: Props) {
     }
   };
 
+  const handleLogout = async () => {
+    await apiPost("/api/auth/logout");
+    props.onLogout();
+  };
+
   const getInstanceIcon = (type: string) => {
     const baseClasses = "h-2.5 w-2.5 rounded-full";
     if (type === "opnsense") {
@@ -356,6 +362,15 @@ export default function ControlCenter(props: Props) {
                 <path d="M12 20h9M12 20a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2M12 20v2M3 8l2.5-2.5L8 8M3 8h5M8 8v5" />
               </svg>
               <span class="hidden sm:inline">Reconfigure</span>
+            </Button>
+
+            <Button variant="ghost" size="sm" onClick={() => void handleLogout()}>
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span class="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>

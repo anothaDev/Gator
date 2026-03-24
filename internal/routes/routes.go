@@ -1,12 +1,13 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/anothaDev/gator/internal/handlers"
+	"github.com/gin-gonic/gin"
 )
 
 func Register(
 	r *gin.Engine,
+	auth *handlers.AuthHandler,
 	setup *handlers.SetupHandler,
 	opnsense *handlers.OPNsenseHandler,
 	vpn *handlers.VPNHandler,
@@ -17,6 +18,7 @@ func Register(
 ) {
 	api := r.Group("/api")
 
+	registerAuthRoutes(api, auth)
 	registerSetupRoutes(api, setup)
 	registerOPNsenseRoutes(api, setup, opnsense, vpn, gateway, appRouting)
 	registerPfSenseRoutes(api, setup)

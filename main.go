@@ -43,19 +43,21 @@ func main() {
 	})
 
 	setupHandler := handlers.NewSetupHandler(store)
+	authHandler := handlers.NewAuthHandler(store)
 	opnsenseHandler := handlers.NewOPNsenseHandler(store)
 	vpnHandler := handlers.NewVPNHandler(store)
 	gatewayHandler := handlers.NewGatewayHandler(store)
 	appRoutingHandler := handlers.NewAppRoutingHandler(store)
 	ipRangesHandler := handlers.NewIPRangesHandler(store)
 	tunnelHandler := handlers.NewTunnelHandler(store)
+	r.Use(authHandler.Middleware())
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
 	// Register API routes
-	routes.Register(r, setupHandler, opnsenseHandler, vpnHandler, gatewayHandler, appRoutingHandler, ipRangesHandler, tunnelHandler)
+	routes.Register(r, authHandler, setupHandler, opnsenseHandler, vpnHandler, gatewayHandler, appRoutingHandler, ipRangesHandler, tunnelHandler)
 	serveFrontend(r)
 
 	// Start background jobs.

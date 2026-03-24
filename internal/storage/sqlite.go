@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	_ "modernc.org/sqlite"
 
@@ -42,6 +43,73 @@ func (s *SQLiteStore) Close() error {
 		return nil
 	}
 	return s.db.Close()
+}
+
+func (s *SQLiteStore) HasAdminPassword(ctx context.Context) (bool, error) {
+	var hash string
+	err := s.db.QueryRowContext(ctx, `SELECT password_hash FROM auth_config WHERE id = 1`).Scan(&hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(hash) != "", nil
+}
+
+func (s *SQLiteStore) GetAdminPasswordHash(ctx context.Context) (string, error) {
+	var hash string
+	err := s.db.QueryRowContext(ctx, `SELECT password_hash FROM auth_config WHERE id = 1`).Scan(&hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
+}
+
+func (s *SQLiteStore) SetAdminPasswordHash(ctx context.Context, hash string) error {
+	const query = `
+		INSERT INTO auth_config (id, password_hash)
+		VALUES (1, ?)
+		ON CONFLICT(id) DO UPDATE SET
+			password_hash = excluded.password_hash,
+			updated_at = CURRENT_TIMESTAMP
+	`
+	_, err := s.db.ExecContext(ctx, query, hash)
+	return err
+}
+
+func (s *SQLiteStore) CreateAuthSession(ctx context.Context, tokenHash string, expiresAtUnix int64) error {
+	const query = `
+		INSERT INTO auth_sessions (token_hash, expires_at_unix)
+		VALUES (?, ?)
+	`
+	_, err := s.db.ExecContext(ctx, query, tokenHash, expiresAtUnix)
+	return err
+}
+
+func (s *SQLiteStore) GetAuthSessionExpiry(ctx context.Context, tokenHash string) (int64, bool, error) {
+	var expiresAtUnix int64
+	err := s.db.QueryRowContext(ctx, `SELECT expires_at_unix FROM auth_sessions WHERE token_hash = ?`, tokenHash).Scan(&expiresAtUnix)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, false, err
+	}
+	return expiresAtUnix, true, nil
+}
+
+func (s *SQLiteStore) DeleteAuthSession(ctx context.Context, tokenHash string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM auth_sessions WHERE token_hash = ?`, tokenHash)
+	return err
+}
+
+func (s *SQLiteStore) DeleteExpiredAuthSessions(ctx context.Context, nowUnix int64) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM auth_sessions WHERE expires_at_unix <= ?`, nowUnix)
+	return err
 }
 
 // ─── Instance Management ──────────────────────────────────────────
@@ -1037,6 +1105,19 @@ func (s *SQLiteStore) migrate(ctx context.Context) error {
 			instance_id INTEGER NOT NULL REFERENCES firewall_instances(id)
 		);
 
+		CREATE TABLE IF NOT EXISTS auth_config (
+			id INTEGER PRIMARY KEY CHECK (id = 1),
+			password_hash TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);
+
+		CREATE TABLE IF NOT EXISTS auth_sessions (
+			token_hash TEXT PRIMARY KEY,
+			expires_at_unix INTEGER NOT NULL,
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);
+
 		CREATE TABLE IF NOT EXISTS vpn_configs (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
@@ -1147,6 +1228,7 @@ func (s *SQLiteStore) migrate(ctx context.Context) error {
 	s.dropIndexSafe(ctx, "idx_vpn_configs_name")
 	s.addIndexSafe(ctx, "vpn_configs", "idx_vpn_configs_instance_name", "instance_id, name", true)
 	s.addIndexSafe(ctx, "firewall_instances", "idx_firewall_instances_host", "host", false)
+	s.addIndexSafe(ctx, "auth_sessions", "idx_auth_sessions_expires_at", "expires_at_unix", false)
 	s.addIndexSafe(ctx, "app_routing_rules", "idx_app_routing_rules_app_id", "app_id", false)
 	s.addIndexSafe(ctx, "custom_app_profiles", "idx_custom_app_profiles_instance_id", "instance_id", false)
 	s.addIndexSafe(ctx, "custom_app_profiles", "idx_custom_app_profiles_instance_name", "instance_id, name", false)
