@@ -322,7 +322,8 @@ func isStaticPublicPath(path string) bool {
 	}
 
 	publicFiles := map[string]bool{
-		"/gator-logo.svg": true,
+		"/gator64px.svg":  true,
+		"/gator128px.svg": true,
 		"/favicon.ico":    true,
 	}
 

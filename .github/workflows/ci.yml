@@ -91,6 +91,6 @@ jobs:
           sleep 3
           curl -fsS http://127.0.0.1:18080/ >/dev/null
           curl -fsS http://127.0.0.1:18080/health >/dev/null
-          curl -fsS http://127.0.0.1:18080/gator-logo.svg >/dev/null
+          curl -fsS http://127.0.0.1:18080/gator64px.svg >/dev/null
           kill $pid
           wait $pid || true

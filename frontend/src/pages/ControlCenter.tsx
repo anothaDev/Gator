@@ -246,7 +246,7 @@ export default function ControlCenter(props: Props) {
 
       {/* Header */}
       <header class="sticky top-0 z-50 border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/95 backdrop-blur">
-        <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 lg:px-6">
+        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-6">
           {/* Logo & Title */}
           <div class="flex items-center gap-3">
             {/* Mobile menu toggle */}
@@ -263,13 +263,11 @@ export default function ControlCenter(props: Props) {
             </IconButton>
 
             {/* Logo */}
-            <div class="flex items-center gap-2">
-              <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
-                <img src="/gator-logo.svg" alt="Gator logo" class="h-12 w-12 scale-[4.8] object-contain" />
-              </div>
+            <div class="flex items-center gap-3">
+              <img src="/gator64px.svg" alt="Gator logo" class="h-[3.3rem] w-auto max-w-none object-contain sm:h-[3.7rem]" />
               <div class="hidden sm:block">
                 <h1 class="text-[var(--text-lg)] font-semibold tracking-tight">Gator</h1>
-                <p class="text-[var(--text-xs)] text-[var(--text-tertiary)]">VPN control center</p>
+                <p class="text-[var(--text-xs)] text-[var(--text-tertiary)]">Firewall control plane</p>
               </div>
             </div>
           </div>
@@ -437,7 +435,7 @@ export default function ControlCenter(props: Props) {
         {/* Sidebar navigation - fixed width */}
         <aside
           class={[
-            "fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)] w-56 shrink-0 border-r border-[var(--border-default)] bg-[var(--bg-secondary)]",
+            "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-56 shrink-0 border-r border-[var(--border-default)] bg-[var(--bg-secondary)]",
             "transform transition-transform duration-[var(--transition-slow)] ease-out lg:translate-x-0",
             mobileNavOpen() ? "translate-x-0" : "-translate-x-full",
           ].join(" ")}

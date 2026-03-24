@@ -84,7 +84,7 @@ export default function App() {
         <Match when={statusLoading()}>
           <div class="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
             <div class="flex flex-col items-center gap-4">
-              <img src="/gator-logo.svg" alt="Gator logo" class="h-18 w-18 drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]" />
+              <img src="/gator64px.svg" alt="Gator logo" class="h-18 w-18 drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]" />
               <p class="text-sm text-[var(--text-tertiary)]">Loading Gator...</p>
             </div>
           </div>
