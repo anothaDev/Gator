@@ -22,6 +22,8 @@ Some documentation is still missing while the project is moving quickly. More se
 - **Migration Assistant** -- Adopt and convert legacy OPNsense rules into Gator-managed rules
 - **Reconciler** -- Background drift detection that flags when firewall state doesn't match what Gator expects
 - **Backup/Restore** -- Download and manage OPNsense configuration backups
+- **Tailscale Integration** -- Guided setup for the OPNsense Tailscale community plugin with auth configuration, interface detection, and advertised route management
+- **Firmware Update Awareness** -- Detects when OPNsense needs updating and shows an app-wide banner with a direct link to apply updates
 - **Multi-Instance** -- Manage multiple OPNsense boxes from a single Gator install
 
 ## Prerequisites
