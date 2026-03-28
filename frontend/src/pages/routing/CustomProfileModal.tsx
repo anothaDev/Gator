@@ -1,13 +1,7 @@
 import { createSignal, For, Show } from "solid-js";
 import { apiPost } from "../../lib/api";
 import Select from "../../components/Select";
-
-// ─── Types ───────────────────────────────────────────────────────
-
-type PortRule = {
-  protocol: string;
-  ports: string;
-};
+import type { PortRule } from "./types";
 
 // ─── Custom Profile Modal ────────────────────────────────────────
 
@@ -71,9 +65,9 @@ function CustomProfileModal(props: {
 
   return (
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}>
-      <div class="mx-4 w-full max-w-lg rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-6 shadow-2xl">
-        <h2 class="text-lg font-bold text-[var(--text-primary)]">Add Custom Service</h2>
-        <p class="mt-1 text-xs text-[var(--text-tertiary)]">Define a custom app or service with its protocol and port rules.</p>
+      <div class="mx-4 w-full max-w-lg rounded-2xl border border-line bg-surface-secondary p-6 shadow-2xl">
+        <h2 class="text-lg font-bold text-fg">Add Custom Service</h2>
+        <p class="mt-1 text-xs text-fg-tertiary">Define a custom app or service with its protocol and port rules.</p>
 
         <Show when={customErr()}>
           <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
@@ -83,13 +77,13 @@ function CustomProfileModal(props: {
 
         <div class="mt-4 space-y-3">
           <div>
-            <label class="text-xs font-medium text-[var(--text-tertiary)]">Name</label>
+            <label class="text-xs font-medium text-fg-tertiary">Name</label>
             <input
               type="text"
               placeholder="e.g. My Game Server"
               value={customName()}
               onInput={(e) => setCustomName(e.currentTarget.value)}
-              class="mt-1 w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              class="mt-1 w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
             />
           </div>
 
@@ -114,11 +108,11 @@ function CustomProfileModal(props: {
 
           <div>
             <div class="flex items-center justify-between">
-              <label class="text-xs font-medium text-[var(--text-tertiary)]">Port Rules</label>
+              <label class="text-xs font-medium text-fg-tertiary">Port Rules</label>
               <button
                 type="button"
                 onClick={addRuleRow}
-                class="text-xs text-[var(--status-success)] hover:text-[var(--status-success)]"
+                class="text-xs text-success hover:text-success"
               >
                 + Add rule
               </button>
@@ -142,13 +136,13 @@ function CustomProfileModal(props: {
                       placeholder="e.g. 8080 or 3000-3100"
                       value={rule.ports}
                       onInput={(e) => updateRuleRow(idx(), "ports", e.currentTarget.value)}
-                      class="flex-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-2 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+                      class="flex-1 rounded-lg border border-line bg-surface-tertiary/50 px-2 py-1.5 text-xs text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
                     />
                     <Show when={customRules().length > 1}>
                       <button
                         type="button"
                         onClick={() => removeRuleRow(idx())}
-                        class="rounded p-1 text-[var(--text-tertiary)] hover:bg-red-500/10 hover:text-red-400"
+                        class="rounded p-1 text-fg-tertiary hover:bg-red-500/10 hover:text-red-400"
                       >
                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/>
@@ -162,27 +156,27 @@ function CustomProfileModal(props: {
           </div>
 
           <div>
-            <label class="text-xs font-medium text-[var(--text-tertiary)]">ASN Numbers (optional)</label>
+            <label class="text-xs font-medium text-fg-tertiary">ASN Numbers (optional)</label>
             <input
               type="text"
               placeholder="e.g. 2906, 15169 — for IP-based routing precision"
               value={customASNs()}
               onInput={(e) => setCustomASNs(e.currentTarget.value)}
-              class="mt-1 w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              class="mt-1 w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
             />
-            <p class="mt-1 text-[10px] text-[var(--text-tertiary)]">
+            <p class="mt-1 text-[10px] text-fg-tertiary">
               Comma-separated AS numbers. IP ranges will be resolved automatically for precise routing.
             </p>
           </div>
 
           <div>
-            <label class="text-xs font-medium text-[var(--text-tertiary)]">Note (optional)</label>
+            <label class="text-xs font-medium text-fg-tertiary">Note (optional)</label>
             <input
               type="text"
               placeholder="e.g. Custom game server ports"
               value={customNote()}
               onInput={(e) => setCustomNote(e.currentTarget.value)}
-              class="mt-1 w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              class="mt-1 w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
             />
           </div>
         </div>
@@ -191,7 +185,7 @@ function CustomProfileModal(props: {
           <button
             type="button"
             onClick={props.onClose}
-            class="rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)] px-4 py-2 text-[13px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+            class="rounded-lg border border-line bg-surface-tertiary px-4 py-2 text-[13px] font-medium text-fg-secondary hover:bg-hover"
           >
             Cancel
           </button>
@@ -199,7 +193,7 @@ function CustomProfileModal(props: {
             type="button"
             onClick={() => void saveCustomProfile()}
             disabled={customSaving()}
-            class="rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-[13px] font-semibold text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-primary)]/20 transition-all hover:brightness-110 disabled:opacity-50"
+            class="rounded-lg bg-accent px-4 py-2 text-[13px] font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 disabled:opacity-50"
           >
             {customSaving() ? "Saving..." : "Add Service"}
           </button>

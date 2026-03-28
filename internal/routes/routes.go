@@ -10,6 +10,7 @@ func Register(
 	auth *handlers.AuthHandler,
 	setup *handlers.SetupHandler,
 	opnsense *handlers.OPNsenseHandler,
+	tailscale *handlers.TailscaleHandler,
 	vpn *handlers.VPNHandler,
 	gateway *handlers.GatewayHandler,
 	appRouting *handlers.AppRoutingHandler,
@@ -20,7 +21,7 @@ func Register(
 
 	registerAuthRoutes(api, auth)
 	registerSetupRoutes(api, setup)
-	registerOPNsenseRoutes(api, setup, opnsense, vpn, gateway, appRouting)
+	registerOPNsenseRoutes(api, setup, opnsense, tailscale, vpn, gateway, appRouting)
 	registerPfSenseRoutes(api, setup)
 	registerVPNRoutes(api, vpn)
 	registerAppRoutingRoutes(api, appRouting)

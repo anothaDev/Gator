@@ -23,10 +23,18 @@ func NewSQLiteStore(path string) (*SQLiteStore, error) {
 		return nil, fmt.Errorf("open sqlite database: %w", err)
 	}
 
-	// Enable foreign key enforcement (off by default in SQLite).
-	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("enable foreign keys: %w", err)
+	// WAL mode allows concurrent reads while writing, and busy_timeout
+	// tells SQLite to retry for up to 5 seconds instead of immediately
+	// returning SQLITE_BUSY when the database is locked.
+	for _, pragma := range []string{
+		"PRAGMA journal_mode = WAL",
+		"PRAGMA busy_timeout = 5000",
+		"PRAGMA foreign_keys = ON",
+	} {
+		if _, err := db.Exec(pragma); err != nil {
+			_ = db.Close()
+			return nil, fmt.Errorf("%s: %w", pragma, err)
+		}
 	}
 
 	store := &SQLiteStore{db: db}

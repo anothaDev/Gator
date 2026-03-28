@@ -13,18 +13,18 @@ interface IconButtonProps {
 export default function IconButton(props: IconButtonProps) {
   const variantStyles = {
     default: [
-      "bg-[var(--bg-elevated)] text-[var(--text-secondary)]",
-      "hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
-      "active:bg-[var(--bg-active)]",
+      "bg-elevated text-fg-secondary",
+      "hover:bg-hover hover:text-fg",
+      "active:bg-active",
     ].join(" "),
     ghost: [
-      "bg-transparent text-[var(--text-tertiary)]",
-      "hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]",
-      "active:bg-[var(--bg-active)]",
+      "bg-transparent text-fg-tertiary",
+      "hover:bg-hover hover:text-fg",
+      "active:bg-active",
     ].join(" "),
     subtle: [
-      "bg-transparent text-[var(--text-muted)]",
-      "hover:text-[var(--text-secondary)]",
+      "bg-transparent text-fg-muted",
+      "hover:text-fg-secondary",
     ].join(" "),
   };
 
@@ -41,9 +41,9 @@ export default function IconButton(props: IconButtonProps) {
       title={props.title}
       onClick={props.onClick}
       class={[
-        "inline-flex items-center justify-center rounded-[var(--radius-md)]",
-        "transition-all duration-[var(--transition-base)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]",
+        "inline-flex items-center justify-center rounded-md",
+        "transition-all duration-base",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         variantStyles[props.variant ?? "ghost"],
         sizeStyles[props.size ?? "md"],

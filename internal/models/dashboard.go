@@ -20,6 +20,8 @@ type OPNsenseOverview struct {
 	Disk struct {
 		Mountpoint string `json:"mountpoint,omitempty"`
 		UsedPct    int    `json:"used_pct"`
+		Size       string `json:"size,omitempty"`
+		Used       string `json:"used,omitempty"`
 	} `json:"disk"`
 	Gateways struct {
 		Total   int `json:"total"`

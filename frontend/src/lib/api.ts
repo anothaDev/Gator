@@ -53,3 +53,26 @@ export async function apiDelete<T = Record<string, unknown>>(url: string): Promi
   const data = await res.json().catch(() => ({ error: `Non-JSON response (${res.status})` }) as T);
   return { ok: res.ok, data };
 }
+
+// Cached OPNsense host URL for external links.
+let _opnsenseHost: string | null = null;
+
+export async function getOpnsenseHost(): Promise<string> {
+  if (_opnsenseHost !== null) return _opnsenseHost;
+  try {
+    const { ok, data } = await apiGet<{ instances?: Array<{ host: string; active: boolean }> }>("/api/instances");
+    if (ok) {
+      const active = data.instances?.find((i) => i.active);
+      if (active) {
+        _opnsenseHost = active.host.replace(/\/$/, "");
+        return _opnsenseHost;
+      }
+    }
+  } catch {}
+  _opnsenseHost = "";
+  return "";
+}
+
+export function clearOpnsenseHostCache() {
+  _opnsenseHost = null;
+}

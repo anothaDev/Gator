@@ -20,8 +20,8 @@ export default function ConfirmModal(props: {
 }) {
   return (
     <Modal size="md">
-      <h2 class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]">{props.title}</h2>
-      <p class="mt-2 text-[var(--text-sm)] text-[var(--text-secondary)]">{props.description}</p>
+      <h2 class="text-lg font-semibold text-fg">{props.title}</h2>
+      <p class="mt-2 text-sm text-fg-secondary">{props.description}</p>
       <Show when={props.children}>
         <div class="mt-4">{props.children}</div>
       </Show>

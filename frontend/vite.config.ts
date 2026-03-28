@@ -11,8 +11,9 @@ export default defineConfig({
         target: "http://localhost:8080",
         changeOrigin: true,
         // SSE requires no response buffering and no timeout.
-        configure: (proxy) => {
-          proxy.on("proxyRes", (proxyRes) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        configure: (proxy: any) => {
+          proxy.on("proxyRes", (proxyRes: any) => {
             proxyRes.headers["cache-control"] = "no-cache";
             proxyRes.headers["x-accel-buffering"] = "no";
           });

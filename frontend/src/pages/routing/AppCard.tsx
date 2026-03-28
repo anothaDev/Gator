@@ -1,24 +1,6 @@
 import { Show, For } from "solid-js";
 import Badge from "../../components/Badge";
-
-// ─── Types ───────────────────────────────────────────────────────
-
-type PortRule = {
-  protocol: string;
-  ports: string;
-};
-
-type AppProfile = {
-  id: string;
-  name: string;
-  icon: string;
-  category: string;
-  rules: PortRule[];
-  asns?: number[];
-  url_table_hint?: { download_url: string; jq_filter: string; description: string; filename: string };
-  note?: string;
-  is_custom?: boolean;
-};
+import type { AppProfile } from "./types";
 
 // ─── App Card ────────────────────────────────────────────────────
 
@@ -32,26 +14,26 @@ function AppCard(props: {
   onDelete: () => void;
 }) {
   const protocolColors: Record<string, string> = {
-    tcp: "text-[var(--status-info)]",
-    udp: "text-[var(--status-warning)]",
-    both: "text-[var(--accent-primary)]",
+    tcp: "text-info",
+    udp: "text-warning",
+    both: "text-accent",
   };
 
   return (
     <div
       class={`group relative flex items-center gap-3 rounded-lg border px-4 py-3.5 transition-all ${
         props.enabled
-          ? "border-[var(--status-success)]/30 bg-[var(--success-subtle)]"
-          : "border-[var(--border-default)] bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)]"
+          ? "border-success/30 bg-success-subtle"
+          : "border-line bg-surface-tertiary hover:border-line-strong"
       }`}
     >
       <Show when={props.enabled}>
-        <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--status-success)] rounded-l-lg" />
+        <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-success rounded-l-lg" />
       </Show>
 
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
-          <span class="text-[14px] font-medium text-[var(--text-primary)] truncate">
+          <span class="text-[14px] font-medium text-fg truncate">
             {props.app.name}
           </span>
           <Show when={props.app.is_custom}>
@@ -65,21 +47,21 @@ function AppCard(props: {
         <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
           <For each={props.app.rules}>
             {(rule) => (
-              <span class="inline-flex items-center gap-1 rounded bg-[var(--bg-hover)] px-1.5 py-0.5 text-[10px] font-mono">
-                <span class={protocolColors[rule.protocol] || "text-[var(--text-tertiary)]"}>
+              <span class="inline-flex items-center gap-1 rounded bg-hover px-1.5 py-0.5 text-[10px] font-mono">
+                <span class={protocolColors[rule.protocol] || "text-fg-tertiary"}>
                   {rule.protocol.toUpperCase()}
                 </span>
-                <span class="text-[var(--text-secondary)]">{rule.ports}</span>
+                <span class="text-fg-secondary">{rule.ports}</span>
               </span>
             )}
           </For>
           <Show when={props.app.asns && props.app.asns.length > 0}>
-            <span class="inline-flex items-center gap-1 rounded bg-[var(--accent-primary)]/10 px-1.5 py-0.5 text-[10px] text-[var(--accent-primary)]">
+            <span class="inline-flex items-center gap-1 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">
               {props.app.asns!.length} ASN{props.app.asns!.length > 1 ? "s" : ""}
             </span>
           </Show>
           <Show when={props.app.url_table_hint}>
-            <span class="inline-flex items-center gap-1 rounded bg-[var(--status-info)]/10 px-1.5 py-0.5 text-[10px] text-[var(--status-info)]">
+            <span class="inline-flex items-center gap-1 rounded bg-info/10 px-1.5 py-0.5 text-[10px] text-info">
               IP ranges
             </span>
           </Show>
@@ -90,7 +72,7 @@ function AppCard(props: {
         <button
           type="button"
           onClick={props.onDelete}
-          class="shrink-0 rounded p-1.5 text-[var(--text-muted)] opacity-0 transition-all hover:bg-[var(--status-error)]/10 hover:text-[var(--status-error)] group-hover:opacity-100"
+          class="shrink-0 rounded p-1.5 text-fg-muted opacity-0 transition-all hover:bg-error/10 hover:text-error group-hover:opacity-100"
           title="Delete custom profile"
         >
           <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -106,8 +88,8 @@ function AppCard(props: {
         disabled={props.toggleDisabled}
         class={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-all duration-200 disabled:opacity-50 ${
           props.enabled 
-            ? "bg-[var(--status-success)] shadow-[0_0_10px_rgba(34,197,94,0.3)]" 
-            : "bg-[var(--bg-active)]"
+            ? "bg-success shadow-[0_0_10px_rgba(34,197,94,0.3)]" 
+            : "bg-active"
         }`}
       >
         <Show when={props.busy}>

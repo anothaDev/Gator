@@ -1,5 +1,6 @@
 import { createSignal, Show } from "solid-js";
 import type { ConnectionDetails } from "./ConnectionForm";
+import Spinner from "./Spinner";
 
 type TestResult = {
   success: boolean;
@@ -64,47 +65,47 @@ export default function ConnectionTest(props: Props) {
 
   return (
     <div class="space-y-6">
-      <p class="text-sm text-[var(--text-secondary)]">
+      <p class="text-sm text-fg-secondary">
         Test the connection to your{" "}
-        <span class="font-medium text-[var(--text-primary)]">
+        <span class="font-medium text-fg">
           {props.firewallType === "opnsense" ? "OPNsense" : "pfSense"}
         </span>{" "}
         instance to make sure everything is configured correctly.
       </p>
 
-      <div class="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] p-4">
-        <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+      <div class="rounded-lg border border-line-faint bg-surface-tertiary p-4">
+        <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
           Connection Summary
         </h4>
         <dl class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <dt class="text-[var(--text-tertiary)]">Type</dt>
-            <dd class="font-medium text-[var(--text-primary)]">
+            <dt class="text-fg-tertiary">Type</dt>
+            <dd class="font-medium text-fg">
               {props.firewallType === "opnsense" ? "OPNsense" : "pfSense"}
             </dd>
           </div>
           <div class="flex justify-between">
-            <dt class="text-[var(--text-tertiary)]">Host</dt>
-            <dd class="font-mono text-[var(--text-primary)]">{props.connection.host}</dd>
+            <dt class="text-fg-tertiary">Host</dt>
+            <dd class="font-mono text-fg">{props.connection.host}</dd>
           </div>
           {props.firewallType === "opnsense" ? (
             <div class="flex justify-between">
-              <dt class="text-[var(--text-tertiary)]">API Key</dt>
-              <dd class="font-mono text-[var(--text-primary)]">
+              <dt class="text-fg-tertiary">API Key</dt>
+              <dd class="font-mono text-fg">
                 {props.connection.apiKey.slice(0, 8)}...
               </dd>
             </div>
           ) : (
             <div class="flex justify-between">
-              <dt class="text-[var(--text-tertiary)]">API Token</dt>
-              <dd class="font-mono text-[var(--text-primary)]">
+              <dt class="text-fg-tertiary">API Token</dt>
+              <dd class="font-mono text-fg">
                 {props.connection.apiToken.slice(0, 8)}...
               </dd>
             </div>
           )}
           <div class="flex justify-between">
-            <dt class="text-[var(--text-tertiary)]">TLS Verification</dt>
-            <dd class="text-[var(--text-primary)]">
+            <dt class="text-fg-tertiary">TLS Verification</dt>
+            <dd class="text-fg">
               {props.connection.skipTls ? (
                 <span class="text-amber-400">Skipped</span>
               ) : (
@@ -119,28 +120,10 @@ export default function ConnectionTest(props: Props) {
         type="button"
         onClick={runTest}
         disabled={status() === "testing"}
-        class="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] px-5 py-3 text-sm font-medium text-[var(--text-primary)] transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+        class="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-elevated px-5 py-3 text-sm font-medium text-fg transition-colors hover:border-line-strong hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Show when={status() === "testing"}>
-          <svg
-            class="h-4 w-4 animate-spin"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            />
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
+          <Spinner />
         </Show>
         {status() === "testing" ? "Testing connection..." : "Test Connection"}
       </button>
@@ -150,19 +133,19 @@ export default function ConnectionTest(props: Props) {
           <div
             class={`rounded-lg border p-4 ${
               r().success
-                ? "border-[var(--status-success)]/30 bg-[var(--success-subtle)]"
-                : "border-[var(--status-error)]/30 bg-[var(--error-subtle)]"
+                ? "border-success/30 bg-success-subtle"
+                : "border-error/30 bg-error-subtle"
             }`}
           >
             <div class="flex items-start gap-3">
               <div
                 class={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${
-                  r().success ? "bg-[var(--status-success)]" : "bg-[var(--status-error)]"
+                  r().success ? "bg-success" : "bg-error"
                 }`}
               >
                 {r().success ? (
                   <svg
-                    class="h-3 w-3 text-[var(--bg-primary)]"
+                    class="h-3 w-3 text-surface"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -193,19 +176,19 @@ export default function ConnectionTest(props: Props) {
               <div>
                 <p
                   class={`text-sm font-medium ${
-                    r().success ? "text-[var(--status-success)]" : "text-[var(--status-error)]"
+                    r().success ? "text-success" : "text-error"
                   }`}
                 >
                   {r().success ? "Connection successful" : "Connection failed"}
                 </p>
-                <p class="mt-1 text-sm text-[var(--text-secondary)]">{r().message}</p>
+                <p class="mt-1 text-sm text-fg-secondary">{r().message}</p>
                 <Show when={r().version}>
-                  <p class="mt-1 text-xs text-[var(--text-tertiary)]">
+                  <p class="mt-1 text-xs text-fg-tertiary">
                     Version: {r().version}
                   </p>
                 </Show>
                 <Show when={r().hostname}>
-                  <p class="text-xs text-[var(--text-tertiary)]">
+                  <p class="text-xs text-fg-tertiary">
                     Hostname: {r().hostname}
                   </p>
                 </Show>
@@ -219,7 +202,7 @@ export default function ConnectionTest(props: Props) {
         <button
           type="button"
           onClick={props.onComplete}
-          class="w-full rounded-lg bg-[var(--accent-primary)] px-5 py-3 text-sm font-semibold text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-primary)]/20 transition-all hover:brightness-110 hover:shadow-[var(--accent-primary)]/30"
+          class="w-full rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30"
         >
           Save & Continue
         </button>

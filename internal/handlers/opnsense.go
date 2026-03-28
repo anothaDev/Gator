@@ -88,6 +88,43 @@ func (h *OPNsenseHandler) refreshFirmwareCache() {
 
 	_ = h.store.SetCache(ctx, "firmware_name", name)
 	_ = h.store.SetCache(ctx, "firmware_version", version)
+
+	// Cache update availability.
+	fwStatus := asString(firmware["status"])
+	switch fwStatus {
+	case "update", "upgrade":
+		latest := firmwareTargetVersion(firmware)
+		if latest == "" {
+			latest = "available"
+		}
+		_ = h.store.SetCache(ctx, "firmware_needs_update", latest)
+		_ = h.store.SetCache(ctx, "firmware_status_msg", asString(firmware["status_msg"]))
+	default:
+		_ = h.store.SetCache(ctx, "firmware_needs_update", "")
+		_ = h.store.SetCache(ctx, "firmware_status_msg", "")
+	}
+	reboot := asString(firmware["needs_reboot"])
+	if reboot == "" {
+		reboot = asString(firmware["upgrade_needs_reboot"])
+	}
+	_ = h.store.SetCache(ctx, "firmware_needs_reboot", reboot)
+}
+
+// FirmwareStatus returns cached firmware update availability (lightweight, no OPNsense call).
+func (h *OPNsenseHandler) FirmwareStatus(c *gin.Context) {
+	ctx := c.Request.Context()
+	needsUpdate, _ := h.store.GetCache(ctx, "firmware_needs_update")
+	version, _ := h.store.GetCache(ctx, "firmware_version")
+	statusMsg, _ := h.store.GetCache(ctx, "firmware_status_msg")
+	needsReboot, _ := h.store.GetCache(ctx, "firmware_needs_reboot")
+
+	c.JSON(http.StatusOK, gin.H{
+		"current_version": version,
+		"needs_update":    needsUpdate != "",
+		"latest_version":  needsUpdate,
+		"status_msg":      statusMsg,
+		"needs_reboot":    needsReboot == "1",
+	})
 }
 
 // Overview returns a single snapshot of the dashboard data.
@@ -195,6 +232,15 @@ func (h *OPNsenseHandler) buildOverview(ctx context.Context) models.OPNsenseOver
 	if version, _ := h.store.GetCache(ctx, "firmware_version"); version != "" {
 		overview.Version = version
 	}
+	if latest, _ := h.store.GetCache(ctx, "firmware_needs_update"); latest != "" {
+		if latest != "available" {
+			overview.Updates = "Update to " + latest + " is available"
+		} else if msg, _ := h.store.GetCache(ctx, "firmware_status_msg"); msg != "" {
+			overview.Updates = msg
+		} else {
+			overview.Updates = "Updates available"
+		}
+	}
 
 	// Fire remaining OPNsense API calls in parallel (no firmware — it's cached).
 	type apiResult struct {
@@ -289,14 +335,20 @@ func (h *OPNsenseHandler) buildOverview(ctx context.Context) models.OPNsenseOver
 			device := asMap(raw)
 			mount := asString(device["mountpoint"])
 			usedPct := parsePercent(device["used_pct"])
+			size := asString(device["size"])
+			used := asString(device["used"])
 			if mount == "/" {
 				overview.Disk.Mountpoint = mount
 				overview.Disk.UsedPct = usedPct
+				overview.Disk.Size = size
+				overview.Disk.Used = used
 				break
 			}
 			if overview.Disk.Mountpoint == "" {
 				overview.Disk.Mountpoint = mount
 				overview.Disk.UsedPct = usedPct
+				overview.Disk.Size = size
+				overview.Disk.Used = used
 			}
 		}
 	} else {
@@ -421,4 +473,44 @@ func parseInt(value any) int {
 
 func parsePercent(value any) int {
 	return parseInt(value)
+}
+
+// firmwareTargetVersion extracts the target OPNsense version from the firmware
+// status response. OPNsense nests the version info in upgrade_sets or all_sets
+// arrays rather than a simple top-level field.
+func firmwareTargetVersion(firmware map[string]any) string {
+	// Try upgrade_sets first (base system upgrades), then all_sets.
+	for _, key := range []string{"upgrade_sets", "all_sets"} {
+		if sets, ok := firmware[key].([]any); ok {
+			for _, item := range sets {
+				entry, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				name := strings.ToLower(asString(entry["name"]))
+				if strings.Contains(name, "opnsense") {
+					if v := asString(entry["new_version"]); v != "" {
+						return v
+					}
+				}
+			}
+		}
+		// all_sets may also be a map keyed by package name.
+		if sets, ok := firmware[key].(map[string]any); ok {
+			for name, item := range sets {
+				if !strings.Contains(strings.ToLower(name), "opnsense") {
+					continue
+				}
+				if entry, ok := item.(map[string]any); ok {
+					if v := asString(entry["new"]); v != "" {
+						return v
+					}
+					if v := asString(entry["new_version"]); v != "" {
+						return v
+					}
+				}
+			}
+		}
+	}
+	return ""
 }

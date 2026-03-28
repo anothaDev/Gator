@@ -53,17 +53,17 @@ const icons = {
 };
 
 const styles = {
-  success: "border-[var(--status-success)]/30 bg-[var(--status-success)]/[0.07] text-[var(--status-success)]",
-  error: "border-[var(--status-error)]/30 bg-[var(--status-error)]/[0.07] text-[var(--status-error)]",
-  warning: "border-[var(--status-warning)]/30 bg-[var(--status-warning)]/[0.07] text-[var(--status-warning)]",
-  info: "border-[var(--status-info)]/30 bg-[var(--status-info)]/[0.07] text-[var(--status-info)]",
+  success: "border-success/30 bg-success/[0.07] text-success",
+  error: "border-error/30 bg-error/[0.07] text-error",
+  warning: "border-warning/30 bg-warning/[0.07] text-warning",
+  info: "border-info/30 bg-info/[0.07] text-info",
 };
 
 const iconStyles = {
-  success: "bg-[var(--status-success)]/15 text-[var(--status-success)]",
-  error: "bg-[var(--status-error)]/15 text-[var(--status-error)]",
-  warning: "bg-[var(--status-warning)]/15 text-[var(--status-warning)]",
-  info: "bg-[var(--status-info)]/15 text-[var(--status-info)]",
+  success: "bg-success/15 text-success",
+  error: "bg-error/15 text-error",
+  warning: "bg-warning/15 text-warning",
+  info: "bg-info/15 text-info",
 };
 
 export default function ToastContainer() {
@@ -87,7 +87,7 @@ export default function ToastContainer() {
             <button
               type="button"
               onClick={() => dismissToast(t.id)}
-              class="shrink-0 p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all opacity-0 group-hover:opacity-100"
+              class="shrink-0 p-1 rounded-md text-fg-muted hover:text-fg hover:bg-hover transition-all opacity-0 group-hover:opacity-100"
             >
               <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />

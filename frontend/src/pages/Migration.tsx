@@ -2,6 +2,8 @@ import { createSignal, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
+import OpnsenseLink from "../components/OpnsenseLink";
+import Spinner from "../components/Spinner";
 
 type MigrationState = "loading" | "ready" | "downloading" | "uploading" | "applying" | "confirming" | "flushing" | "done" | "error";
 
@@ -164,49 +166,49 @@ export default function Migration() {
   return (
     <div class="space-y-6">
       {/* Header */}
-      <div>
-        <h1 class="text-[var(--text-2xl)] font-semibold tracking-tight text-[var(--text-primary)]">
-          Migration Assistant
-        </h1>
-        <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">
-          Migrate legacy OPNsense firewall rules to the new MVC/API system.
-        </p>
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+            Migration Assistant
+          </h1>
+          <p class="mt-1 text-sm text-fg-tertiary">
+            Migrate legacy OPNsense firewall rules to the new MVC/API system.
+          </p>
+        </div>
+        <OpnsenseLink path="/ui/firewall/migration" label="Migration" />
       </div>
 
       {/* Status card */}
       <Card variant="elevated">
-        <h2 class="text-[var(--text-sm)] font-semibold text-[var(--text-primary)]">Current Status</h2>
+        <h2 class="text-sm font-semibold text-fg">Current Status</h2>
 
         <Show when={state() === "loading"}>
-          <div class="mt-3 flex items-center gap-3 text-[var(--text-sm)] text-[var(--text-tertiary)]">
-            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
+          <div class="mt-3 flex items-center gap-3 text-sm text-fg-tertiary">
+            <Spinner />
             Checking rule status...
           </div>
         </Show>
 
         <Show when={state() !== "loading"}>
           <div class="mt-3 grid grid-cols-2 gap-4">
-            <div class="rounded-lg border border-[var(--border-strong)] bg-[var(--bg-tertiary)] p-3">
-              <p class="text-2xl font-bold text-[var(--status-warning)]">{legacyCount()}</p>
-              <p class="text-[var(--text-xs)] text-[var(--text-tertiary)]">Legacy rules</p>
+            <div class="rounded-lg border border-line-strong bg-surface-tertiary p-3">
+              <p class="text-2xl font-bold text-warning">{legacyCount()}</p>
+              <p class="text-xs text-fg-tertiary">Legacy rules</p>
             </div>
-            <div class="rounded-lg border border-[var(--border-strong)] bg-[var(--bg-tertiary)] p-3">
-              <p class="text-2xl font-bold text-[var(--status-success)]">{mvcCount()}</p>
-              <p class="text-[var(--text-xs)] text-[var(--text-tertiary)]">MVC rules (API-visible)</p>
+            <div class="rounded-lg border border-line-strong bg-surface-tertiary p-3">
+              <p class="text-2xl font-bold text-success">{mvcCount()}</p>
+              <p class="text-xs text-fg-tertiary">MVC rules (API-visible)</p>
             </div>
           </div>
 
           <Show when={!legacyAvailable() && state() === "ready"}>
-            <div class="mt-3 rounded-lg border border-[var(--status-success)]/30 bg-[var(--success-subtle)] px-3 py-2 text-[var(--text-sm)] text-[var(--status-success)]">
+            <div class="mt-3 rounded-lg border border-success/30 bg-success-subtle px-3 py-2 text-sm text-success">
               No legacy rules found. Your firewall is already using the new MVC system.
             </div>
           </Show>
 
           <Show when={legacyAvailable() && legacyCount() === 0 && state() === "ready"}>
-            <div class="mt-3 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-hover)] px-3 py-2 text-[var(--text-sm)] text-[var(--text-secondary)]">
+            <div class="mt-3 rounded-lg border border-line-strong bg-hover px-3 py-2 text-sm text-fg-secondary">
               Legacy rule system exists but contains no rules. You can flush it to clean up.
             </div>
           </Show>
@@ -215,15 +217,15 @@ export default function Migration() {
 
       {/* Error */}
       <Show when={error()}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-error)]">
+        <Card variant="elevated" class="border-l-4 border-l-error">
           <div class="flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3 text-[var(--status-error)]">
+            <div class="flex items-center gap-3 text-error">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <span class="text-[var(--text-sm)]">{error()}</span>
+              <span class="text-sm">{error()}</span>
             </div>
             <Show when={state() === "error"}>
               <Button variant="secondary" size="sm" onClick={() => { setError(""); void loadStatus(); }}>
@@ -236,15 +238,15 @@ export default function Migration() {
 
       {/* Confirming state — countdown */}
       <Show when={state() === "confirming"}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-warning)]">
+        <Card variant="elevated" class="border-l-4 border-l-warning">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p class="text-[var(--text-sm)] font-semibold text-[var(--status-warning)]">Verify your connection</p>
-              <p class="mt-1 text-[var(--text-xs)] text-[var(--text-secondary)]">
+              <p class="text-sm font-semibold text-warning">Verify your connection</p>
+              <p class="mt-1 text-xs text-fg-secondary">
                 Rules applied with savepoint. OPNsense will auto-rollback in{" "}
-                <span class="font-mono font-bold text-[var(--text-primary)]">{countdown()}s</span> if you don't confirm.
+                <span class="font-mono font-bold text-fg">{countdown()}s</span> if you don't confirm.
               </p>
-              <p class="mt-1 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+              <p class="mt-1 text-xs text-fg-tertiary">
                 Check that you can still access OPNsense and your network works correctly before confirming.
               </p>
             </div>
@@ -253,9 +255,9 @@ export default function Migration() {
             </Button>
           </div>
           {/* Countdown bar */}
-          <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--bg-active)]">
+          <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-active">
             <div
-              class="h-full rounded-full bg-[var(--status-warning)] transition-all duration-1000"
+              class="h-full rounded-full bg-warning transition-all duration-1000"
               style={{ width: `${(countdown() / 60) * 100}%` }}
             />
           </div>
@@ -265,8 +267,8 @@ export default function Migration() {
       {/* Steps */}
       <Show when={legacyAvailable() && state() !== "loading"}>
         <Card variant="elevated">
-          <h2 class="text-[var(--text-sm)] font-semibold text-[var(--text-primary)]">Migration Steps</h2>
-          <p class="mt-1 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+          <h2 class="text-sm font-semibold text-fg">Migration Steps</h2>
+          <p class="mt-1 text-xs text-fg-tertiary">
             Run each step in order. A config backup is recommended before starting.
           </p>
 
@@ -329,13 +331,13 @@ export default function Migration() {
 
       {/* Done */}
       <Show when={state() === "done"}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-success)]">
-          <div class="flex items-center gap-3 text-[var(--status-success)]">
+        <Card variant="elevated" class="border-l-4 border-l-success">
+          <div class="flex items-center gap-3 text-success">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            <span class="text-[var(--text-sm)]">Migration complete. All rules are now managed through the MVC/API system and visible to Gator.</span>
+            <span class="text-sm">Migration complete. All rules are now managed through the MVC/API system and visible to Gator.</span>
           </div>
         </Card>
       </Show>
@@ -343,11 +345,11 @@ export default function Migration() {
       {/* Log */}
       <Show when={stepsDone().length > 0}>
         <Card>
-          <h2 class="text-[var(--text-sm)] font-semibold text-[var(--text-primary)]">Log</h2>
+          <h2 class="text-sm font-semibold text-fg">Log</h2>
           <div class="mt-2 space-y-1">
             {stepsDone().map((step, i) => (
-              <p class="text-[var(--text-xs)] text-[var(--text-tertiary)]">
-                <span class="font-mono text-[var(--text-muted)]">{String(i + 1).padStart(2, " ")}.</span>{" "}
+              <p class="text-xs text-fg-tertiary">
+                <span class="font-mono text-fg-muted">{String(i + 1).padStart(2, " ")}.</span>{" "}
                 {step}
               </p>
             ))}
@@ -375,16 +377,16 @@ function StepCard(props: {
       class={[
         "flex items-center gap-4 rounded-lg border px-4 py-3",
         props.done
-          ? "border-[var(--status-success)]/20 bg-[var(--success-subtle)]"
-          : "border-[var(--border-strong)] bg-[var(--bg-tertiary)]",
+          ? "border-success/20 bg-success-subtle"
+          : "border-line-strong bg-surface-tertiary",
       ].join(" ")}
     >
       <div
         class={[
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-xs)] font-bold",
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
           props.done
-            ? "bg-[var(--status-success)] text-[var(--bg-primary)]"
-            : "bg-[var(--bg-active)] text-[var(--text-secondary)]",
+            ? "bg-success text-surface"
+            : "bg-active text-fg-secondary",
         ].join(" ")}
       >
         {props.done ? (
@@ -397,10 +399,10 @@ function StepCard(props: {
       </div>
 
       <div class="min-w-0 flex-1">
-        <p class={["text-[var(--text-sm)] font-medium", props.done ? "text-[var(--status-success)]" : "text-[var(--text-primary)]"].join(" ")}>
+        <p class={["text-sm font-medium", props.done ? "text-success" : "text-fg"].join(" ")}>
           {props.title}
         </p>
-        <p class="text-[var(--text-xs)] text-[var(--text-tertiary)]">
+        <p class="text-xs text-fg-tertiary">
           {props.done ? props.doneLabel : props.description}
         </p>
       </div>

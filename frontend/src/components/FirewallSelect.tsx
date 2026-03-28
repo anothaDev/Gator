@@ -16,15 +16,15 @@ function FirewallCard(props: {
       onClick={props.onSelect}
       class={`group relative flex flex-col items-center gap-4 rounded-xl border-2 px-8 py-10 text-center transition-all duration-200 ${
         props.selected
-          ? "border-[var(--status-success)] bg-[var(--success-subtle)] shadow-[0_0_24px_rgba(0,255,157,0.08)]"
-          : "border-[var(--border-default)] bg-[var(--bg-tertiary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)]"
+          ? "border-success bg-success-subtle shadow-[0_0_24px_rgba(0,255,157,0.08)]"
+          : "border-line bg-surface-tertiary hover:border-line-strong hover:bg-hover"
       }`}
     >
       <div
         class={`flex h-16 w-16 items-center justify-center rounded-xl transition-colors ${
           props.selected
-            ? "bg-[var(--success-subtle)] text-[var(--status-success)]"
-            : "bg-[var(--bg-elevated)] text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]"
+            ? "bg-success-subtle text-success"
+            : "bg-elevated text-fg-tertiary group-hover:text-fg-secondary"
         }`}
       >
         {props.id === "opnsense" ? (
@@ -41,24 +41,24 @@ function FirewallCard(props: {
       <div>
         <h3
           class={`text-lg font-semibold ${
-            props.selected ? "text-[var(--status-success)]" : "text-[var(--text-primary)]"
+            props.selected ? "text-success" : "text-fg"
           }`}
         >
           {props.name}
         </h3>
-        <p class="mt-1.5 text-sm text-[var(--text-tertiary)]">{props.description}</p>
+        <p class="mt-1.5 text-sm text-fg-tertiary">{props.description}</p>
       </div>
 
       <div
         class={`absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all ${
           props.selected
-            ? "border-[var(--status-success)] bg-[var(--status-success)]"
-            : "border-[var(--border-default)]"
+            ? "border-success bg-success"
+            : "border-line"
         }`}
       >
         {props.selected && (
           <svg
-            class="h-3 w-3 text-[var(--bg-primary)]"
+            class="h-3 w-3 text-surface"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

@@ -9,12 +9,12 @@ interface BadgeProps {
 
 export default function Badge(props: BadgeProps) {
   const variantStyles = {
-    default: "bg-[var(--accent-primary-subtle)] text-[var(--accent-primary)]",
-    success: "bg-[var(--success-subtle)] text-[var(--status-success)]",
-    warning: "bg-[var(--warning-subtle)] text-[var(--status-warning)]",
-    error: "bg-[var(--error-subtle)] text-[var(--status-error)]",
-    info: "bg-[var(--info-subtle)] text-[var(--status-info)]",
-    muted: "bg-[var(--bg-active)] text-[var(--text-tertiary)]",
+    default: "bg-accent-subtle text-accent",
+    success: "bg-success-subtle text-success",
+    warning: "bg-warning-subtle text-warning",
+    error: "bg-error-subtle text-error",
+    info: "bg-info-subtle text-info",
+    muted: "bg-active text-fg-tertiary",
   };
 
   const sizeStyles = {
@@ -25,7 +25,7 @@ export default function Badge(props: BadgeProps) {
   return (
     <span
       class={[
-        "inline-flex items-center gap-1 rounded-[var(--radius-sm)] font-medium",
+        "inline-flex items-center gap-1 rounded-sm font-medium",
         variantStyles[props.variant ?? "default"],
         sizeStyles[props.size ?? "md"],
         props.class ?? "",

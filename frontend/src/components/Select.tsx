@@ -35,7 +35,7 @@ export default function Select(props: SelectProps) {
   return (
     <div class={["w-full", props.class ?? ""].join(" ")} ref={ref}>
       {props.label && (
-        <label class="mb-1.5 block text-[var(--text-sm)] font-medium text-[var(--text-secondary)]">
+        <label class="mb-1.5 block text-sm font-medium text-fg-secondary">
           {props.label}
         </label>
       )}
@@ -45,20 +45,20 @@ export default function Select(props: SelectProps) {
           disabled={props.disabled}
           onClick={() => setOpen((v) => !v)}
           class={[
-            "flex w-full items-center justify-between rounded-[var(--radius-lg)] border bg-[var(--bg-secondary)] px-3 py-2 text-left",
-            "text-[var(--text-sm)] text-[var(--text-primary)]",
-            "transition-all duration-[var(--transition-base)]",
+            "flex w-full items-center justify-between rounded-lg border bg-surface-secondary px-3 py-2 text-left",
+            "text-sm text-fg",
+            "transition-all duration-base",
             open()
-              ? "border-[var(--accent-primary)] ring-2 ring-[var(--accent-primary)]/50"
-              : "border-[var(--border-default)] hover:border-[var(--border-strong)]",
+              ? "border-accent ring-2 ring-accent/50"
+              : "border-line hover:border-line-strong",
             props.disabled ? "cursor-not-allowed opacity-60" : "",
           ].join(" ")}
         >
-          <span class={props.value ? "" : "text-[var(--text-muted)]"}>
+          <span class={props.value ? "" : "text-fg-muted"}>
             {selectedLabel()}
           </span>
           <svg
-            class={["h-4 w-4 shrink-0 text-[var(--text-tertiary)] transition-transform", open() ? "rotate-180" : ""].join(" ")}
+            class={["h-4 w-4 shrink-0 text-fg-tertiary transition-transform", open() ? "rotate-180" : ""].join(" ")}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -68,7 +68,7 @@ export default function Select(props: SelectProps) {
           </svg>
         </button>
         <Show when={open()}>
-          <div class="absolute left-0 top-full z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] py-1 shadow-xl shadow-black/40">
+          <div class="absolute left-0 top-full z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-line bg-elevated py-1 shadow-xl shadow-black/40">
             <For each={props.options}>
               {(option) => (
                 <button
@@ -78,10 +78,10 @@ export default function Select(props: SelectProps) {
                     setOpen(false);
                   }}
                   class={[
-                    "flex w-full items-center px-3 py-2 text-left text-[var(--text-sm)] transition-colors",
+                    "flex w-full items-center px-3 py-2 text-left text-sm transition-colors",
                     option.value === props.value
-                      ? "bg-[var(--accent-primary)]/10 font-medium text-[var(--accent-primary)]"
-                      : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
+                      ? "bg-accent/10 font-medium text-accent"
+                      : "text-fg hover:bg-hover",
                   ].join(" ")}
                 >
                   {option.label}

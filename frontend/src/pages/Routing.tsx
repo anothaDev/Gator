@@ -6,40 +6,10 @@ import AppCard from "./routing/AppCard";
 import RoutingToolbar from "./routing/RoutingToolbar";
 import EmptyState from "../components/EmptyState";
 import Card from "../components/Card";
-import Button from "../components/Button";
+import OpnsenseLink from "../components/OpnsenseLink";
 import Select from "../components/Select";
-
-type PortRule = {
-  protocol: string;
-  ports: string;
-};
-
-type URLTableHint = {
-  download_url: string;
-  jq_filter: string;
-  description: string;
-  filename: string;
-};
-
-type AppProfile = {
-  id: string;
-  name: string;
-  icon: string;
-  category: string;
-  rules: PortRule[];
-  asns?: number[];
-  url_table_hint?: URLTableHint;
-  note?: string;
-  is_custom?: boolean;
-};
-
-type AppPreset = {
-  id: string;
-  name: string;
-  description: string;
-  vpn_on?: string[];
-  vpn_off?: string[];
-};
+import Spinner from "../components/Spinner";
+import type { AppProfile, AppPreset, URLTableHint } from "./routing/types";
 
 type AppRouteStatus = {
   app_id: string;
@@ -416,7 +386,7 @@ export default function Routing() {
       // Enable everything NOT in vpn_off.
       enableIds = [
         ...enableIds,
-        ...allIds.filter((id) => !preset.vpn_off.includes(id) && !enabled.has(id)),
+        ...allIds.filter((id) => !preset.vpn_off!.includes(id) && !enabled.has(id)),
       ];
     }
     // Privacy mode: enable everything.
@@ -487,15 +457,18 @@ export default function Routing() {
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div>
-        <h1 class="text-[24px] font-semibold tracking-tight text-[var(--text-primary)]">Routing</h1>
-        <p class="mt-1 text-[14px] text-[var(--text-tertiary)]">
-          Route specific apps and protocols through your VPN
-        </p>
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-[24px] font-semibold tracking-tight text-fg">Routing</h1>
+          <p class="mt-1 text-[14px] text-fg-tertiary">
+            Route specific apps and protocols through your VPN
+          </p>
+        </div>
+        <OpnsenseLink path="/ui/routes/gateway" label="Gateways" />
       </div>
 
       {/* Controls Card */}
-      <div class="rounded-xl border border-[var(--border-default)] bg-[var(--bg-tertiary)] p-4">
+      <div class="rounded-xl border border-line bg-surface-tertiary p-4">
         <div class="flex flex-wrap items-center gap-4">
 
         {/* VPN selector */}
@@ -525,7 +498,7 @@ export default function Routing() {
             />
           </div>
           <Show when={routingMode() !== "all"}>
-            <p class="mt-3 text-[12px] text-[var(--text-tertiary)]">
+            <p class="mt-3 text-[12px] text-fg-tertiary">
               {routingMode() === "selective"
                 ? "Only toggled apps route through VPN. All other traffic uses the default gateway."
                 : "All traffic routes through VPN. Toggled apps bypass it and use the default gateway."}
@@ -547,13 +520,13 @@ export default function Routing() {
 
       {/* Pending confirmation banner */}
       <Show when={pendingRevision()}>
-        <div class="rounded-xl border border-[var(--status-warning)]/40 bg-[var(--warning-subtle)] px-5 py-4">
+        <div class="rounded-xl border border-warning/40 bg-warning-subtle px-5 py-4">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <p class="text-[14px] font-semibold text-[var(--status-warning)]">
+              <p class="text-[14px] font-semibold text-warning">
                 Firewall changes pending — auto-reverts in {countdown()}s
               </p>
-              <p class="mt-1 text-[12px] text-[var(--status-warning)]/70">
+              <p class="mt-1 text-[12px] text-warning/70">
                 Verify your connectivity is still working, then confirm or revert.
               </p>
             </div>
@@ -561,22 +534,22 @@ export default function Routing() {
               <button
                 type="button"
                 onClick={() => void confirmChanges()}
-                class="rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-[13px] font-semibold text-[var(--bg-primary)] transition-all hover:brightness-110"
+                class="rounded-lg bg-accent px-4 py-2 text-[13px] font-semibold text-surface transition-all hover:brightness-110"
               >
                 Confirm
               </button>
               <button
                 type="button"
                 onClick={() => void revertChanges()}
-                class="rounded-lg border border-[var(--status-error)]/30 bg-[var(--error-subtle)] px-4 py-2 text-[13px] font-semibold text-[var(--status-error)] transition-all hover:bg-[var(--status-error)]/20"
+                class="rounded-lg border border-error/30 bg-error-subtle px-4 py-2 text-[13px] font-semibold text-error transition-all hover:bg-error/20"
               >
                 Revert
               </button>
             </div>
           </div>
-          <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--status-warning)]/20">
+          <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-warning/20">
             <div
-              class="h-full rounded-full bg-[var(--status-warning)] transition-all duration-1000 ease-linear"
+              class="h-full rounded-full bg-warning transition-all duration-1000 ease-linear"
               style={{ width: `${(countdown() / 60) * 100}%` }}
             />
           </div>
@@ -585,12 +558,12 @@ export default function Routing() {
 
       {/* Messages */}
       <Show when={!pendingRevision() && actionMsg()}>
-        <div class="rounded-lg border border-[var(--status-success)]/30 bg-[var(--success-subtle)] px-4 py-3 text-[14px] text-[var(--status-success)]">
+        <div class="rounded-lg border border-success/30 bg-success-subtle px-4 py-3 text-[14px] text-success">
           {actionMsg()}
         </div>
       </Show>
       <Show when={actionErr()}>
-        <div class="rounded-lg border border-[var(--status-error)]/30 bg-[var(--error-subtle)] px-4 py-3 text-[14px] text-[var(--status-error)]">
+        <div class="rounded-lg border border-error/30 bg-error-subtle px-4 py-3 text-[14px] text-error">
           {actionErr()}
         </div>
       </Show>
@@ -615,11 +588,8 @@ export default function Routing() {
 
         {/* Loading state */}
         <Show when={routesLoading()}>
-          <div class="flex items-center justify-center gap-3 py-8 text-[var(--text-tertiary)]">
-            <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+          <div class="flex items-center justify-center gap-3 py-8 text-fg-tertiary">
+            <Spinner size="md" />
             <span class="text-[14px]">Loading app routes...</span>
           </div>
         </Show>
@@ -627,15 +597,15 @@ export default function Routing() {
         {/* App grid by category */}
         <Show when={!routesLoading()}>
           <Show when={filteredApps().length === 0}>
-            <div class="rounded-xl border border-[var(--border-default)] bg-[var(--bg-tertiary)] p-8 text-center">
-              <p class="text-[14px] text-[var(--text-tertiary)]">No apps match your search</p>
+            <div class="rounded-xl border border-line bg-surface-tertiary p-8 text-center">
+              <p class="text-[14px] text-fg-tertiary">No apps match your search</p>
             </div>
           </Show>
 
           <For each={groupByCategory(filteredApps())}>
             {(group) => (
               <div class="space-y-4">
-                <p class="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                <p class="text-[12px] font-semibold uppercase tracking-[0.08em] text-fg-muted">
                   {group.label}
                 </p>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">

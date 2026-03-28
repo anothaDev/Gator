@@ -3,18 +3,15 @@ import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import IconButton from "../components/IconButton";
+import OpnsenseLink from "../components/OpnsenseLink";
+import Spinner from "../components/Spinner";
+import { formatBytes } from "../lib/format";
 
 type Backup = {
   filename: string;
   size: number;
   created: string;
 };
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function formatDate(iso: string): string {
   try {
@@ -103,17 +100,18 @@ export default function Backups() {
       {/* Header */}
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-[var(--text-2xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 class="text-2xl font-semibold tracking-tight text-fg">
             Backups
           </h1>
-          <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+          <p class="mt-1 text-sm text-fg-tertiary">
             OPNsense configuration snapshots.
             {backups().length > 0 && (
-              <span class="ml-2 text-[var(--text-secondary)]">{backups().length} stored</span>
+              <span class="ml-2 text-fg-secondary">{backups().length} stored</span>
             )}
           </p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex items-center gap-2">
+          <OpnsenseLink path="/ui/core/backup" label="Backups" />
           <Button variant="secondary" size="md" onClick={() => void loadBackups()} loading={loading()}>
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
@@ -133,14 +131,14 @@ export default function Backups() {
 
       {/* Error */}
       <Show when={createError()}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-error)]">
-          <div class="flex items-center gap-3 text-[var(--status-error)]">
+        <Card variant="elevated" class="border-l-4 border-l-error">
+          <div class="flex items-center gap-3 text-error">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-[var(--text-sm)]">{createError()}</span>
+            <span class="text-sm">{createError()}</span>
           </div>
         </Card>
       </Show>
@@ -148,26 +146,23 @@ export default function Backups() {
       {/* Loading */}
       <Show when={loading()}>
         <Card class="py-12">
-          <div class="flex items-center justify-center gap-3 text-[var(--text-tertiary)]">
-            <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <span class="text-[var(--text-sm)]">Loading backups...</span>
+          <div class="flex items-center justify-center gap-3 text-fg-tertiary">
+            <Spinner size="md" />
+            <span class="text-sm">Loading backups...</span>
           </div>
         </Card>
       </Show>
 
       {/* Error state */}
       <Show when={loadError()}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-error)]">
-          <div class="flex items-center gap-3 text-[var(--status-error)]">
+        <Card variant="elevated" class="border-l-4 border-l-error">
+          <div class="flex items-center gap-3 text-error">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-[var(--text-sm)]">{loadError()}</span>
+            <span class="text-sm">{loadError()}</span>
           </div>
         </Card>
       </Show>
@@ -176,13 +171,13 @@ export default function Backups() {
       <Show when={!loading() && !loadError()}>
         <Show when={backups().length === 0}>
           <Card class="py-12 text-center">
-            <svg class="mx-auto h-12 w-12 text-[var(--text-muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg class="mx-auto h-12 w-12 text-fg-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7,10 12,15 17,10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            <p class="mt-3 text-[var(--text-sm)] text-[var(--text-secondary)]">No backups stored yet</p>
-            <p class="mt-1 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+            <p class="mt-3 text-sm text-fg-secondary">No backups stored yet</p>
+            <p class="mt-1 text-xs text-fg-tertiary">
               Create a backup before making changes to OPNsense.
             </p>
           </Card>
@@ -193,17 +188,17 @@ export default function Backups() {
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-[var(--border-strong)]">
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                  <tr class="border-b border-line-strong">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Filename
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Size
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Created
                     </th>
-                    <th class="px-4 py-3 text-right text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Actions
                     </th>
                   </tr>
@@ -211,12 +206,12 @@ export default function Backups() {
                 <tbody>
                   <For each={backups()}>
                     {(backup) => (
-                      <tr class="border-b border-[var(--border-subtle)] transition-colors duration-[var(--transition-fast)] hover:bg-[var(--bg-hover)]">
+                      <tr class="border-b border-line-faint transition-colors duration-fast hover:bg-hover">
                         <td class="px-4 py-3">
-                          <span class="font-mono text-[var(--text-xs)] text-[var(--text-primary)]">{backup.filename}</span>
+                          <span class="font-mono text-xs text-fg">{backup.filename}</span>
                         </td>
-                        <td class="px-4 py-3 text-[var(--text-xs)] text-[var(--text-tertiary)]">{formatBytes(backup.size)}</td>
-                        <td class="px-4 py-3 text-[var(--text-xs)] text-[var(--text-tertiary)]">{formatDate(backup.created)}</td>
+                        <td class="px-4 py-3 text-xs text-fg-tertiary">{formatBytes(backup.size)}</td>
+                        <td class="px-4 py-3 text-xs text-fg-tertiary">{formatDate(backup.created)}</td>
                         <td class="px-4 py-3">
                           <div class="flex items-center justify-end gap-2">
                             <Button
@@ -241,16 +236,13 @@ export default function Backups() {
                               <Show
                                 when={deleting() === backup.filename}
                                 fallback={
-                                  <svg class="h-4 w-4 text-[var(--status-error)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <svg class="h-4 w-4 text-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3 6 5 6 21 6" />
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                   </svg>
                                 }
                               >
-                                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
+                                <Spinner />
                               </Show>
                             </IconButton>
                           </div>

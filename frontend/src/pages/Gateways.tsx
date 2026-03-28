@@ -3,8 +3,10 @@ import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import IconButton from "../components/IconButton";
+import OpnsenseLink from "../components/OpnsenseLink";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
 import { apiDelete, apiGet } from "../lib/api";
+import Spinner from "../components/Spinner";
 
 type Gateway = {
   uuid: string;
@@ -96,10 +98,10 @@ export default function Gateways() {
       {/* Header */}
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-[var(--text-2xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 class="text-2xl font-semibold tracking-tight text-fg">
             Gateways
           </h1>
-          <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+          <p class="mt-1 text-sm text-fg-tertiary">
             Network gateways. VPN routing creates gateways automatically.
           </p>
         </div>
@@ -109,30 +111,31 @@ export default function Gateways() {
           </svg>
           Refresh
         </Button>
+        <OpnsenseLink path="/ui/routes/gateway" label="Gateways" />
       </div>
 
       {/* Action messages */}
       <Show when={actionMsg() !== ""}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-success)]">
-          <div class="flex items-center gap-3 text-[var(--status-success)]">
+        <Card variant="elevated" class="border-l-4 border-l-success">
+          <div class="flex items-center gap-3 text-success">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            <span class="text-[var(--text-sm)]">{actionMsg()}</span>
+            <span class="text-sm">{actionMsg()}</span>
           </div>
         </Card>
       </Show>
 
       <Show when={actionErr() !== ""}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-error)]">
-          <div class="flex items-center gap-3 text-[var(--status-error)]">
+        <Card variant="elevated" class="border-l-4 border-l-error">
+          <div class="flex items-center gap-3 text-error">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-[var(--text-sm)]">{actionErr()}</span>
+            <span class="text-sm">{actionErr()}</span>
           </div>
         </Card>
       </Show>
@@ -151,7 +154,7 @@ export default function Gateways() {
       <Show when={!loading() && loadError() === ""}>
         <Show when={gateways().length === 0}>
           <EmptyStateCard message="No gateways found">
-            <svg class="mx-auto h-12 w-12 text-[var(--text-muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg class="mx-auto h-12 w-12 text-fg-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
@@ -163,26 +166,26 @@ export default function Gateways() {
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-[var(--border-strong)]">
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                  <tr class="border-b border-line-strong">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Name
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Interface
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Gateway
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Protocol
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Status
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Default
                     </th>
-                    <th class="px-4 py-3 text-right text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Actions
                     </th>
                   </tr>
@@ -190,24 +193,24 @@ export default function Gateways() {
                 <tbody>
                   <For each={gateways()}>
                     {(gw) => (
-                      <tr class="border-b border-[var(--border-subtle)] transition-colors duration-[var(--transition-fast)] hover:bg-[var(--bg-hover)]">
+                      <tr class="border-b border-line-faint transition-colors duration-fast hover:bg-hover">
                         <td class="px-4 py-3">
                           <div>
-                            <span class="font-medium text-[var(--text-primary)]">{gw.name}</span>
+                            <span class="font-medium text-fg">{gw.name}</span>
                             <Show when={gw.descr}>
-                              <p class="text-[var(--text-xs)] text-[var(--text-muted)]">{gw.descr}</p>
+                              <p class="text-xs text-fg-muted">{gw.descr}</p>
                             </Show>
                           </div>
                         </td>
-                        <td class="px-4 py-3 text-[var(--text-sm)] text-[var(--text-secondary)]">{gw.interface}</td>
-                        <td class="px-4 py-3 font-mono text-[var(--text-sm)] text-[var(--text-secondary)]">{gw.gateway || "-"}</td>
-                        <td class="px-4 py-3 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+                        <td class="px-4 py-3 text-sm text-fg-secondary">{gw.interface}</td>
+                        <td class="px-4 py-3 font-mono text-sm text-fg-secondary">{gw.gateway || "-"}</td>
+                        <td class="px-4 py-3 text-sm text-fg-tertiary">
                           {gw.ipprotocol === "inet" ? "IPv4" : gw.ipprotocol === "inet6" ? "IPv6" : gw.ipprotocol}
                         </td>
                         <td class="px-4 py-3">{getStatusBadge(gw.status)}</td>
-                        <td class="px-4 py-3 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+                        <td class="px-4 py-3 text-sm text-fg-tertiary">
                           {gw.defaultgw === "1" ? (
-                            <span class="text-[var(--status-success)]">Yes</span>
+                            <span class="text-success">Yes</span>
                           ) : (
                             "-"
                           )}
@@ -223,16 +226,13 @@ export default function Gateways() {
                             <Show
                               when={deleting() === gw.uuid}
                               fallback={
-                                <svg class="h-4 w-4 text-[var(--status-error)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg class="h-4 w-4 text-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                   <polyline points="3 6 5 6 21 6" />
                                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                 </svg>
                               }
                             >
-                              <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                              </svg>
+                              <Spinner />
                             </Show>
                           </IconButton>
                         </td>

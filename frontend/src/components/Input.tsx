@@ -22,7 +22,7 @@ export default function Input(props: InputProps) {
   return (
     <div class={["w-full", props.class ?? ""].join(" ")}>
       {props.label && (
-        <label class="mb-1.5 block text-[var(--text-sm)] font-medium text-[var(--text-secondary)]">
+        <label class="mb-1.5 block text-sm font-medium text-fg-secondary">
           {props.label}
         </label>
       )}
@@ -34,25 +34,25 @@ export default function Input(props: InputProps) {
         disabled={props.disabled}
         readOnly={props.readOnly}
         class={[
-          "w-full rounded-[var(--radius-lg)] border bg-[var(--bg-secondary)] px-3 py-2",
-          "font-mono text-[var(--text-base)] text-[var(--text-primary)]",
-          "placeholder:text-[var(--text-muted)]",
-          "transition-all duration-[var(--transition-base)]",
-          "focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/50 focus:border-[var(--accent-primary)]",
+          "w-full rounded-lg border bg-surface-secondary px-3 py-2",
+          "font-mono text-base text-fg",
+          "placeholder:text-fg-muted",
+          "transition-all duration-base",
+          "focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent",
           props.error
-            ? "border-[var(--status-error)] focus:border-[var(--status-error)] focus:ring-[var(--status-error)]/30"
-            : "border-[var(--border-default)] hover:border-[var(--border-strong)]",
+            ? "border-error focus:border-error focus:ring-error/30"
+            : "border-line hover:border-line-strong",
           props.disabled && "cursor-not-allowed opacity-60",
-          props.readOnly && "cursor-default bg-[var(--bg-tertiary)]",
+          props.readOnly && "cursor-default bg-surface-tertiary",
         ].join(" ")}
       />
       {props.error && (
-        <p class="mt-1.5 text-[var(--text-xs)] text-[var(--status-error)]">
+        <p class="mt-1.5 text-xs text-error">
           {props.error}
         </p>
       )}
       {props.hint && !props.error && (
-        <p class="mt-1.5 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+        <p class="mt-1.5 text-xs text-fg-tertiary">
           {props.hint}
         </p>
       )}

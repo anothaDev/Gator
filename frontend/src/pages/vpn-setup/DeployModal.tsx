@@ -5,6 +5,7 @@ import Button from "../../components/Button";
 import AlertBanner from "../../components/AlertBanner";
 import Badge from "../../components/Badge";
 import Card from "../../components/Card";
+import Spinner from "../../components/Spinner";
 
 type SelectableInterface = {
   identifier: string;
@@ -52,6 +53,12 @@ export default function DeployModal(props: {
 
   // Auto-adopted rules info (filled by apply-policy-rule step).
   type AdoptedRule = { uuid: string; description: string; source: string; destination: string; protocol: string };
+  type DeployStepResponse = {
+    error?: string;
+    gateway_name?: string;
+    filter_uuid?: string;
+    adopted_rules?: AdoptedRule[];
+  };
   const [adoptedRules, setAdoptedRules] = createSignal<AdoptedRule[]>([]);
 
   // Post-deploy stale rule cleanup state.
@@ -140,7 +147,7 @@ export default function DeployModal(props: {
       updateStep(i, { status: "running", error: undefined });
       const step = steps()[i];
       try {
-        const { ok, data } = await apiPost(`/api/opnsense/vpn/${props.vpnId}/${step.endpoint}`);
+        const { ok, data } = await apiPost<DeployStepResponse>(`/api/opnsense/vpn/${props.vpnId}/${step.endpoint}`);
         if (!ok) {
           updateStep(i, { status: "error", error: data?.error ?? "Unknown error" });
           setFailed(true);
@@ -174,12 +181,12 @@ export default function DeployModal(props: {
       setStaleLoading(true);
       setStaleError("");
       try {
-        const { ok, data } = await apiPost("/api/opnsense/firewall/stale-rules", {
+        const { ok, data } = await apiPost<{ stale_rules?: StaleRule[] }>("/api/opnsense/firewall/stale-rules", {
           gateway_name: gwName,
           interfaces: selectedIfaces(),
         });
-        if (ok && data?.stale_rules?.length > 0) {
-          setStaleRules(data.stale_rules);
+        if (ok && (data?.stale_rules?.length ?? 0) > 0) {
+          setStaleRules(data.stale_rules!);
         }
       } catch {
         setStaleError("Failed to check for stale rules.");
@@ -208,7 +215,7 @@ export default function DeployModal(props: {
 
     // Save selected source interfaces.
     try {
-      const { ok, data } = await apiPost(`/api/opnsense/vpn/${props.vpnId}/source-interfaces`, {
+      const { ok, data } = await apiPost<{ error?: string }>(`/api/opnsense/vpn/${props.vpnId}/source-interfaces`, {
         interfaces: selectedIfaces(),
       });
       if (!ok) {
@@ -246,7 +253,7 @@ export default function DeployModal(props: {
     markBusy(uuid);
     clearError(uuid);
     try {
-      const { ok, data } = await apiPost("/api/opnsense/firewall/adopt-rule", {
+      const { ok, data } = await apiPost<{ error?: string }>("/api/opnsense/firewall/adopt-rule", {
         stale_uuid: uuid,
         gator_uuid: filterUUID,
       });
@@ -287,8 +294,8 @@ export default function DeployModal(props: {
 
   return (
     <Modal size="md" onBackdropClick={stage() === "confirm" ? props.onClose : undefined}>
-      <h2 class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]">{props.vpnName} deployment</h2>
-      <p class="mt-1 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+      <h2 class="text-lg font-semibold text-fg">{props.vpnName} deployment</h2>
+      <p class="mt-1 text-xs text-fg-tertiary">
         {stage() === "confirm"
           ? "This will save the current profile and run the OPNsense deployment steps automatically."
           : "Running the OPNsense deployment flow..."}
@@ -313,7 +320,7 @@ export default function DeployModal(props: {
       </Show>
 
       <Show when={natModeLoading()}>
-        <div class="mt-3 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-tertiary)] px-3 py-2 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+        <div class="mt-3 rounded-lg border border-line-strong bg-surface-tertiary px-3 py-2 text-xs text-fg-tertiary">
           Checking outbound NAT mode...
         </div>
       </Show>
@@ -345,7 +352,7 @@ export default function DeployModal(props: {
       </Show>
 
       <Show when={!natModeLoading() && natMode()?.compatible}>
-        <div class="mt-3 rounded-lg border border-[var(--status-success)]/20 bg-[var(--success-subtle)] px-3 py-2 text-[var(--text-xs)] text-[var(--status-success)]">
+        <div class="mt-3 rounded-lg border border-success/20 bg-success-subtle px-3 py-2 text-xs text-success">
           Outbound NAT: <span class="font-medium">{natMode()!.mode}</span> mode
         </div>
       </Show>
@@ -358,16 +365,16 @@ export default function DeployModal(props: {
 
       {/* Source interface selection — shown during confirm stage */}
       <Show when={stage() === "confirm"}>
-        <div class="mt-4 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-tertiary)] p-3">
-          <p class="text-[var(--text-xs)] font-semibold text-[var(--text-secondary)]">Source interfaces</p>
-          <p class="mt-1 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+        <div class="mt-4 rounded-lg border border-line-strong bg-surface-tertiary p-3">
+          <p class="text-xs font-semibold text-fg-secondary">Source interfaces</p>
+          <p class="mt-1 text-xs text-fg-tertiary">
             Select which interfaces should route traffic through this VPN.
           </p>
           <Show when={ifacesLoading()}>
-            <p class="mt-2 text-[var(--text-xs)] text-[var(--text-tertiary)]">Loading interfaces...</p>
+            <p class="mt-2 text-xs text-fg-tertiary">Loading interfaces...</p>
           </Show>
           <Show when={!ifacesLoading() && selectableIfaces().length === 0}>
-            <p class="mt-2 text-[var(--text-xs)] text-[var(--status-warning)]">
+            <p class="mt-2 text-xs text-warning">
               No selectable interfaces found. Will default to LAN.
             </p>
           </Show>
@@ -375,15 +382,15 @@ export default function DeployModal(props: {
             <div class="mt-2 space-y-1.5">
               <For each={selectableIfaces()}>
                 {(iface) => (
-                  <label class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-[var(--bg-hover)]">
+                  <label class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-hover">
                     <input
                       type="checkbox"
                       checked={selectedIfaces().includes(iface.identifier)}
                       onChange={() => toggleIface(iface.identifier)}
-                      class="h-3.5 w-3.5 rounded border-[var(--border-strong)] bg-[var(--bg-secondary)] text-[var(--accent-primary)] focus:ring-[var(--accent-primary)]/30"
+                      class="h-3.5 w-3.5 rounded border-line-strong bg-surface-secondary text-accent focus:ring-accent/30"
                     />
-                    <span class="text-[var(--text-xs)] font-medium text-[var(--text-primary)]">{iface.description}</span>
-                    <span class="text-[var(--text-xs)] text-[var(--text-muted)]">({iface.identifier} / {iface.device})</span>
+                    <span class="text-xs font-medium text-fg">{iface.description}</span>
+                    <span class="text-xs text-fg-muted">({iface.identifier} / {iface.device})</span>
                   </label>
                 )}
               </For>
@@ -404,13 +411,13 @@ export default function DeployModal(props: {
             <div class="mt-2 max-h-24 space-y-1 overflow-y-auto">
               <For each={conflictInfo()!.conflicts}>
                 {(c) => (
-                  <div class="rounded bg-[var(--warning-subtle)] px-2 py-1 text-[var(--text-xs)] text-[var(--status-warning)]">
+                  <div class="rounded bg-warning-subtle px-2 py-1 text-xs text-warning">
                     <span class="font-medium">{c.gateway}</span>
                     {" ← "}
                     {c.source} {"\u2192"} {c.destination}
                     <Show when={c.description}>
                       {" "}
-                      <span class="text-[var(--text-muted)]">({c.description})</span>
+                      <span class="text-fg-muted">({c.description})</span>
                     </Show>
                   </div>
                 )}
@@ -431,38 +438,35 @@ export default function DeployModal(props: {
               <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
                 <Switch>
                   <Match when={step.status === "pending"}>
-                    <div class="h-4 w-4 rounded-full border-2 border-[var(--border-strong)]" />
+                    <div class="h-4 w-4 rounded-full border-2 border-line-strong" />
                   </Match>
                   <Match when={step.status === "running"}>
-                    <svg class="h-5 w-5 animate-spin text-[var(--accent-primary)]" viewBox="0 0 24 24" fill="none">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <Spinner size="md" class="text-accent" />
                   </Match>
                   <Match when={step.status === "done"}>
-                    <svg class="h-5 w-5 text-[var(--status-success)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <svg class="h-5 w-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                       <path d="M5 13l4 4L19 7" />
                     </svg>
                   </Match>
                   <Match when={step.status === "error"}>
-                    <svg class="h-5 w-5 text-[var(--status-error)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <svg class="h-5 w-5 text-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                       <path d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </Match>
                 </Switch>
               </div>
               <div class="min-w-0 flex-1">
-                <p class={`text-[var(--text-sm)] ${
-                  step.status === "done" ? "text-[var(--status-success)]" :
-                  step.status === "error" ? "text-[var(--status-error)]" :
-                  step.status === "running" ? "text-[var(--text-primary)]" :
-                  "text-[var(--text-tertiary)]"
+                <p class={`text-sm ${
+                  step.status === "done" ? "text-success" :
+                  step.status === "error" ? "text-error" :
+                  step.status === "running" ? "text-fg" :
+                  "text-fg-tertiary"
                 }`}>
                   {step.status === "done" ? step.doneLabel : step.label}
                   {step.status === "running" ? "..." : ""}
                 </p>
                 <Show when={step.status === "error" && step.error}>
-                  <p class="mt-1 text-[var(--text-xs)] text-[var(--status-error)]">{step.error}</p>
+                  <p class="mt-1 text-xs text-error">{step.error}</p>
                 </Show>
               </div>
             </div>
@@ -489,13 +493,13 @@ export default function DeployModal(props: {
             <div class="mt-2 space-y-1">
               <For each={adoptedRules()}>
                 {(rule) => (
-                  <div class="rounded bg-[var(--info-subtle)] px-2 py-1 text-[var(--text-xs)] text-[var(--status-info)]">
+                  <div class="rounded bg-info-subtle px-2 py-1 text-xs text-info">
                     {rule.source || "any"} {"\u2192"} <span class="font-medium">{rule.destination || "any"}</span>
                     <Show when={rule.protocol && rule.protocol !== "any"}>
-                      {" "}<span class="rounded bg-[var(--bg-hover)] px-1 py-0.5 text-[var(--text-secondary)]">{rule.protocol}</span>
+                      {" "}<span class="rounded bg-hover px-1 py-0.5 text-fg-secondary">{rule.protocol}</span>
                     </Show>
                     <Show when={rule.description}>
-                      {" "}<span class="text-[var(--text-muted)]">({rule.description})</span>
+                      {" "}<span class="text-fg-muted">({rule.description})</span>
                     </Show>
                   </div>
                 )}
@@ -507,7 +511,7 @@ export default function DeployModal(props: {
 
       {/* Post-deploy stale rule cleanup (fallback for rules not auto-adopted) */}
       <Show when={finished() && staleLoading()}>
-        <div class="mt-3 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-tertiary)] px-3 py-2 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+        <div class="mt-3 rounded-lg border border-line-strong bg-surface-tertiary px-3 py-2 text-xs text-fg-tertiary">
           Checking for redundant rules...
         </div>
       </Show>
@@ -544,27 +548,27 @@ export default function DeployModal(props: {
                     <For each={staleRules()}>
                       {(rule) => (
                         <Show when={!handledUuids().has(rule.uuid)}>
-                          <div class="rounded border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-2">
+                          <div class="rounded border border-line bg-surface-secondary px-2.5 py-2">
                             <div class="flex items-start gap-2">
                               <div class="min-w-0 flex-1">
-                                <p class="text-[var(--text-xs)] text-[var(--text-secondary)]">
+                                <p class="text-xs text-fg-secondary">
                                   {rule.source || "any"} {"\u2192"} <span class="font-medium">{rule.destination || "any"}</span>
                                   <Show when={rule.protocol && rule.protocol !== "any"}>
-                                    {" "}<span class="rounded bg-[var(--bg-hover)] px-1 py-0.5 text-[10px] text-[var(--text-tertiary)]">{rule.protocol}</span>
+                                    {" "}<span class="rounded bg-hover px-1 py-0.5 text-[10px] text-fg-tertiary">{rule.protocol}</span>
                                   </Show>
                                   <Show when={rule.destination_port}>
                                     {" "}:{rule.destination_port}
                                   </Show>
                                 </p>
                                 <Show when={rule.description}>
-                                  <p class="mt-0.5 truncate text-[var(--text-xs)] text-[var(--text-muted)]">{rule.description}</p>
+                                  <p class="mt-0.5 truncate text-xs text-fg-muted">{rule.description}</p>
                                 </Show>
-                                <p class="mt-0.5 text-[var(--text-xs)] text-[var(--text-muted)]">
+                                <p class="mt-0.5 text-xs text-fg-muted">
                                   {rule.interface} / {rule.direction} / {rule.gateway}
-                                  <Show when={!rule.enabled}> / <span class="text-[var(--text-disabled)]">disabled</span></Show>
+                                  <Show when={!rule.enabled}> / <span class="text-fg-disabled">disabled</span></Show>
                                 </p>
                                 <Show when={actionErrors()[rule.uuid]}>
-                                  <p class="mt-1 text-[var(--text-xs)] text-[var(--status-error)]">{actionErrors()[rule.uuid]}</p>
+                                  <p class="mt-1 text-xs text-error">{actionErrors()[rule.uuid]}</p>
                                 </Show>
                               </div>
                               <div class="flex shrink-0 gap-1.5">
@@ -606,7 +610,7 @@ export default function DeployModal(props: {
                   </Show>
                 </Show>
                 <Show when={allHandled()}>
-                  <p class="text-[var(--status-success)]">All legacy rules have been handled.</p>
+                  <p class="text-success">All legacy rules have been handled.</p>
                 </Show>
               </AlertBanner>
             </div>
@@ -636,7 +640,7 @@ export default function DeployModal(props: {
         </Show>
 
         <Show when={stage() === "running"}>
-          <div class="rounded-lg border border-[var(--border-strong)] bg-[var(--bg-tertiary)] px-4 py-2 text-[var(--text-sm)] font-medium text-[var(--text-secondary)]">
+          <div class="rounded-lg border border-line-strong bg-surface-tertiary px-4 py-2 text-sm font-medium text-fg-secondary">
             Deploying...
           </div>
         </Show>

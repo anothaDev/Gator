@@ -9,8 +9,8 @@ import AlertBanner from "../../components/AlertBanner";
 // ─── CSS ─────────────────────────────────────────────────────────
 
 const inputClass =
-  "w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-2.5 text-[var(--text-sm)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none";
-const labelClass = "block text-[var(--text-xs)] font-medium text-[var(--text-secondary)] mb-1.5";
+  "w-full rounded-lg border border-line bg-surface-secondary px-3 py-2.5 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none";
+const labelClass = "block text-xs font-medium text-fg-secondary mb-1.5";
 
 // ─── Create Tunnel Form ─────────────────────────────────────────
 
@@ -89,8 +89,8 @@ function CreateTunnelForm(props: {
 
   return (
     <Card variant="elevated">
-      <h2 class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]">New Tunnel</h2>
-      <p class="mb-5 mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+      <h2 class="text-lg font-semibold text-fg">New Tunnel</h2>
+      <p class="mb-5 mt-1 text-sm text-fg-tertiary">
         Configure a WireGuard tunnel to a remote Linux VPS.
       </p>
 
@@ -121,7 +121,7 @@ function CreateTunnelForm(props: {
 
         {/* SSH connection */}
         <div>
-          <p class="mb-3 text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
             SSH Connection
           </p>
           <div class="grid gap-4 md:grid-cols-3">
@@ -157,12 +157,12 @@ function CreateTunnelForm(props: {
           <div class="mt-4">
             <label class={labelClass}>SSH Private Key</label>
             <textarea
-              class={inputClass + " h-28 font-mono text-[var(--text-xs)]"}
+              class={inputClass + " h-28 font-mono text-xs"}
               placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"
               value={form().ssh_private_key}
               onInput={(e) => setForm((f) => ({ ...f, ssh_private_key: e.currentTarget.value }))}
             />
-            <p class="mt-1 text-[var(--text-xs)] text-[var(--text-tertiary)]">
+            <p class="mt-1 text-xs text-fg-tertiary">
               Paste the full PEM key, or leave empty and use password below.
             </p>
           </div>
@@ -190,7 +190,7 @@ function CreateTunnelForm(props: {
             </Button>
             <Show when={sshTestResult()}>
               {(result) => (
-                <span class={`text-[var(--text-sm)] ${result().success ? "text-[var(--status-success)]" : "text-[var(--status-error)]"}`}>
+                <span class={`text-sm ${result().success ? "text-success" : "text-error"}`}>
                   {result().success
                     ? `Connected — ${result().info?.hostname ?? ""} (${result().info?.os ?? "Linux"})`
                     : `Failed: ${result().error}`}
@@ -202,7 +202,7 @@ function CreateTunnelForm(props: {
 
         {/* Tunnel addressing */}
         <div>
-          <p class="mb-3 text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
             Tunnel Addressing
           </p>
           <div class="grid gap-4 md:grid-cols-3">
@@ -264,7 +264,7 @@ function CreateTunnelForm(props: {
           <AlertBanner tone="error">{createError()}</AlertBanner>
         </Show>
 
-        <div class="flex items-center gap-3 border-t border-[var(--border-default)] pt-4">
+        <div class="flex items-center gap-3 border-t border-line pt-4">
           <Button
             variant="primary"
             size="md"

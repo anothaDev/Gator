@@ -32,12 +32,12 @@ export default function Table<T>(props: TableProps<T>) {
     <div class={["overflow-x-auto", props.class ?? ""].join(" ")}>
       <table class="w-full border-collapse">
         <thead>
-          <tr class="border-b border-[var(--border-strong)]">
+          <tr class="border-b border-line-strong">
             <For each={props.columns}>
               {(column) => (
                 <th
                   class={[
-                    "py-3 px-4 text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]",
+                    "py-3 px-4 text-xs font-semibold uppercase tracking-wider text-fg-tertiary",
                     getAlignment(column.align),
                   ].join(" ")}
                   style={column.width ? { width: column.width } : undefined}
@@ -55,7 +55,7 @@ export default function Table<T>(props: TableProps<T>) {
               <tr>
                 <td
                   colSpan={props.columns.length}
-                  class="py-8 px-4 text-center text-[var(--text-tertiary)]"
+                  class="py-8 px-4 text-center text-fg-tertiary"
                 >
                   {props.emptyMessage ?? "No data available"}
                 </td>
@@ -65,14 +65,13 @@ export default function Table<T>(props: TableProps<T>) {
             <For each={props.data}>
               {(row) => (
                 <tr
-                  key={props.keyExtractor(row)}
-                  class="border-b border-[var(--border-subtle)] transition-colors duration-[var(--transition-fast)] hover:bg-[var(--bg-hover)]"
+                  class="border-b border-line-faint transition-colors duration-fast hover:bg-hover"
                 >
                   <For each={props.columns}>
                     {(column) => (
                       <td
                         class={[
-                          "py-3 px-4 text-[var(--text-sm)] text-[var(--text-secondary)]",
+                          "py-3 px-4 text-sm text-fg-secondary",
                           getAlignment(column.align),
                           column.key === "actions" ? "whitespace-nowrap" : "",
                         ].join(" ")}

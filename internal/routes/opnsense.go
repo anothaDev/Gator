@@ -9,6 +9,7 @@ func registerOPNsenseRoutes(
 	api *gin.RouterGroup,
 	setup *handlers.SetupHandler,
 	opnsenseHandler *handlers.OPNsenseHandler,
+	tailscale *handlers.TailscaleHandler,
 	vpn *handlers.VPNHandler,
 	gateway *handlers.GatewayHandler,
 	appRouting *handlers.AppRoutingHandler,
@@ -18,6 +19,7 @@ func registerOPNsenseRoutes(
 		opnsense.POST("/test-connection", setup.TestOPNsenseConnection)
 		opnsense.GET("/overview", opnsenseHandler.Overview)
 		opnsense.GET("/overview/stream", opnsenseHandler.OverviewStream)
+		opnsense.GET("/firmware-status", opnsenseHandler.FirmwareStatus)
 		opnsense.POST("/vpn/:id/apply", vpn.ApplyToOPNsense)
 		opnsense.POST("/vpn/:id/apply-gateway", vpn.ApplyGatewayToOPNsense)
 		opnsense.POST("/vpn/:id/apply-nat", vpn.ApplyNATToOPNsense)
@@ -68,5 +70,8 @@ func registerOPNsenseRoutes(
 		opnsense.POST("/backups", gateway.CreateBackup)
 		opnsense.GET("/backups/:filename", gateway.DownloadBackup)
 		opnsense.DELETE("/backups/:filename", gateway.DeleteBackup)
+
+		// Tailscale setup
+		registerTailscaleRoutes(opnsense, tailscale)
 	}
 }

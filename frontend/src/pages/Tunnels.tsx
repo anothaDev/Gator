@@ -1,14 +1,17 @@
 import { createSignal, For, onMount, Show } from "solid-js";
 import { apiGet } from "../lib/api";
+import { createLegacyCheck } from "../lib/legacy";
 import TunnelDeployModal from "./tunnels/TunnelDeployModal";
 import TunnelDiscoveryModal from "./tunnels/TunnelDiscoveryModal";
 import TunnelCard from "./tunnels/TunnelCard";
 import CreateTunnelForm from "./tunnels/CreateTunnelForm";
 import type { TunnelStatus } from "./tunnels/types";
 import Card from "../components/Card";
+import OpnsenseLink from "../components/OpnsenseLink";
 import Button from "../components/Button";
 import AlertBanner from "../components/AlertBanner";
 import EmptyState from "../components/EmptyState";
+import LegacyRulesWarning from "../components/LegacyRulesWarning";
 import { SkeletonList } from "../components/Skeleton";
 
 // ─── Legacy rule check (same pattern as VpnSetup.tsx) ────────────
@@ -31,21 +34,7 @@ export default function Tunnels() {
   const [actionErr, setActionErr] = createSignal("");
 
   // Legacy rules state.
-  const [legacyCount, setLegacyCount] = createSignal(0);
-  const [legacyChecked, setLegacyChecked] = createSignal(false);
-
-  const checkLegacyRules = async () => {
-    try {
-      const { ok, data } = await apiGet<{ legacy_count?: number; legacy_available?: boolean }>("/api/opnsense/migration/status");
-      if (ok && data.legacy_available && (data.legacy_count ?? 0) > 0) {
-        setLegacyCount(data.legacy_count ?? 0);
-      }
-    } catch {
-      // Silent — best-effort check.
-    } finally {
-      setLegacyChecked(true);
-    }
-  };
+  const { legacyCount, legacyChecked, checkLegacyRules } = createLegacyCheck();
 
   // Import/discover state.
   const [showImport, setShowImport] = createSignal(false);
@@ -79,14 +68,15 @@ export default function Tunnels() {
       {/* Header */}
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 class="text-[var(--text-2xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 class="text-2xl font-semibold tracking-tight text-fg">
             Site-to-Site Tunnels
           </h1>
-          <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+          <p class="mt-1 text-sm text-fg-tertiary">
             WireGuard tunnels between your firewall and remote VPS endpoints.
           </p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex items-center gap-2">
+          <OpnsenseLink path="/ui/wireguard/general" label="WireGuard" />
           <Button
             variant="secondary"
             size="md"
@@ -134,23 +124,10 @@ export default function Tunnels() {
 
       {/* Legacy rules warning */}
       <Show when={legacyChecked() && legacyCount() > 0}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-warning)]">
-          <div class="flex items-center gap-3">
-            <svg class="h-5 w-5 shrink-0 text-[var(--status-warning)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-            <div>
-              <p class="text-[var(--text-sm)] font-medium text-[var(--text-primary)]">
-                Legacy firewall rules detected
-              </p>
-              <p class="mt-0.5 text-[var(--text-xs)] text-[var(--text-tertiary)]">
-                Your firewall has {legacyCount()} rule{legacyCount() !== 1 ? "s" : ""} in the old format. Deploy and re-adopt actions are blocked until migration is complete.
-              </p>
-            </div>
-          </div>
-        </Card>
+        <LegacyRulesWarning
+          count={legacyCount()}
+          detail="Deploy and re-adopt actions are blocked until migration is complete."
+        />
       </Show>
 
       {/* Loading */}

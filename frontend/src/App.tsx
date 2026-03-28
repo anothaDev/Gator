@@ -82,22 +82,22 @@ export default function App() {
     <>
       <Switch>
         <Match when={statusLoading()}>
-          <div class="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
+          <div class="flex min-h-screen items-center justify-center bg-surface">
             <div class="flex flex-col items-center gap-4">
               <img src="/gator64px.svg" alt="Gator logo" class="h-18 w-18 drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]" />
-              <p class="text-sm text-[var(--text-tertiary)]">Loading Gator...</p>
+              <p class="text-sm text-fg-tertiary">Loading Gator...</p>
             </div>
           </div>
         </Match>
 
         <Match when={statusError()}>
-          <div class="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] px-4">
-            <div class="w-full max-w-md rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-6 text-center">
+          <div class="flex min-h-screen items-center justify-center bg-surface px-4">
+            <div class="w-full max-w-md rounded-xl border border-line bg-surface-secondary p-6 text-center">
               <p class="text-sm text-red-300">Could not load setup status.</p>
               <button
                 type="button"
                 onClick={() => void loadAppState()}
-                class="mt-4 rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-[13px] font-semibold text-[var(--bg-primary)] hover:brightness-110"
+                class="mt-4 rounded-lg bg-accent px-4 py-2 text-[13px] font-semibold text-surface hover:brightness-110"
               >
                 Retry
               </button>
@@ -119,7 +119,7 @@ export default function App() {
 
         <Match when={setupStatus()?.configured && authStatus()?.configured && authStatus()?.authenticated}>
           <Show when={setupStatus()} keyed>
-            {() => (
+            {(_status) => (
               <ControlCenter
                 onLogout={handleLoggedOut}
                 onReconfigure={() => setForceSetup(true)}

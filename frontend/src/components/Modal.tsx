@@ -40,9 +40,9 @@ export default function Modal(props: {
         }
       }}
     >
-      <div class="fixed inset-0 pointer-events-none" style={{ backdropFilter: "blur(8px)" }} />
+      <div class="fixed inset-0 pointer-events-none" style={{ "backdrop-filter": "blur(8px)" }} />
       <div
-        class={`relative w-full rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-secondary)] shadow-2xl animate-scale-up ${sizeClasses[props.size ?? "lg"]}`}
+        class={`relative w-full rounded-2xl border border-line-strong bg-surface-secondary shadow-2xl animate-scale-up ${sizeClasses[props.size ?? "lg"]}`}
         style={{
           background: "linear-gradient(180deg, rgba(16, 16, 20, 1) 0%, rgba(10, 10, 12, 1) 100%)",
         }}

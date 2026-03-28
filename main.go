@@ -45,6 +45,7 @@ func main() {
 	setupHandler := handlers.NewSetupHandler(store)
 	authHandler := handlers.NewAuthHandler(store)
 	opnsenseHandler := handlers.NewOPNsenseHandler(store)
+	tailscaleHandler := handlers.NewTailscaleHandler(store)
 	vpnHandler := handlers.NewVPNHandler(store)
 	gatewayHandler := handlers.NewGatewayHandler(store)
 	appRoutingHandler := handlers.NewAppRoutingHandler(store)
@@ -57,7 +58,7 @@ func main() {
 	})
 
 	// Register API routes
-	routes.Register(r, authHandler, setupHandler, opnsenseHandler, vpnHandler, gatewayHandler, appRoutingHandler, ipRangesHandler, tunnelHandler)
+	routes.Register(r, authHandler, setupHandler, opnsenseHandler, tailscaleHandler, vpnHandler, gatewayHandler, appRoutingHandler, ipRangesHandler, tunnelHandler)
 	serveFrontend(r)
 
 	// Start background jobs.

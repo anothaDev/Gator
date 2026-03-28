@@ -1,8 +1,9 @@
-import { For, Show, createSignal, createEffect, onMount, onCleanup } from "solid-js";
+import { Show, createSignal, createEffect, onMount, onCleanup } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { apiGet } from "../lib/api";
+import { formatMB } from "../lib/format";
 
 type Props = {
   onConnectionStateChange?: (state: { connected: boolean; message?: string }) => void;
@@ -28,6 +29,8 @@ type Overview = {
   disk?: {
     mountpoint?: string;
     used_pct: number;
+    size?: string;
+    used?: string;
   };
   gateways?: {
     total: number;
@@ -60,25 +63,18 @@ async function fetchOverview(): Promise<Overview> {
   return data;
 }
 
-const POLL_INTERVAL = 15000;
-
-function formatBytes(mb: number): string {
-  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
-  return `${mb} MB`;
-}
-
 // Interpret load average relative to CPU cores.
 // load_avg is "1m, 5m, 15m" comma-separated. We use the 1-minute value.
 function formatLoad(raw: string | undefined, cpuCount: number | undefined): { label: string; color: string } {
-  if (!raw) return { label: "N/A", color: "text-[var(--text-muted)]" };
+  if (!raw) return { label: "N/A", color: "text-fg-muted" };
   const first = parseFloat(raw.split(",")[0]?.trim() || "0");
   const cores = cpuCount || 1;
   const ratio = first / cores;
-  if (ratio < 0.3) return { label: "Idle", color: "text-[var(--status-success)]" };
-  if (ratio < 0.7) return { label: "Low", color: "text-[var(--status-success)]" };
-  if (ratio < 1.0) return { label: "Moderate", color: "text-[var(--status-warning)]" };
-  if (ratio < 2.0) return { label: "High", color: "text-[var(--status-warning)]" };
-  return { label: "Critical", color: "text-[var(--status-error)]" };
+  if (ratio < 0.3) return { label: "Idle", color: "text-success" };
+  if (ratio < 0.7) return { label: "Low", color: "text-success" };
+  if (ratio < 1.0) return { label: "Moderate", color: "text-warning" };
+  if (ratio < 2.0) return { label: "High", color: "text-warning" };
+  return { label: "Critical", color: "text-error" };
 }
 
 function formatUptime(raw: string | undefined): { value: string; unit: string } {
@@ -102,10 +98,10 @@ function formatUptime(raw: string | undefined): { value: string; unit: string } 
 // Pulsing status dot
 function StatusDot(props: { status: "success" | "warning" | "error" | "neutral"; pulse?: boolean }) {
   const colors = {
-    success: "bg-[var(--status-success)]",
-    warning: "bg-[var(--status-warning)]",
-    error: "bg-[var(--status-error)]",
-    neutral: "bg-[var(--text-muted)]",
+    success: "bg-success",
+    warning: "bg-warning",
+    error: "bg-error",
+    neutral: "bg-fg-muted",
   };
   return (
     <span class={`inline-block h-2 w-2 rounded-full ${colors[props.status]} ${props.pulse ? "animate-pulse-subtle" : ""}`} />
@@ -120,20 +116,20 @@ function ResourceBar(props: {
   color?: string;
 }) {
   const pct = Math.min(100, Math.round(props.pct));
-  const barColor = pct > 90 ? "bg-[var(--status-error)]" : pct > 70 ? "bg-[var(--status-warning)]" : (props.color || "bg-[var(--accent-primary)]");
+  const barColor = pct > 90 ? "bg-error" : pct > 70 ? "bg-warning" : (props.color || "bg-accent");
 
   return (
     <div class="space-y-2">
       <div class="flex items-center justify-between">
-        <span class="text-[12px] text-[var(--text-secondary)]">{props.label}</span>
+        <span class="text-[12px] text-fg-secondary">{props.label}</span>
         <div class="flex items-center gap-2">
           <Show when={props.detail}>
-            <span class="text-[11px] text-[var(--text-muted)]">{props.detail}</span>
+            <span class="text-[11px] text-fg-muted">{props.detail}</span>
           </Show>
-          <span class="text-[12px] font-mono text-[var(--text-primary)]">{pct}%</span>
+          <span class="text-[12px] font-mono text-fg">{pct}%</span>
         </div>
       </div>
-      <div class="h-1.5 overflow-hidden rounded-full bg-[var(--bg-hover)]">
+      <div class="h-1.5 overflow-hidden rounded-full bg-hover">
         <div
           class={`h-full rounded-full ${barColor} transition-all duration-700 ease-out`}
           style={{ width: `${pct}%` }}
@@ -151,9 +147,9 @@ function StatTile(props: {
   value: string;
   sub?: string;
   accent?: boolean;
-  children?: any;
+  children?: import("solid-js").JSX.Element;
 }) {
-  const icons: Record<string, () => any> = {
+  const icons: Record<string, () => import("solid-js").JSX.Element> = {
     clock: () => (
       <svg class={`h-5 w-5 ${props.iconColor}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10" />
@@ -184,16 +180,16 @@ function StatTile(props: {
 
   return (
     <div class="flex items-start gap-3">
-      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-hover)]">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-hover">
         {IconComponent && <IconComponent />}
       </div>
       <div class="flex-1 min-w-0">
-        <div class="text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{props.label}</div>
-        <div class="mt-0.5 text-[20px] font-semibold tracking-tight text-[var(--text-primary)] leading-tight">
+        <div class="text-[11px] uppercase tracking-[0.12em] text-fg-muted">{props.label}</div>
+        <div class="mt-0.5 text-[20px] font-semibold tracking-tight text-fg leading-tight">
           {props.value}
         </div>
         <Show when={props.sub}>
-          <div class="mt-1 text-[12px] text-[var(--text-tertiary)]">{props.sub}</div>
+          <div class="mt-1 text-[12px] text-fg-tertiary">{props.sub}</div>
         </Show>
         {props.children}
       </div>
@@ -316,13 +312,13 @@ export default function Dashboard(props: Props) {
       {/* Header */}
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <h1 class="text-[24px] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 class="text-[24px] font-semibold tracking-tight text-fg">
             Overview
           </h1>
           <Show when={live()}>
-            <span class="flex items-center gap-1.5 rounded-full bg-[var(--success-subtle)] px-2 py-0.5">
-              <span class="h-1.5 w-1.5 rounded-full bg-[var(--status-success)] animate-pulse-subtle" />
-              <span class="text-[10px] font-medium text-[var(--status-success)]">LIVE</span>
+            <span class="flex items-center gap-1.5 rounded-full bg-success-subtle px-2 py-0.5">
+              <span class="h-1.5 w-1.5 rounded-full bg-success animate-pulse-subtle" />
+              <span class="text-[10px] font-medium text-success">LIVE</span>
             </span>
           </Show>
         </div>
@@ -340,14 +336,14 @@ export default function Dashboard(props: Props) {
 
       {/* Error state */}
       <Show when={loadError()}>
-        <Card class="border-l-2 border-l-[var(--status-error)] bg-[var(--error-subtle)]">
+        <Card class="border-l-2 border-l-error bg-error-subtle">
           <div class="flex items-center gap-3">
-            <svg class="h-5 w-5 text-[var(--status-error)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="h-5 w-5 text-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-[14px] text-[var(--status-error)]">Failed to reach OPNsense API</span>
+            <span class="text-[14px] text-error">Failed to reach OPNsense API</span>
           </div>
         </Card>
       </Show>
@@ -356,12 +352,12 @@ export default function Dashboard(props: Props) {
         {(data) => (
           <>
             {/* Firewall identity card */}
-            <Card class={["relative overflow-hidden", !data().connected ? "border border-[var(--status-error)]/25 bg-[var(--error-subtle)]/40" : ""].join(" ")}>
-              <div class={["absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r", data().connected ? "from-[var(--accent-primary)] to-transparent" : "from-[var(--status-error)] to-transparent"].join(" ")} />
+            <Card class={["relative overflow-hidden", !data().connected ? "border border-error/25 bg-error-subtle/40" : ""].join(" ")}>
+              <div class={["absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r", data().connected ? "from-accent to-transparent" : "from-error to-transparent"].join(" ")} />
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-3">
-                  <div class={["flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", data().connected ? "bg-[var(--bg-hover)]" : "bg-[var(--status-error)]/10"].join(" ")}>
-                    <svg class={["h-5 w-5", data().connected ? "text-[var(--accent-primary)]" : "text-[var(--status-error)]"].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <div class={["flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", data().connected ? "bg-hover" : "bg-error/10"].join(" ")}>
+                    <svg class={["h-5 w-5", data().connected ? "text-accent" : "text-error"].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                       <line x1="8" y1="21" x2="16" y2="21" />
                       <line x1="12" y1="17" x2="12" y2="21" />
@@ -369,19 +365,19 @@ export default function Dashboard(props: Props) {
                   </div>
                   <div>
                     <div class="flex items-center gap-2">
-                      <h2 class="text-[18px] font-semibold text-[var(--text-primary)]">
+                      <h2 class="text-[18px] font-semibold text-fg">
                         {(data().host || "Firewall").replace(/^https?:\/\//, "")}
                       </h2>
                       <StatusDot status={data().connected ? "success" : "error"} pulse={data().connected} />
                     </div>
-                    <p class="text-[12px] text-[var(--text-tertiary)]">
+                    <p class="text-[12px] text-fg-tertiary">
                       {data().name || "OPNsense"}{data().version ? ` ${data().version}` : ""}
                     </p>
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
                   <Show when={!data().connected}>
-                    <Badge variant="danger" size="sm">Instance down</Badge>
+                    <Badge variant="error" size="sm">Instance down</Badge>
                   </Show>
                   <Show when={data().connected && data().updates}>
                     <Badge variant="warning" size="sm">{data().updates}</Badge>
@@ -394,27 +390,27 @@ export default function Dashboard(props: Props) {
             </Card>
 
             <Show when={!data().connected}>
-              <Card class="border-l-2 border-l-[var(--status-error)] bg-[var(--bg-secondary)]">
+              <Card class="border-l-2 border-l-error bg-surface-secondary">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div class="flex items-start gap-3">
-                    <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--status-error)]/10">
-                      <svg class="h-5 w-5 text-[var(--status-error)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-error/10">
+                      <svg class="h-5 w-5 text-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 9v4" />
                         <path d="M12 17h.01" />
                         <path d="M5 3h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 4v-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
                       </svg>
                     </div>
                     <div>
-                      <h3 class="text-[16px] font-semibold text-[var(--text-primary)]">This firewall is offline</h3>
-                      <p class="mt-1 text-[13px] text-[var(--text-secondary)]">
+                      <h3 class="text-[16px] font-semibold text-fg">This firewall is offline</h3>
+                      <p class="mt-1 text-[13px] text-fg-secondary">
                         Gator can see the saved instance, but it cannot reach the live firewall right now. Start the VM or switch to another instance before making changes.
                       </p>
                       <Show when={data().error}>
-                        <p class="mt-2 text-[12px] text-[var(--status-error)]">{data().error}</p>
+                        <p class="mt-2 text-[12px] text-error">{data().error}</p>
                       </Show>
                     </div>
                   </div>
-                  <div class="rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)] px-3 py-2 text-[12px] text-[var(--text-tertiary)]">
+                  <div class="rounded-lg border border-line bg-surface-tertiary px-3 py-2 text-[12px] text-fg-tertiary">
                     Management actions are temporarily disabled
                   </div>
                 </div>
@@ -434,7 +430,7 @@ export default function Dashboard(props: Props) {
                   return (
                     <StatTile
                       icon="clock"
-                      iconColor="text-[var(--status-success)]"
+                      iconColor="text-success"
                       label="Uptime"
                       value={up.value}
                       sub={up.unit || undefined}
@@ -442,7 +438,7 @@ export default function Dashboard(props: Props) {
                       <Show when={data().load_avg}>
                         <div class="mt-1 flex items-center gap-1.5">
                           <span class={`text-[11px] font-medium ${load.color}`}>{load.label}</span>
-                          <span class="text-[11px] text-[var(--text-muted)]" title={`Load: ${data().load_avg}`}>
+                          <span class="text-[11px] text-fg-muted" title={`Load: ${data().load_avg}`}>
                             {data().cpu_count ? `${data().cpu_count}-core` : ""}
                           </span>
                         </div>
@@ -456,15 +452,15 @@ export default function Dashboard(props: Props) {
               <Card padding="sm">
                 <StatTile
                   icon="gateway"
-                  iconColor="text-[var(--status-info)]"
+                  iconColor="text-info"
                   label="Gateways"
                   value={`${data().gateways?.online || 0}/${data().gateways?.total || 0}`}
                 >
                   <Show when={(data().gateways?.total || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
                       <StatusDot status={gwStatus()} />
-                      <span class="text-[11px] text-[var(--text-tertiary)]">
-                        {data().gateways?.offline ? `${data().gateways.offline} offline` : "All online"}
+                      <span class="text-[11px] text-fg-tertiary">
+                        {data().gateways?.offline ? `${data().gateways!.offline} offline` : "All online"}
                       </span>
                     </div>
                   </Show>
@@ -475,7 +471,7 @@ export default function Dashboard(props: Props) {
               <Card padding="sm">
                 <StatTile
                   icon="wireguard"
-                  iconColor="text-[var(--status-warning)]"
+                  iconColor="text-warning"
                   label="WireGuard"
                   value={`${data().wireguard?.online || 0}/${data().wireguard?.peers || 0}`}
                   sub={`${data().wireguard?.interfaces || 0} interface${(data().wireguard?.interfaces || 0) !== 1 ? "s" : ""}`}
@@ -483,7 +479,7 @@ export default function Dashboard(props: Props) {
                   <Show when={(data().wireguard?.peers || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
                       <StatusDot status={wgStatus()} />
-                      <span class="text-[11px] text-[var(--text-tertiary)]">
+                      <span class="text-[11px] text-fg-tertiary">
                         {data().wireguard?.online === data().wireguard?.peers ? "All peers up" : `${(data().wireguard?.peers || 0) - (data().wireguard?.online || 0)} peer${((data().wireguard?.peers || 0) - (data().wireguard?.online || 0)) !== 1 ? "s" : ""} down`}
                       </span>
                     </div>
@@ -495,14 +491,14 @@ export default function Dashboard(props: Props) {
               <Card padding="sm">
                 <StatTile
                   icon="tunnel"
-                  iconColor="text-[var(--accent-primary)]"
+                  iconColor="text-accent"
                   label="Tunnels"
                   value={String(data().tunnels?.total || 0)}
                 >
                   <Show when={(data().tunnels?.total || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
                       <StatusDot status={data().tunnels?.errors ? "error" : data().tunnels?.deployed === data().tunnels?.total ? "success" : "warning"} />
-                      <span class="text-[11px] text-[var(--text-tertiary)]">
+                      <span class="text-[11px] text-fg-tertiary">
                         {data().tunnels?.errors
                           ? `${data().tunnels!.errors} error${data().tunnels!.errors !== 1 ? "s" : ""}`
                           : `${data().tunnels?.deployed || 0} deployed`}
@@ -510,7 +506,7 @@ export default function Dashboard(props: Props) {
                     </div>
                   </Show>
                   <Show when={(data().tunnels?.total || 0) === 0}>
-                    <div class="mt-1 text-[11px] text-[var(--text-muted)]">No tunnels</div>
+                    <div class="mt-1 text-[11px] text-fg-muted">No tunnels</div>
                   </Show>
                 </StatTile>
               </Card>
@@ -522,40 +518,40 @@ export default function Dashboard(props: Props) {
                 <ResourceBar
                   label="Memory"
                   pct={memPct()}
-                  detail={data().memory?.total_mb ? `${formatBytes(data().memory!.used_mb)} / ${formatBytes(data().memory!.total_mb)}` : undefined}
+                  detail={data().memory?.total_mb ? `${formatMB(data().memory!.used_mb)} / ${formatMB(data().memory!.total_mb)}` : undefined}
                 />
               </Card>
               <Card padding="sm">
                 <ResourceBar
                   label="Disk"
                   pct={data().disk?.used_pct || 0}
-                  detail={data().disk?.mountpoint || undefined}
-                  color="bg-[var(--status-info)]"
+                  detail={data().disk?.used && data().disk?.size ? `${data().disk!.used} / ${data().disk!.size}` : data().disk?.mountpoint || undefined}
+                  color="bg-info"
                 />
               </Card>
             </div>
 
             {/* VPN Status */}
             <Card class="relative overflow-hidden">
-              <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-[var(--accent-primary-subtle)] to-transparent opacity-20 pointer-events-none" />
+              <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-accent-subtle to-transparent opacity-20 pointer-events-none" />
               <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4">
                   <div class={[
                     "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
                     data().vpn?.routing_applied
-                      ? "bg-[var(--success-subtle)]"
+                      ? "bg-success-subtle"
                       : data().vpn?.applied
-                        ? "bg-[var(--warning-subtle)]"
-                        : "bg-[var(--bg-hover)]"
+                        ? "bg-warning-subtle"
+                        : "bg-hover"
                   ].join(" ")}>
                     <svg
                       class={[
                         "h-6 w-6",
                         data().vpn?.routing_applied
-                          ? "text-[var(--status-success)]"
+                          ? "text-success"
                           : data().vpn?.applied
-                            ? "text-[var(--status-warning)]"
-                            : "text-[var(--text-muted)]"
+                            ? "text-warning"
+                            : "text-fg-muted"
                       ].join(" ")}
                       viewBox="0 0 24 24"
                       fill="none"
@@ -567,7 +563,7 @@ export default function Dashboard(props: Props) {
                   </div>
                   <div>
                     <div class="flex items-center gap-2.5">
-                      <h2 class="text-[18px] font-semibold text-[var(--text-primary)]">
+                      <h2 class="text-[18px] font-semibold text-fg">
                         {data().vpn?.name || "VPN"}
                       </h2>
                       {data().vpn?.routing_applied ? (
@@ -580,7 +576,7 @@ export default function Dashboard(props: Props) {
                         <Badge variant="muted" size="sm">Not configured</Badge>
                       )}
                     </div>
-                    <p class="mt-1 text-[13px] text-[var(--text-tertiary)]">
+                    <p class="mt-1 text-[13px] text-fg-tertiary">
                       {data().vpn?.configured
                         ? data().vpn?.applied
                           ? data().vpn?.routing_applied
@@ -593,12 +589,12 @@ export default function Dashboard(props: Props) {
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
                   <Show when={(data().vpn_count || 0) > 1}>
-                    <span class="text-[11px] text-[var(--text-muted)]">
+                    <span class="text-[11px] text-fg-muted">
                       {data().vpn_count} VPN profile{data().vpn_count !== 1 ? "s" : ""}
                     </span>
                   </Show>
                   <Show when={data().vpn?.last_applied_at}>
-                    <span class="text-[11px] font-mono text-[var(--text-muted)]">
+                    <span class="text-[11px] font-mono text-fg-muted">
                       {new Date(data().vpn!.last_applied_at!).toLocaleDateString()}
                     </span>
                   </Show>
@@ -608,14 +604,14 @@ export default function Dashboard(props: Props) {
 
             {/* Permission warning */}
             <Show when={data().error && data().connected}>
-              <Card class="border-l-2 border-l-[var(--status-warning)]">
+              <Card class="border-l-2 border-l-warning">
                 <div class="flex items-start gap-3">
-                  <svg class="mt-0.5 h-4 w-4 shrink-0 text-[var(--status-warning)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg class="mt-0.5 h-4 w-4 shrink-0 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                     <line x1="12" y1="9" x2="12" y2="13" />
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
-                  <span class="text-[12px] text-[var(--text-secondary)]">{data().error}</span>
+                  <span class="text-[12px] text-fg-secondary">{data().error}</span>
                 </div>
               </Card>
             </Show>

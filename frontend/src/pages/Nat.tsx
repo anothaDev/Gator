@@ -2,6 +2,7 @@ import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
+import OpnsenseLink from "../components/OpnsenseLink";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
 import { apiGet } from "../lib/api";
 
@@ -52,13 +53,13 @@ export default function Nat() {
       {/* Header */}
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-[var(--text-2xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 class="text-2xl font-semibold tracking-tight text-fg">
             NAT
           </h1>
-          <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+          <p class="mt-1 text-sm text-fg-tertiary">
             Outbound NAT rules.
             {gatorCount() > 0 && (
-              <span class="ml-2 text-[var(--status-success)]">{gatorCount()} managed by Gator</span>
+              <span class="ml-2 text-success">{gatorCount()} managed by Gator</span>
             )}
           </p>
         </div>
@@ -68,6 +69,7 @@ export default function Nat() {
           </svg>
           Refresh
         </Button>
+        <OpnsenseLink path="/firewall_nat_out.php" label="NAT" />
       </div>
 
       {/* Loading state */}
@@ -84,7 +86,7 @@ export default function Nat() {
       <Show when={!loading() && loadError() === ""}>
         <Show when={rules().length === 0}>
           <EmptyStateCard message="No outbound NAT rules found. If OPNsense is in automatic or hybrid NAT mode, rules are generated dynamically.">
-            <svg class="mx-auto h-12 w-12 text-[var(--text-muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg class="mx-auto h-12 w-12 text-fg-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
@@ -96,26 +98,26 @@ export default function Nat() {
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-[var(--border-strong)]">
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                  <tr class="border-b border-line-strong">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Interface
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Source
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Destination
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Protocol
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Target
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Status
                     </th>
                   </tr>
@@ -125,13 +127,13 @@ export default function Nat() {
                     {(rule) => (
                       <tr
                         class={[
-                          "border-b border-[var(--border-subtle)] transition-colors duration-[var(--transition-fast)] hover:bg-[var(--bg-hover)]",
-                          rule.is_gator ? "bg-[var(--success-subtle)]/30" : "",
+                          "border-b border-line-faint transition-colors duration-fast hover:bg-hover",
+                          rule.is_gator ? "bg-success-subtle/30" : "",
                         ].join(" ")}
                       >
                         <td class="px-4 py-3">
                           <div class="flex items-center gap-2">
-                            <span class="font-medium text-[var(--text-sm)] text-[var(--text-primary)]">
+                            <span class="font-medium text-sm text-fg">
                               {rule.description || "(no description)"}
                             </span>
                             <Show when={rule.is_gator}>
@@ -139,11 +141,11 @@ export default function Nat() {
                             </Show>
                           </div>
                         </td>
-                        <td class="px-4 py-3 text-[var(--text-sm)] text-[var(--text-secondary)]">{rule.interface || "-"}</td>
-                        <td class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)]">{rule.source_net || "any"}</td>
-                        <td class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)]">{rule.destination || "any"}</td>
-                        <td class="px-4 py-3 text-[var(--text-sm)] text-[var(--text-tertiary)]">{rule.protocol || "any"}</td>
-                        <td class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)]">{rule.target || "-"}</td>
+                        <td class="px-4 py-3 text-sm text-fg-secondary">{rule.interface || "-"}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-fg-tertiary">{rule.source_net || "any"}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-fg-tertiary">{rule.destination || "any"}</td>
+                        <td class="px-4 py-3 text-sm text-fg-tertiary">{rule.protocol || "any"}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-fg-tertiary">{rule.target || "-"}</td>
                         <td class="px-4 py-3">
                           {rule.enabled === "1" ? (
                             <Badge variant="success" size="sm">enabled</Badge>

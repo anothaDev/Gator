@@ -46,6 +46,7 @@ type SelectableInterface = {
 
 type VPNDetail = VPNStatus & {
   dns?: string;
+  error?: string;
 };
 
 type VPNForm = {
@@ -64,8 +65,6 @@ type VPNForm = {
   _parsedAllowedIPs?: string;
   _parsedDNS?: string;
 };
-
-type VPNListResponse = { vpns: VPNStatus[] };
 
 type VPNStateKey = "draft" | "tunnel" | "standby" | "active";
 
@@ -98,10 +97,6 @@ function pickByIPVersion(values: string[], ipVersion: IPVersion): string {
   const v4 = values.find((v) => v.includes("."));
   if (v4) return v4;
   return values[0] ?? "";
-}
-
-function hasIPv6(csv: string): boolean {
-  return splitCSV(csv).some((v) => v.includes(":"));
 }
 
 function parseWireGuardConfig(content: string, fileName: string): Partial<VPNForm> {
@@ -208,11 +203,11 @@ function vpnStateMeta(vpn: Pick<VPNStatus, "applied" | "policy_applied" | "routi
       summary: externallyManaged
         ? "Routing via legacy rules. Deploy through Gator to take control."
         : "Routing LAN traffic through this VPN right now.",
-      badgeClass: "bg-[var(--status-success)]/15 text-[var(--status-success)]",
-      dotClass: "bg-[var(--status-success)]",
+      badgeClass: "bg-success/15 text-success",
+      dotClass: "bg-success",
       panelClass: externallyManaged
-        ? "border-[var(--status-success)]/30 bg-[var(--status-success)]/10 text-[var(--status-success)]"
-        : "border-[var(--status-success)]/30 bg-[var(--status-success)]/10 text-[var(--status-success)]",
+        ? "border-success/30 bg-success/10 text-success"
+        : "border-success/30 bg-success/10 text-success",
       deployLabel: externallyManaged ? "Deploy with Gator" : "Deploy update",
     };
   }
@@ -242,9 +237,9 @@ function vpnStateMeta(vpn: Pick<VPNStatus, "applied" | "policy_applied" | "routi
     key: "draft",
     label: "Draft",
     summary: "Saved locally only. Nothing has been deployed to OPNsense yet.",
-    badgeClass: "bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]",
-    dotClass: "bg-[var(--text-muted)]",
-    panelClass: "border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 text-[var(--text-tertiary)]",
+    badgeClass: "bg-surface-tertiary text-fg-tertiary",
+    dotClass: "bg-fg-muted",
+    panelClass: "border-line bg-surface-tertiary/50 text-fg-tertiary",
     deployLabel: "Deploy to OPNsense",
   };
 }
@@ -258,7 +253,7 @@ function interfaceMeta(vpn: Pick<VPNStatus, "wg_device" | "wg_interface" | "inte
     return {
       headline: "Pending discovery",
       detail: "The WireGuard interface will appear after the first tunnel deploy.",
-      badgeClass: "bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]",
+      badgeClass: "bg-surface-tertiary text-fg-tertiary",
     };
   }
   if (!vpn.interface_assigned) {
@@ -387,7 +382,7 @@ function VPNCard(props: {
     setSaving(true);
     try {
       if (isNew()) {
-        const { ok, data } = await apiPost("/api/vpn/configs", formPayload());
+        const { ok, data } = await apiPost<{ id?: number; error?: string }>("/api/vpn/configs", formPayload());
         if (!ok) {
           setError(data?.error ?? "Failed to create VPN.");
           return;
@@ -395,7 +390,7 @@ function VPNCard(props: {
         setSuccess("VPN profile created.");
         props.onSaved(typeof data?.id === "number" ? data.id : undefined);
       } else {
-        const { ok, data } = await apiPut(`/api/vpn/configs/${vpn()!.id}`, formPayload());
+        const { ok, data } = await apiPut<{ error?: string }>(`/api/vpn/configs/${vpn()!.id}`, formPayload());
         if (!ok) {
           setError(data?.error ?? "Failed to save VPN.");
           return;
@@ -424,7 +419,7 @@ function VPNCard(props: {
   const saveBeforeDeploy = async (): Promise<string | null> => {
     setSaving(true);
     try {
-      const saveRes = await apiPut(`/api/vpn/configs/${vpn()!.id}`, formPayload());
+      const saveRes = await apiPut<{ error?: string }>(`/api/vpn/configs/${vpn()!.id}`, formPayload());
       if (!saveRes.ok) {
         const message = saveRes.data?.error ?? "Failed to save before deploying.";
         setError(message);
@@ -519,7 +514,7 @@ function VPNCard(props: {
     const state = vpnStateMeta(v);
     return (
       <div
-        class="flex w-full items-center gap-4 rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-secondary)]/60 px-5 py-4 text-left transition-colors hover:border-[var(--border-default)] hover:bg-[var(--bg-secondary)]/80 cursor-pointer"
+        class="flex w-full items-center gap-4 rounded-2xl border border-line-strong bg-surface-secondary/60 px-5 py-4 text-left transition-colors hover:border-line hover:bg-surface-secondary/80 cursor-pointer"
         onClick={props.onToggle}
       >
         {/* Status dot */}
@@ -528,8 +523,8 @@ function VPNCard(props: {
         {/* Name + meta */}
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
-            <span class="truncate font-semibold text-[var(--text-primary)]">{v.name}</span>
-            <span class="shrink-0 rounded bg-[var(--bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
+            <span class="truncate font-semibold text-fg">{v.name}</span>
+            <span class="shrink-0 rounded bg-surface-tertiary px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-fg-tertiary">
               {v.protocol}
             </span>
             <Show when={v.wg_device}>
@@ -537,7 +532,7 @@ function VPNCard(props: {
                 {v.wg_device}
               </span>
               <Show when={v.interface_assigned && v.wg_interface}>
-                <span class="shrink-0 rounded border border-[var(--border-default)] bg-[var(--bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
+                <span class="shrink-0 rounded border border-line bg-surface-tertiary px-1.5 py-0.5 text-[10px] font-medium text-fg-secondary">
                   {v.wg_interface}
                 </span>
               </Show>
@@ -553,9 +548,9 @@ function VPNCard(props: {
               </span>
             </Show>
           </div>
-          <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--text-tertiary)]">
+          <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-tertiary">
             <span class="truncate">{v.endpoint}</span>
-            <span class="text-[var(--text-muted)]">•</span>
+            <span class="text-fg-muted">•</span>
             <span>{state.summary}</span>
           </div>
         </div>
@@ -568,8 +563,8 @@ function VPNCard(props: {
 
           {/* Toggle switch (only for fully deployed VPNs) */}
           <Show when={canToggle()}>
-            <div class="flex items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--bg-primary)]/70 px-2 py-1">
-              <span class="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+            <div class="flex items-center gap-2 rounded-full border border-line-strong bg-surface/70 px-2 py-1">
+              <span class="text-[10px] font-medium uppercase tracking-[0.18em] text-fg-tertiary">
                 Route
               </span>
               <button
@@ -581,7 +576,7 @@ function VPNCard(props: {
                 }}
                 disabled={toggling()}
                 class={`relative inline-flex h-5 w-10 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
-                  v.routing_applied ? "bg-[var(--status-success)]" : "bg-[var(--bg-active)]"
+                  v.routing_applied ? "bg-success" : "bg-active"
                 }`}
               >
                 <span
@@ -595,7 +590,7 @@ function VPNCard(props: {
 
           {/* Chevron */}
           <svg
-            class="h-4 w-4 shrink-0 text-[var(--text-tertiary)] transition-transform"
+            class="h-4 w-4 shrink-0 text-fg-tertiary transition-transform"
             classList={{ "rotate-180": props.expanded }}
             fill="none"
             viewBox="0 0 24 24"
@@ -612,16 +607,16 @@ function VPNCard(props: {
   // ── Expanded form (shared between new + existing) ──
   const ExpandedForm = () => (
     <form
-      class="space-y-5 rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-secondary)]/60 p-5"
+      class="space-y-5 rounded-2xl border border-line-strong bg-surface-secondary/60 p-5"
       onSubmit={save}
     >
       <Show when={!isNew()}>
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-[var(--text-primary)]">{vpn()!.name}</h2>
+          <h2 class="text-lg font-semibold text-fg">{vpn()!.name}</h2>
           <button
             type="button"
             onClick={props.onToggle}
-            class="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+            class="text-xs text-fg-tertiary hover:text-fg-secondary"
           >
             Collapse
           </button>
@@ -630,11 +625,11 @@ function VPNCard(props: {
 
       <Show when={isNew()}>
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-[var(--text-primary)]">New VPN profile</h2>
+          <h2 class="text-lg font-semibold text-fg">New VPN profile</h2>
           <button
             type="button"
             onClick={props.onCancel}
-            class="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+            class="text-xs text-fg-tertiary hover:text-fg-secondary"
           >
             Cancel
           </button>
@@ -667,9 +662,9 @@ function VPNCard(props: {
         <Show when={vpn()!.gateway_applied && !vpn()!.policy_applied}>
           <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
             <p class="text-xs font-semibold text-amber-300">Legacy firewall rules detected</p>
-            <p class="mt-1 text-xs text-[var(--text-tertiary)]">
+            <p class="mt-1 text-xs text-fg-tertiary">
               This VPN's routing rules were created with the old OPNsense firewall interface and are
-              not visible to the API. Use the <span class="font-semibold text-[var(--text-secondary)]">Migration</span> page
+              not visible to the API. Use the <span class="font-semibold text-fg-secondary">Migration</span> page
               in the sidebar to migrate your rules to the new system, then deploy this VPN through Gator.
             </p>
           </div>
@@ -677,7 +672,7 @@ function VPNCard(props: {
       </Show>
 
       <Show when={detailLoading()}>
-        <div class="rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/60 px-3 py-2 text-xs text-[var(--text-secondary)]">
+        <div class="rounded-lg border border-line bg-surface-tertiary/60 px-3 py-2 text-xs text-fg-secondary">
           Loading the saved profile details...
         </div>
       </Show>
@@ -702,7 +697,7 @@ function VPNCard(props: {
         </div>
       </Show>
       <Show when={success()}>
-        <div class="rounded-lg border border-[var(--status-success)]/30 bg-[var(--status-success)]/10 px-3 py-2 text-xs text-[var(--status-success)]">
+        <div class="rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
           {success()}
         </div>
       </Show>
@@ -760,7 +755,7 @@ function VPNCard(props: {
               <button
                 type="button"
                 onClick={() => setActionsOpen((v) => !v)}
-                class="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-1.5 text-[13px] font-medium text-[var(--text-primary)] transition-all hover:bg-[var(--bg-hover)]"
+                class="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-elevated px-3 py-1.5 text-[13px] font-medium text-fg transition-all hover:bg-hover"
               >
                 Actions
                 <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -768,7 +763,7 @@ function VPNCard(props: {
                 </svg>
               </button>
               <Show when={actionsOpen()}>
-                <div class="absolute left-0 top-full z-50 mt-1 min-w-[180px] overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] py-1 shadow-xl shadow-black/40">
+                <div class="absolute left-0 top-full z-50 mt-1 min-w-[180px] overflow-hidden rounded-lg border border-line bg-elevated py-1 shadow-xl shadow-black/40">
                   <For each={items()}>
                     {(item) => (
                       <button
@@ -777,12 +772,12 @@ function VPNCard(props: {
                         title={item.title}
                         onClick={() => { setActionsOpen(false); item.onClick(); }}
                         class={[
-                          "flex w-full items-center gap-2 px-3 py-2 text-left text-[var(--text-sm)] font-medium transition-colors",
+                          "flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium transition-colors",
                           item.variant === "danger"
-                            ? "text-[var(--status-error)] hover:bg-[var(--status-error)]/10"
+                            ? "text-error hover:bg-error/10"
                             : item.variant === "primary"
-                              ? "text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10"
-                              : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
+                              ? "text-accent hover:bg-accent/10"
+                              : "text-fg hover:bg-hover",
                           "disabled:opacity-40 disabled:cursor-not-allowed",
                         ].join(" ")}
                       >
@@ -798,11 +793,11 @@ function VPNCard(props: {
       </Show>
 
       {/* Import */}
-      <div class="rounded-xl border border-[var(--border-strong)] bg-[var(--bg-secondary)]/40 p-4">
+      <div class="rounded-xl border border-line-strong bg-surface-secondary/40 p-4">
         <div class="mb-3">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Import</p>
-          <p class="mt-1 text-sm font-semibold text-[var(--text-primary)]">Load from a WireGuard config</p>
-          <p class="mt-1 text-xs text-[var(--text-tertiary)]">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">Import</p>
+          <p class="mt-1 text-sm font-semibold text-fg">Load from a WireGuard config</p>
+          <p class="mt-1 text-xs text-fg-tertiary">
             Import first for the fastest path, then adjust any fields that need to be customized.
           </p>
         </div>
@@ -810,28 +805,28 @@ function VPNCard(props: {
           type="file"
           accept=".conf,.wg,.txt"
           onChange={handleConfigFileSelect}
-          class="block w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-1.5 text-xs text-[var(--text-secondary)] file:mr-2 file:rounded file:border-0 file:bg-[var(--bg-active)] file:px-2 file:py-1 file:text-xs file:font-medium file:text-[var(--text-primary)] hover:file:bg-[var(--bg-active)]"
+          class="block w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-1.5 text-xs text-fg-secondary file:mr-2 file:rounded file:border-0 file:bg-active file:px-2 file:py-1 file:text-xs file:font-medium file:text-fg hover:file:bg-active"
         />
       </div>
 
       {/* Fields */}
-      <div class="rounded-xl border border-[var(--border-strong)] bg-[var(--bg-secondary)]/35 p-4">
+      <div class="rounded-xl border border-line-strong bg-surface-secondary/35 p-4">
         <div class="mb-4">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Connection</p>
-          <p class="mt-1 text-sm font-semibold text-[var(--text-primary)]">Core profile settings</p>
-          <p class="mt-1 text-xs text-[var(--text-tertiary)]">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">Connection</p>
+          <p class="mt-1 text-sm font-semibold text-fg">Core profile settings</p>
+          <p class="mt-1 text-xs text-fg-tertiary">
             These values describe the tunnel, endpoint, and allowed networks.
           </p>
         </div>
 
         <div>
-          <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Profile name</label>
+          <label class="mb-1.5 block text-xs font-medium text-fg-tertiary">Profile name</label>
           <input
             type="text"
             value={form().name}
             onInput={(e) => update("name", e.currentTarget.value)}
             placeholder="Branch Office VPN"
-            class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+            class="w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -874,64 +869,64 @@ function VPNCard(props: {
             />
           </div>
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Remote endpoint</label>
+            <label class="mb-1.5 block text-xs font-medium text-fg-tertiary">Remote endpoint</label>
             <input
               type="text"
               value={form().endpoint}
               onInput={(e) => update("endpoint", e.currentTarget.value)}
               placeholder="vpn.example.com:51820"
-              class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              class="w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
             />
           </div>
         </div>
 
         <div class="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Local CIDR</label>
+            <label class="mb-1.5 block text-xs font-medium text-fg-tertiary">Local CIDR</label>
             <input
               type="text"
               value={form().localCIDR}
               onInput={(e) => update("localCIDR", e.currentTarget.value)}
               placeholder="10.73.211.155/32"
-              class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              class="w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
             />
           </div>
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Remote CIDR</label>
+            <label class="mb-1.5 block text-xs font-medium text-fg-tertiary">Remote CIDR</label>
             <input
               type="text"
               value={form().remoteCIDR}
               onInput={(e) => update("remoteCIDR", e.currentTarget.value)}
               placeholder="0.0.0.0/0"
-              class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              class="w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
             />
           </div>
         </div>
 
         <div class="mt-4">
-          <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">DNS (optional)</label>
+          <label class="mb-1.5 block text-xs font-medium text-fg-tertiary">DNS (optional)</label>
           <input
             type="text"
             value={form().dns}
             onInput={(e) => update("dns", e.currentTarget.value)}
             placeholder="10.64.0.1"
-            class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+            class="w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
           />
         </div>
       </div>
 
-      <div class="rounded-xl border border-[var(--border-strong)] bg-[var(--bg-secondary)]/35 p-4">
+      <div class="rounded-xl border border-line-strong bg-surface-secondary/35 p-4">
         <div class="mb-4">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Keys</p>
-          <p class="mt-1 text-sm font-semibold text-[var(--text-primary)]">Credential material</p>
-          <p class="mt-1 text-xs text-[var(--text-tertiary)]">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-tertiary">Keys</p>
+          <p class="mt-1 text-sm font-semibold text-fg">Credential material</p>
+          <p class="mt-1 text-xs text-fg-tertiary">
             Leave secret fields blank to keep the values already stored for this profile.
           </p>
         </div>
 
         <div class="grid gap-3 sm:grid-cols-2">
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Interface private key</label>
+            <label class="mb-1.5 block text-xs font-medium text-fg-tertiary">Interface private key</label>
             <input
               type="password"
               value={form().privateKey}
@@ -939,11 +934,11 @@ function VPNCard(props: {
               placeholder={
                 vpn()?.has_private_key ? "Leave blank to keep existing" : "Base64 private key"
               }
-              class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 font-mono text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              class="w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 font-mono text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
             />
           </div>
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Peer public key</label>
+            <label class="mb-1.5 block text-xs font-medium text-fg-tertiary">Peer public key</label>
             <input
               type="text"
               value={form().peerPublicKey}
@@ -951,13 +946,13 @@ function VPNCard(props: {
               placeholder={
                 vpn()?.has_peer_public_key ? "Leave blank to keep existing" : "Base64 public key"
               }
-              class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 font-mono text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              class="w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 font-mono text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
             />
           </div>
         </div>
 
         <div class="mt-4">
-          <label class="mb-1.5 block text-xs font-medium text-[var(--text-tertiary)]">Pre-shared key (optional)</label>
+          <label class="mb-1.5 block text-xs font-medium text-fg-tertiary">Pre-shared key (optional)</label>
           <input
             type="password"
             value={form().preSharedKey}
@@ -965,7 +960,7 @@ function VPNCard(props: {
             placeholder={
               vpn()?.has_pre_shared_key ? "Leave blank to keep existing" : "Enter pre-shared key"
             }
-            class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-tertiary)]/50 px-3 py-2 font-mono text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+            class="w-full rounded-lg border border-line bg-surface-tertiary/50 px-3 py-2 font-mono text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
           />
         </div>
       </div>
@@ -975,7 +970,7 @@ function VPNCard(props: {
         <button
           type="submit"
           disabled={busy()}
-          class="w-full rounded-lg bg-[var(--accent-primary)] px-4 py-2.5 text-sm font-semibold text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-primary)]/20 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          class="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving() ? "Creating..." : "Create VPN profile"}
         </button>

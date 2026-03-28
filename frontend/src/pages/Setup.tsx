@@ -102,17 +102,17 @@ export default function Setup(props: Props) {
   };
 
   return (
-    <div class="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] px-4">
+    <div class="flex min-h-screen items-center justify-center bg-surface px-4">
       {/* Subtle background grain */}
       <div class="pointer-events-none fixed inset-0 opacity-[0.015]" style={{ "background-image": "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }} />
 
       <div class="w-full max-w-xl">
         {/* Logo / Header */}
         <div class="mb-10 text-center">
-          <h1 class="text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+          <h1 class="text-3xl font-bold tracking-tight text-fg">
             gator
           </h1>
-          <p class="mt-2 text-sm text-[var(--text-tertiary)]">
+          <p class="mt-2 text-sm text-fg-tertiary">
             Firewall management, simplified
           </p>
         </div>
@@ -123,16 +123,16 @@ export default function Setup(props: Props) {
         </div>
 
         {/* Card */}
-        <div class="rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-secondary)] p-8 shadow-2xl backdrop-blur">
+        <div class="rounded-2xl border border-line-strong bg-surface-secondary p-8 shadow-2xl backdrop-blur">
           {/* Step title */}
-          <h2 class="mb-1 text-lg font-semibold text-[var(--text-primary)]">
+          <h2 class="mb-1 text-lg font-semibold text-fg">
             <Switch>
               <Match when={step() === 0}>Choose your platform</Match>
               <Match when={step() === 1}>Connection details</Match>
               <Match when={step() === 2}>Verify connection</Match>
             </Switch>
           </h2>
-          <p class="mb-6 text-sm text-[var(--text-tertiary)]">
+          <p class="mb-6 text-sm text-fg-tertiary">
             <Switch>
               <Match when={step() === 0}>
                 Select the firewall platform you want to manage.
@@ -169,9 +169,9 @@ export default function Setup(props: Props) {
                   onComplete={handleComplete}
                 />
 
-                <div class="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-tertiary)] p-4">
-                  <h4 class="mb-1 text-sm font-semibold text-[var(--text-primary)]">Create admin password</h4>
-                  <p class="mb-4 text-sm text-[var(--text-tertiary)]">Gator will require authentication for the UI and API after setup.</p>
+                <div class="rounded-xl border border-line-faint bg-surface-tertiary p-4">
+                  <h4 class="mb-1 text-sm font-semibold text-fg">Create admin password</h4>
+                  <p class="mb-4 text-sm text-fg-tertiary">Gator will require authentication for the UI and API after setup.</p>
 
                   <div class="grid gap-4 sm:grid-cols-2">
                     <Input
@@ -210,7 +210,7 @@ export default function Setup(props: Props) {
                 <button
                   type="button"
                   onClick={back}
-                  class="rounded-lg px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+                  class="rounded-lg px-4 py-2 text-sm font-medium text-fg-secondary transition-colors hover:text-fg"
                 >
                   Back
                 </button>
@@ -219,7 +219,7 @@ export default function Setup(props: Props) {
                 type="button"
                 onClick={next}
                 disabled={step() === 0 ? !canProceedStep0() : !canProceedStep1()}
-                class="rounded-lg bg-[var(--accent-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--bg-primary)] shadow-lg shadow-[var(--accent-primary)]/20 transition-all hover:brightness-110 hover:shadow-[var(--accent-primary)]/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                class="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
               >
                 Continue
               </button>
@@ -228,7 +228,7 @@ export default function Setup(props: Props) {
         </div>
 
         {/* Footer */}
-        <p class="mt-6 text-center text-xs text-[var(--text-muted)]">
+        <p class="mt-6 text-center text-xs text-fg-muted">
           You can change these settings later in the configuration panel.
         </p>
       </div>

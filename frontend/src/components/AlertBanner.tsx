@@ -7,17 +7,17 @@ import Card from "./Card";
 type AlertTone = "error" | "success" | "warning" | "info";
 
 const toneClasses: Record<AlertTone, string> = {
-  error: "border-l-[var(--status-error)] bg-[var(--error-subtle)]",
-  success: "border-l-[var(--status-success)] bg-[var(--success-subtle)]",
-  warning: "border-l-[var(--status-warning)] bg-[var(--warning-subtle)]",
-  info: "border-l-[var(--status-info)] bg-[var(--info-subtle)]",
+  error: "border-l-error bg-error-subtle",
+  success: "border-l-success bg-success-subtle",
+  warning: "border-l-warning bg-warning-subtle",
+  info: "border-l-info bg-info-subtle",
 };
 
 const textClasses: Record<AlertTone, string> = {
-  error: "text-[var(--status-error)]",
-  success: "text-[var(--status-success)]",
-  warning: "text-[var(--status-warning)]",
-  info: "text-[var(--status-info)]",
+  error: "text-error",
+  success: "text-success",
+  warning: "text-warning",
+  info: "text-info",
 };
 
 export default function AlertBanner(props: {
@@ -58,7 +58,7 @@ export default function AlertBanner(props: {
             <line x1="12" y1="8" x2="12.01" y2="8" />
           </svg>
         )}
-        <span class="text-[var(--text-sm)]">{props.children}</span>
+        <span class="text-sm">{props.children}</span>
       </div>
     </Card>
   );

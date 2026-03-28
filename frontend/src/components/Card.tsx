@@ -10,8 +10,8 @@ interface CardProps {
 
 export default function Card(props: CardProps) {
   const variantStyles = {
-    default: "bg-[var(--bg-tertiary)] border-[var(--border-default)]",
-    elevated: "bg-[var(--bg-elevated)] border-[var(--border-strong)] shadow-[var(--shadow-md)]",
+    default: "bg-surface-tertiary border-line",
+    elevated: "bg-elevated border-line-strong shadow-md",
     ghost: "bg-transparent border-transparent",
   };
 
@@ -25,11 +25,11 @@ export default function Card(props: CardProps) {
   return (
     <div
       class={[
-        "rounded-[var(--radius-lg)] border",
-        "transition-all duration-[var(--transition-base)]",
+        "rounded-lg border",
+        "transition-all duration-base",
         variantStyles[props.variant ?? "default"],
         paddingStyles[props.padding ?? "md"],
-        props.interactive && "cursor-pointer hover:border-[var(--border-focus)] hover:shadow-[var(--shadow-md)]",
+        props.interactive && "cursor-pointer hover:border-line-focus hover:shadow-md",
         props.class ?? "",
       ].join(" ")}
     >

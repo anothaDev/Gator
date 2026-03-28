@@ -24,10 +24,10 @@ export default function StepIndicator(props: Props) {
                 <div
                   class={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all duration-300 ${
                     isActive()
-                      ? "border-[var(--status-success)] bg-[var(--success-subtle)] text-[var(--status-success)] shadow-[0_0_12px_rgba(0,255,157,0.3)]"
+                      ? "border-success bg-success-subtle text-success shadow-[0_0_12px_rgba(0,255,157,0.3)]"
                       : isCompleted()
-                        ? "border-[var(--status-success)] bg-[var(--status-success)] text-[var(--bg-primary)]"
-                        : "border-[var(--border-default)] text-[var(--text-tertiary)]"
+                        ? "border-success bg-success text-surface"
+                        : "border-line text-fg-tertiary"
                   }`}
                 >
                   {isCompleted() ? (
@@ -52,10 +52,10 @@ export default function StepIndicator(props: Props) {
                   <p
                     class={`text-sm font-medium leading-none ${
                       isActive()
-                        ? "text-[var(--text-primary)]"
+                        ? "text-fg"
                         : isCompleted()
-                          ? "text-[var(--text-secondary)]"
-                          : "text-[var(--text-muted)]"
+                          ? "text-fg-secondary"
+                          : "text-fg-muted"
                     }`}
                   >
                     {step.label}
@@ -63,10 +63,10 @@ export default function StepIndicator(props: Props) {
                   <p
                     class={`mt-1 text-xs ${
                       isActive()
-                        ? "text-[var(--text-secondary)]"
+                        ? "text-fg-secondary"
                         : isCompleted()
-                          ? "text-[var(--text-tertiary)]"
-                          : "text-[var(--text-muted)]"
+                          ? "text-fg-tertiary"
+                          : "text-fg-muted"
                     }`}
                   >
                     {step.description}
@@ -77,7 +77,7 @@ export default function StepIndicator(props: Props) {
               {i() < props.steps.length - 1 && (
                 <div
                   class={`mx-1 h-px flex-1 transition-colors duration-300 ${
-                    isCompleted() ? "bg-[var(--status-success)]/50" : "bg-[var(--bg-elevated)]"
+                    isCompleted() ? "bg-success/50" : "bg-elevated"
                   }`}
                 />
               )}

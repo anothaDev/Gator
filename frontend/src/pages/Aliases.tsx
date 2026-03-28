@@ -2,6 +2,7 @@ import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
+import OpnsenseLink from "../components/OpnsenseLink";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
 import { apiGet } from "../lib/api";
 
@@ -76,13 +77,13 @@ export default function Aliases() {
       {/* Header */}
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-[var(--text-2xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 class="text-2xl font-semibold tracking-tight text-fg">
             Aliases
           </h1>
-          <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+          <p class="mt-1 text-sm text-fg-tertiary">
             Firewall aliases for IP ranges, port groups, and network lists.
             {gatorCount() > 0 && (
-              <span class="ml-2 text-[var(--status-success)]">{gatorCount()} managed by Gator</span>
+              <span class="ml-2 text-success">{gatorCount()} managed by Gator</span>
             )}
           </p>
         </div>
@@ -92,6 +93,7 @@ export default function Aliases() {
           </svg>
           Refresh
         </Button>
+        <OpnsenseLink path="/ui/firewall/alias" label="Aliases" />
       </div>
 
       {/* Loading state */}
@@ -108,7 +110,7 @@ export default function Aliases() {
       <Show when={!loading() && loadError() === ""}>
         <Show when={aliases().length === 0}>
           <EmptyStateCard message="No aliases found">
-            <svg class="mx-auto h-12 w-12 text-[var(--text-muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg class="mx-auto h-12 w-12 text-fg-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
@@ -126,20 +128,20 @@ export default function Aliases() {
                   <col class="w-[10%]" />
                 </colgroup>
                 <thead>
-                  <tr class="border-b border-[var(--border-strong)]">
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                  <tr class="border-b border-line-strong">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Name
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Type
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Content
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Status
                     </th>
                   </tr>
@@ -149,13 +151,13 @@ export default function Aliases() {
                     {(alias) => (
                       <tr
                         class={[
-                          "border-b border-[var(--border-subtle)] transition-colors duration-[var(--transition-fast)] hover:bg-[var(--bg-hover)]",
-                          alias.is_gator ? "bg-[var(--success-subtle)]/30" : "",
+                          "border-b border-line-faint transition-colors duration-fast hover:bg-hover",
+                          alias.is_gator ? "bg-success-subtle/30" : "",
                         ].join(" ")}
                       >
                         <td class="px-4 py-3 overflow-hidden">
                           <div class="flex items-center gap-2 min-w-0">
-                            <span class="font-mono text-[var(--text-sm)] text-[var(--text-primary)] truncate">{alias.name}</span>
+                            <span class="font-mono text-sm text-fg truncate">{alias.name}</span>
                             <Show when={alias.is_gator}>
                               <Badge variant="success" size="sm" class="shrink-0">Gator</Badge>
                             </Show>
@@ -163,13 +165,13 @@ export default function Aliases() {
                         </td>
                         <td class="px-4 py-3">{getTypeBadge(alias.type)}</td>
                         <td
-                          class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)] truncate overflow-hidden"
+                          class="px-4 py-3 font-mono text-xs text-fg-tertiary truncate overflow-hidden"
                           title={alias.content}
                         >
                           {formatContent(alias.content)}
                         </td>
                         <td
-                          class="px-4 py-3 text-[var(--text-xs)] text-[var(--text-tertiary)] truncate overflow-hidden"
+                          class="px-4 py-3 text-xs text-fg-tertiary truncate overflow-hidden"
                           title={alias.description}
                         >
                           {alias.description || "-"}

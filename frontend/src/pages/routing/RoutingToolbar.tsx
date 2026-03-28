@@ -1,21 +1,6 @@
 import { For, Show } from "solid-js";
 import Button from "../../components/Button";
-
-// ─── Types ───────────────────────────────────────────────────────
-
-type AppPreset = {
-  id: string;
-  name: string;
-  description: string;
-  vpn_on?: string[];
-  vpn_off?: string[];
-};
-
-type CategoryInfo = {
-  key: string;
-  label: string;
-  enabledCount: number;
-};
+import type { AppPreset, CategoryInfo } from "./types";
 
 // ─── Routing Toolbar ─────────────────────────────────────────────
 
@@ -35,10 +20,10 @@ function RoutingToolbar(props: {
   onAddCustom: () => void;
 }) {
   return (
-    <div class="rounded-xl border border-[var(--border-default)] bg-[var(--bg-tertiary)] p-4">
+    <div class="rounded-xl border border-line bg-surface-tertiary p-4">
       {/* Presets row */}
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mr-1">Presets</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-fg-tertiary mr-1">Presets</span>
         <For each={props.presets}>
           {(preset) => (
             <Button
@@ -62,9 +47,9 @@ function RoutingToolbar(props: {
             placeholder="Search apps, ports, protocols..."
             value={props.search}
             onInput={(e) => props.onSearchChange(e.currentTarget.value)}
-            class="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-2 pl-8 text-[var(--text-sm)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+            class="w-full rounded-lg border border-line bg-surface-secondary px-3 py-2 pl-8 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none"
           />
-          <svg class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" viewBox="0 0 20 20" fill="currentColor">
+          <svg class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
           </svg>
         </div>
@@ -72,10 +57,10 @@ function RoutingToolbar(props: {
           <button
             type="button"
             onClick={() => props.onFilterStatusChange(props.filterStatus === "enabled" ? "all" : "enabled")}
-            class={`rounded-md px-2.5 py-1.5 text-[var(--text-xs)] font-medium transition-all ${
+            class={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
               props.filterStatus === "enabled"
-                ? "border border-[var(--status-success)]/40 bg-[var(--success-subtle)] text-[var(--status-success)]"
-                : "border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                ? "border border-success/40 bg-success-subtle text-success"
+                : "border border-line bg-surface-secondary text-fg-tertiary hover:text-fg"
             }`}
           >
             Active ({props.enabledCount})
@@ -83,10 +68,10 @@ function RoutingToolbar(props: {
           <button
             type="button"
             onClick={() => props.onFilterStatusChange(props.filterStatus === "disabled" ? "all" : "disabled")}
-            class={`rounded-md px-2.5 py-1.5 text-[var(--text-xs)] font-medium transition-all ${
+            class={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
               props.filterStatus === "disabled"
-                ? "border border-[var(--text-secondary)]/40 bg-[var(--bg-hover)] text-[var(--text-secondary)]"
-                : "border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                ? "border border-fg-secondary/40 bg-hover text-fg-secondary"
+                : "border border-line bg-surface-secondary text-fg-tertiary hover:text-fg"
             }`}
           >
             Inactive ({props.totalCount - props.enabledCount})
@@ -94,7 +79,7 @@ function RoutingToolbar(props: {
           <button
             type="button"
             onClick={props.onAddCustom}
-            class="rounded-md border border-dashed border-[var(--border-strong)] px-2.5 py-1.5 text-[var(--text-xs)] font-medium text-[var(--text-tertiary)] transition-all hover:border-[var(--border-focus)] hover:text-[var(--text-secondary)]"
+            class="rounded-md border border-dashed border-line-strong px-2.5 py-1.5 text-xs font-medium text-fg-tertiary transition-all hover:border-line-focus hover:text-fg-secondary"
           >
             + Custom
           </button>
@@ -106,10 +91,10 @@ function RoutingToolbar(props: {
         <button
           type="button"
           onClick={() => props.onFilterCategoryChange(null)}
-          class={`rounded-md px-2.5 py-1 text-[var(--text-xs)] font-medium transition-all ${
+          class={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
             props.filterCategory === null
-              ? "border border-[var(--status-success)]/40 bg-[var(--success-subtle)] text-[var(--status-success)]"
-              : "border border-[var(--border-default)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+              ? "border border-success/40 bg-success-subtle text-success"
+              : "border border-line text-fg-tertiary hover:text-fg-secondary"
           }`}
         >
           All
@@ -119,15 +104,15 @@ function RoutingToolbar(props: {
             <button
               type="button"
               onClick={() => props.onFilterCategoryChange(props.filterCategory === cat.key ? null : cat.key)}
-              class={`rounded-md px-2.5 py-1 text-[var(--text-xs)] font-medium transition-all ${
+              class={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
                 props.filterCategory === cat.key
-                  ? "border border-[var(--status-success)]/40 bg-[var(--success-subtle)] text-[var(--status-success)]"
-                  : "border border-[var(--border-default)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                  ? "border border-success/40 bg-success-subtle text-success"
+                  : "border border-line text-fg-tertiary hover:text-fg-secondary"
               }`}
             >
               {cat.label}
               <Show when={cat.enabledCount > 0}>
-                <span class="ml-1 text-[var(--status-success)]">{cat.enabledCount}</span>
+                <span class="ml-1 text-success">{cat.enabledCount}</span>
               </Show>
             </button>
           )}

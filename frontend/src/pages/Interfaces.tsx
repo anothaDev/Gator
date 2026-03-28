@@ -2,6 +2,7 @@ import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
+import OpnsenseLink from "../components/OpnsenseLink";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
 import { apiGet } from "../lib/api";
 
@@ -98,10 +99,10 @@ export default function Interfaces() {
       {/* Header */}
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-[var(--text-2xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 class="text-2xl font-semibold tracking-tight text-fg">
             Interfaces
           </h1>
-          <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">
+          <p class="mt-1 text-sm text-fg-tertiary">
             Network interfaces. WireGuard devices must be assigned before routing.
           </p>
         </div>
@@ -111,22 +112,23 @@ export default function Interfaces() {
           </svg>
           Refresh
         </Button>
+        <OpnsenseLink path="/ui/interfaces/overview" label="Interfaces" />
       </div>
 
       {/* Warning banner */}
       <Show when={hasUnassignedWG()}>
-        <Card variant="elevated" class="border-l-4 border-l-[var(--status-warning)]">
+        <Card variant="elevated" class="border-l-4 border-l-warning">
           <div class="flex items-start gap-4">
-            <div class="flex h-10 w-10 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--warning-subtle)]">
-              <svg class="h-5 w-5 text-[var(--status-warning)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-subtle">
+              <svg class="h-5 w-5 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" />
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
             </div>
             <div>
-              <h3 class="font-medium text-[var(--text-primary)]">Unassigned WireGuard device detected</h3>
-              <p class="mt-1 text-[var(--text-sm)] text-[var(--text-secondary)]">
+              <h3 class="font-medium text-fg">Unassigned WireGuard device detected</h3>
+              <p class="mt-1 text-sm text-fg-secondary">
                 To use a WireGuard tunnel for routing, it must be assigned as an OPNsense interface.
                 Go to <span class="font-semibold">Interfaces &gt; Assignments</span> in OPNsense,
                 select the WG device from the "New interface" dropdown, click <span class="font-semibold">+</span> to add it,
@@ -151,7 +153,7 @@ export default function Interfaces() {
       <Show when={!loading() && loadError() === ""}>
         <Show when={interfaces().length === 0}>
           <EmptyStateCard message="No interfaces found">
-            <svg class="mx-auto h-12 w-12 text-[var(--text-muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg class="mx-auto h-12 w-12 text-fg-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
               <line x1="8" y1="21" x2="16" y2="21" />
               <line x1="12" y1="17" x2="12" y2="21" />
@@ -164,23 +166,23 @@ export default function Interfaces() {
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-[var(--border-strong)]">
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                  <tr class="border-b border-line-strong">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Identifier
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Device
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Address
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Status
                     </th>
-                    <th class="px-4 py-3 text-left text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
                       Assigned
                     </th>
                   </tr>
@@ -190,25 +192,25 @@ export default function Interfaces() {
                     {(iface) => (
                       <tr
                         class={[
-                          "border-b border-[var(--border-subtle)] transition-colors duration-[var(--transition-fast)] hover:bg-[var(--bg-hover)]",
-                          iface.is_wireguard ? "bg-[var(--info-subtle)]/30" : "",
+                          "border-b border-line-faint transition-colors duration-fast hover:bg-hover",
+                          iface.is_wireguard ? "bg-info-subtle/30" : "",
                         ].join(" ")}
                       >
                         <td class="px-4 py-3">
                           <div class="flex items-center gap-2">
-                            <span class="font-medium text-[var(--text-primary)]">{iface.identifier}</span>
+                            <span class="font-medium text-fg">{iface.identifier}</span>
                             <Show when={iface.is_wireguard}>
                               <Badge variant="info" size="sm">WG</Badge>
                             </Show>
                           </div>
                         </td>
-                        <td class="px-4 py-3 font-mono text-[var(--text-sm)] text-[var(--text-secondary)]">
+                        <td class="px-4 py-3 font-mono text-sm text-fg-secondary">
                           {iface.device}
                         </td>
-                        <td class="px-4 py-3 text-[var(--text-sm)] text-[var(--text-secondary)]">
+                        <td class="px-4 py-3 text-sm text-fg-secondary">
                           {iface.description || "-"}
                         </td>
-                        <td class="px-4 py-3 font-mono text-[var(--text-xs)] text-[var(--text-tertiary)]">
+                        <td class="px-4 py-3 font-mono text-xs text-fg-tertiary">
                           <Show when={iface.addresses.length > 0} fallback="-">
                             <For each={iface.addresses}>
                               {(addr) => <div>{addr}</div>}
@@ -219,9 +221,9 @@ export default function Interfaces() {
                         <td class="px-4 py-3">
                           <Show
                             when={iface.assigned}
-                            fallback={<span class="text-[var(--text-xs)] text-[var(--status-warning)]">not assigned</span>}
+                            fallback={<span class="text-xs text-warning">not assigned</span>}
                           >
-                            <span class="text-[var(--text-xs)] text-[var(--status-success)]">yes</span>
+                            <span class="text-xs text-success">yes</span>
                           </Show>
                         </td>
                       </tr>

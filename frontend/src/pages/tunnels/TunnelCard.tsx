@@ -6,12 +6,13 @@ import Card from "../../components/Card";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
 import AlertBanner from "../../components/AlertBanner";
+import Spinner from "../../components/Spinner";
 
 // ─── Render helpers ──────────────────────────────────────────────
 
 const inputClass =
-  "w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-2.5 text-[var(--text-sm)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none";
-const labelClass = "block text-[var(--text-xs)] font-medium text-[var(--text-secondary)] mb-1.5";
+  "w-full rounded-lg border border-line bg-surface-secondary px-3 py-2.5 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none";
+const labelClass = "block text-xs font-medium text-fg-secondary mb-1.5";
 
 function getStatusBadge(t: TunnelStatus) {
   const os = t.ownership_status ?? "local_only";
@@ -121,7 +122,7 @@ function TunnelActions(props: {
         </svg>
       </Button>
       <Show when={open()}>
-        <div class="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--bg-elevated)] py-1 shadow-xl shadow-black/40">
+        <div class="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-line bg-elevated py-1 shadow-xl shadow-black/40">
           <For each={actions()}>
             {(item) => (
               <button
@@ -133,18 +134,15 @@ function TunnelActions(props: {
                   item.onClick();
                 }}
                 class={[
-                  "flex w-full items-center gap-2 px-3 py-2 text-left text-[var(--text-sm)] font-medium transition-colors",
+                  "flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium transition-colors",
                   item.variant === "danger"
-                    ? "text-[var(--status-error)] hover:bg-[var(--status-error)]/10"
-                    : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
+                    ? "text-error hover:bg-error/10"
+                    : "text-fg hover:bg-hover",
                   "disabled:opacity-40 disabled:cursor-not-allowed",
                 ].join(" ")}
               >
                 <Show when={item.loading}>
-                  <svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
+                  <Spinner size="xs" />
                 </Show>
                 {item.label}
               </button>
@@ -321,11 +319,11 @@ function TunnelCard(props: {
       <div class="flex items-start justify-between">
         <div>
           <div class="flex items-center gap-3">
-            <h3 class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]">{t.name}</h3>
+            <h3 class="text-lg font-semibold text-fg">{t.name}</h3>
             {getStatusBadge(t)}
           </div>
           <Show when={t.description}>
-            <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">{t.description}</p>
+            <p class="mt-1 text-sm text-fg-tertiary">{t.description}</p>
           </Show>
         </div>
 
@@ -359,60 +357,60 @@ function TunnelCard(props: {
       </Show>
 
       {/* Connection details */}
-      <div class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-[var(--text-sm)] md:grid-cols-4">
+      <div class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
         <div>
-          <span class="text-[var(--text-tertiary)]">Remote</span>
-          <p class="font-mono text-[var(--text-primary)]">{t.remote_host}</p>
+          <span class="text-fg-tertiary">Remote</span>
+          <p class="font-mono text-fg">{t.remote_host}</p>
         </div>
         <div>
-          <span class="text-[var(--text-tertiary)]">Tunnel</span>
-          <p class="font-mono text-[var(--text-primary)]">{t.tunnel_subnet || "-"}</p>
+          <span class="text-fg-tertiary">Tunnel</span>
+          <p class="font-mono text-fg">{t.tunnel_subnet || "-"}</p>
         </div>
         <div>
-          <span class="text-[var(--text-tertiary)]">Firewall IP</span>
-          <p class="font-mono text-[var(--text-primary)]">{t.firewall_ip || "-"}</p>
+          <span class="text-fg-tertiary">Firewall IP</span>
+          <p class="font-mono text-fg">{t.firewall_ip || "-"}</p>
         </div>
         <div>
-          <span class="text-[var(--text-tertiary)]">Remote IP</span>
-          <p class="font-mono text-[var(--text-primary)]">{t.remote_ip || "-"}</p>
+          <span class="text-fg-tertiary">Remote IP</span>
+          <p class="font-mono text-fg">{t.remote_ip || "-"}</p>
         </div>
       </div>
 
       {/* Live status (when deployed) */}
       <Show when={t.deployed}>
-        <div class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-[var(--border-default)] pt-3 text-[var(--text-sm)] md:grid-cols-4">
+        <div class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-line pt-3 text-sm md:grid-cols-4">
           <div>
-            <span class="text-[var(--text-tertiary)]">Interface</span>
-            <p class="font-mono text-[var(--text-primary)]">{t.remote_wg_interface}</p>
+            <span class="text-fg-tertiary">Interface</span>
+            <p class="font-mono text-fg">{t.remote_wg_interface}</p>
           </div>
           <div>
-            <span class="text-[var(--text-tertiary)]">Handshake</span>
-            <p class="text-[var(--text-primary)]">{t.handshake || "none"}</p>
+            <span class="text-fg-tertiary">Handshake</span>
+            <p class="text-fg">{t.handshake || "none"}</p>
           </div>
           <div>
-            <span class="text-[var(--text-tertiary)]">Received</span>
-            <p class="text-[var(--text-primary)]">{t.transfer_rx || "-"}</p>
+            <span class="text-fg-tertiary">Received</span>
+            <p class="text-fg">{t.transfer_rx || "-"}</p>
           </div>
           <div>
-            <span class="text-[var(--text-tertiary)]">Sent</span>
-            <p class="text-[var(--text-primary)]">{t.transfer_tx || "-"}</p>
+            <span class="text-fg-tertiary">Sent</span>
+            <p class="text-fg">{t.transfer_tx || "-"}</p>
           </div>
         </div>
       </Show>
 
       {/* Cross-check results */}
       <Show when={crossCheckResult()}>
-        <div class="mt-3 border-t border-[var(--border-default)] pt-3">
+        <div class="mt-3 border-t border-line pt-3">
           <div class="flex items-center justify-between">
-            <p class="text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Cross-check results</p>
+            <p class="text-xs font-semibold uppercase tracking-wider text-fg-tertiary">Cross-check results</p>
             <Button variant="ghost" size="sm" onClick={() => setCrossCheckResult(null)}>
               Dismiss
             </Button>
           </div>
-          <div class="mt-2 space-y-1 text-[var(--text-sm)]">
+          <div class="mt-2 space-y-1 text-sm">
             <CrossCheckRow label="SSH connection" ok={crossCheckResult()!.ssh_ok as boolean} detail={crossCheckResult()!.ssh_error as string} />
             <Show when={crossCheckResult()!.hostname}>
-              <p class="text-[var(--text-secondary)]">Host: {crossCheckResult()!.hostname as string} ({crossCheckResult()!.os as string})</p>
+              <p class="text-fg-secondary">Host: {crossCheckResult()!.hostname as string} ({crossCheckResult()!.os as string})</p>
             </Show>
             <Show when={crossCheckResult()!.ssh_ok}>
               <CrossCheckRow label="WireGuard installed" ok={crossCheckResult()!.wg_installed as boolean} />
@@ -439,8 +437,8 @@ function TunnelCard(props: {
 
       {/* Inline edit form */}
       <Show when={editing()}>
-        <div class="mt-4 border-t border-[var(--border-default)] pt-4">
-          <p class="mb-3 text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Edit Tunnel</p>
+        <div class="mt-4 border-t border-line pt-4">
+          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">Edit Tunnel</p>
           <Show when={editErr()}>
             <div class="mb-3">
               <AlertBanner tone="error">{editErr()}</AlertBanner>
@@ -496,16 +494,16 @@ function TunnelCard(props: {
             </div>
           </div>
           <div class="mt-3">
-            <label class={labelClass}>SSH Private Key <span class="text-[var(--text-muted)]">(leave empty to keep current)</span></label>
+            <label class={labelClass}>SSH Private Key <span class="text-fg-muted">(leave empty to keep current)</span></label>
             <textarea
-              class={inputClass + " h-20 font-mono text-[var(--text-xs)]"}
+              class={inputClass + " h-20 font-mono text-xs"}
               placeholder="Paste new key to replace, or leave empty"
               value={(editData().ssh_private_key as string) ?? ""}
               onInput={(e) => setEditData((d) => ({ ...d, ssh_private_key: e.currentTarget.value }))}
             />
           </div>
           <div class="mt-3">
-            <label class={labelClass}>SSH Password <span class="text-[var(--text-muted)]">(leave empty to keep current)</span></label>
+            <label class={labelClass}>SSH Password <span class="text-fg-muted">(leave empty to keep current)</span></label>
             <input
               type="password"
               class={inputClass}
