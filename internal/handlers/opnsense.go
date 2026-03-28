@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -258,6 +259,9 @@ func (h *OPNsenseHandler) buildOverview(ctx context.Context) models.OPNsenseOver
 	diskCh := make(chan apiResult, 1)
 	gatewayCh := make(chan apiResult, 1)
 	wireguardCh := make(chan apiResult, 1)
+	tempCh := make(chan apiResult, 1)
+	cpuTypeCh := make(chan apiResult, 1)
+	activityCh := make(chan apiResult, 1)
 
 	go func() {
 		data, err := api.Get(ctx, "/api/diagnostics/system/system_time")
@@ -278,6 +282,18 @@ func (h *OPNsenseHandler) buildOverview(ctx context.Context) models.OPNsenseOver
 	go func() {
 		data, err := api.Get(ctx, "/api/wireguard/service/show")
 		wireguardCh <- apiResult{data, err}
+	}()
+	go func() {
+		data, err := api.Get(ctx, "/api/diagnostics/system/system_temperature")
+		tempCh <- apiResult{data, err}
+	}()
+	go func() {
+		data, err := api.Get(ctx, "/api/diagnostics/cpu_usage/getCPUType")
+		cpuTypeCh <- apiResult{data, err}
+	}()
+	go func() {
+		data, err := api.Get(ctx, "/api/diagnostics/activity/getActivity")
+		activityCh <- apiResult{data, err}
 	}()
 
 	addPermWarn := func(e error) {
@@ -314,14 +330,25 @@ func (h *OPNsenseHandler) buildOverview(ctx context.Context) models.OPNsenseOver
 		if overview.Memory.UsedMB == 0 {
 			overview.Memory.UsedMB = parseInt(memory["used"]) / 1024 / 1024
 		}
-		// CPU core count from the cpu.used field ("N/M" format) or cpu object.
+		// CPU core count and usage from the cpu object.
 		cpu := asMap(r.data["cpu"])
 		if total := parseInt(cpu["total"]); total > 0 {
 			overview.CPUCount = total
 		}
-		// Fallback: count from top-level cpu_count or headers.
 		if overview.CPUCount == 0 {
 			overview.CPUCount = parseInt(r.data["cpu_count"])
+		}
+		// CPU usage: try "used" field (percentage), then compute from user+sys+nice+intr.
+		if used := parseInt(cpu["used"]); used > 0 {
+			overview.CPUUsage = used
+		} else {
+			user := parseInt(cpu["user"])
+			sys := parseInt(cpu["sys"])
+			nice := parseInt(cpu["nice"])
+			intr := parseInt(cpu["intr"])
+			if total := user + sys + nice + intr; total > 0 {
+				overview.CPUUsage = total
+			}
 		}
 	} else {
 		addPermWarn(r.err)
@@ -398,6 +425,88 @@ func (h *OPNsenseHandler) buildOverview(ctx context.Context) models.OPNsenseOver
 		}
 	} else {
 		addPermWarn(r.err)
+	}
+
+	// Temperature sensors.
+	if r := <-tempCh; r.err == nil {
+		anySuccess = true
+		overview.Connected = true
+		// Response can be {"system": [{"device":"hw.acpi.thermal.tz0","temperature":"45.1C"}, ...]}
+		// or {"devices": [...]} or a flat array under various keys.
+		var temps []any
+		for _, key := range []string{"system", "devices"} {
+			if t := asSlice(r.data[key]); len(t) > 0 {
+				temps = t
+				break
+			}
+		}
+		// Some versions return a flat map keyed by device name.
+		if len(temps) == 0 {
+			for k, v := range r.data {
+				entry := asMap(v)
+				if temp := asString(entry["temperature"]); temp != "" {
+					overview.Temperature = append(overview.Temperature, struct {
+						Device string `json:"device"`
+						TempC  string `json:"temp_c"`
+					}{Device: k, TempC: strings.TrimSuffix(temp, "C")})
+				}
+			}
+		}
+		for _, raw := range temps {
+			entry := asMap(raw)
+			device := asString(entry["device"])
+			temp := asString(entry["temperature"])
+			if device == "" {
+				device = asString(entry["type"])
+			}
+			if temp == "" {
+				continue
+			}
+			overview.Temperature = append(overview.Temperature, struct {
+				Device string `json:"device"`
+				TempC  string `json:"temp_c"`
+			}{Device: device, TempC: strings.TrimSuffix(temp, "C")})
+		}
+	}
+	// Don't addPermWarn for temp - many VMs lack thermal sensors.
+
+	// CPU type info (optional enrichment).
+	if r := <-cpuTypeCh; r.err == nil {
+		if overview.CPUCount == 0 {
+			if count := parseInt(r.data["cpuCount"]); count > 0 {
+				overview.CPUCount = count
+			}
+		}
+	}
+
+	// Activity data includes CPU usage in the headers.
+	if r := <-activityCh; r.err == nil {
+		anySuccess = true
+		overview.Connected = true
+		// Response has "headers" with CPU line, e.g.:
+		// "CPU:  3.1% user,  0.0% nice,  1.5% system,  0.0% interrupt, 95.4% idle"
+		// Or it may have a parsed structure.
+		if headers := asSlice(r.data["headers"]); len(headers) > 0 {
+			for _, h := range headers {
+				line := asString(h)
+				if !strings.Contains(line, "CPU") && !strings.Contains(line, "cpu") {
+					continue
+				}
+				// Parse idle percentage and compute usage = 100 - idle.
+				if idx := strings.Index(line, "idle"); idx > 0 {
+					// Work backwards from "idle" to find the number.
+					chunk := strings.TrimSpace(line[:idx])
+					parts := strings.Split(chunk, " ")
+					if len(parts) > 0 {
+						idleStr := strings.TrimRight(parts[len(parts)-1], "%,")
+						if idleVal, err := strconv.ParseFloat(idleStr, 64); err == nil {
+							overview.CPUUsage = int(math.Round(100 - idleVal))
+						}
+					}
+				}
+				break
+			}
+		}
 	}
 
 	if !anySuccess {

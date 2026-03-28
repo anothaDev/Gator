@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
 
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -71,9 +71,9 @@ export default function AuthBootstrap(props: Props) {
           />
         </div>
 
-        {error() !== "" && (
+        <Show when={error() !== ""}>
           <div class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error()}</div>
-        )}
+        </Show>
 
         <Button variant="primary" size="lg" loading={loading()} class="mt-6 w-full" onClick={() => void handleBootstrap()}>
           Enable authentication

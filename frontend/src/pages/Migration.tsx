@@ -1,4 +1,4 @@
-import { createSignal, Show, onMount } from "solid-js";
+import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -347,12 +347,14 @@ export default function Migration() {
         <Card>
           <h2 class="text-sm font-semibold text-fg">Log</h2>
           <div class="mt-2 space-y-1">
-            {stepsDone().map((step, i) => (
-              <p class="text-xs text-fg-tertiary">
-                <span class="font-mono text-fg-muted">{String(i + 1).padStart(2, " ")}.</span>{" "}
-                {step}
-              </p>
-            ))}
+            <For each={stepsDone()}>
+              {(step, i) => (
+                <p class="text-xs text-fg-tertiary">
+                  <span class="font-mono text-fg-muted">{String(i() + 1).padStart(2, " ")}.</span>{" "}
+                  {step}
+                </p>
+              )}
+            </For>
           </div>
         </Card>
       </Show>

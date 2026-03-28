@@ -189,13 +189,11 @@ function CreateTunnelForm(props: {
               Test SSH Connection
             </Button>
             <Show when={sshTestResult()}>
-              {(result) => (
-                <span class={`text-sm ${result().success ? "text-success" : "text-error"}`}>
-                  {result().success
-                    ? `Connected — ${result().info?.hostname ?? ""} (${result().info?.os ?? "Linux"})`
-                    : `Failed: ${result().error}`}
+                <span class={`text-sm ${sshTestResult()!.success ? "text-success" : "text-error"}`}>
+                  {sshTestResult()!.success
+                    ? `Connected — ${sshTestResult()!.info?.hostname ?? ""} (${sshTestResult()!.info?.os ?? "Linux"})`
+                    : `Failed: ${sshTestResult()!.error}`}
                 </span>
-              )}
             </Show>
           </div>
         </div>

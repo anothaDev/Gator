@@ -105,9 +105,9 @@ export default function Backups() {
           </h1>
           <p class="mt-1 text-sm text-fg-tertiary">
             OPNsense configuration snapshots.
-            {backups().length > 0 && (
+            <Show when={backups().length > 0}>
               <span class="ml-2 text-fg-secondary">{backups().length} stored</span>
-            )}
+            </Show>
           </p>
         </div>
         <div class="flex items-center gap-2">

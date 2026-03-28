@@ -118,14 +118,12 @@ export default function App() {
         </Match>
 
         <Match when={setupStatus()?.configured && authStatus()?.configured && authStatus()?.authenticated}>
-          <Show when={setupStatus()} keyed>
-            {(_status) => (
+          <Show when={setupStatus()}>
               <ControlCenter
                 onLogout={handleLoggedOut}
                 onReconfigure={() => setForceSetup(true)}
                 onInstanceSwitched={() => void loadAppState()}
               />
-            )}
           </Show>
         </Match>
       </Switch>

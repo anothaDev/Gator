@@ -182,34 +182,33 @@ export default function Tailscale() {
       </Show>
 
       <Show when={!loading() && error() === "" && status()}>
-        {(data) => (
           <>
             <Card variant="elevated" class="border-l-4 border-l-accent">
               <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-lg font-semibold text-fg">Setup status</h2>
-                    <Badge variant={data().installed ? "success" : "warning"} size="sm">
-                      {data().installed ? "plugin installed" : "plugin missing"}
+                    <Badge variant={status()!.installed ? "success" : "warning"} size="sm">
+                      {status()!.installed ? "plugin installed" : "plugin missing"}
                     </Badge>
-                    <Show when={data().configured}>
+                    <Show when={status()!.configured}>
                       <Badge variant="info" size="sm">configured</Badge>
                     </Show>
-                    <Show when={data().service_running}>
+                    <Show when={status()!.service_running}>
                       <Badge variant="success" size="sm">service running</Badge>
                     </Show>
                   </div>
-                  <p class="mt-2 text-sm text-fg-secondary">{data().message}</p>
+                  <p class="mt-2 text-sm text-fg-secondary">{status()!.message}</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 text-sm lg:min-w-[300px]">
                   <div class="rounded-md border border-line bg-surface-secondary px-3 py-2">
                     <div class="text-xs uppercase tracking-wider text-fg-tertiary">Service</div>
-                    <div class="mt-1 font-medium text-fg">{data().service_status || "not installed"}</div>
+                    <div class="mt-1 font-medium text-fg">{status()!.service_status || "not installed"}</div>
                   </div>
                   <div class="rounded-md border border-line bg-surface-secondary px-3 py-2">
                     <div class="text-xs uppercase tracking-wider text-fg-tertiary">Tailscale IP</div>
-                    <div class="mt-1 font-mono text-fg">{data().tailscale_ip || "--"}</div>
+                    <div class="mt-1 font-mono text-fg">{status()!.tailscale_ip || "--"}</div>
                   </div>
                 </div>
               </div>
@@ -220,7 +219,7 @@ export default function Tailscale() {
             </Show>
 
             {/* Setup steps: only show the current step that needs action */}
-            <Show when={!data().installed}>
+            <Show when={!status()!.installed}>
               <Card>
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
@@ -239,7 +238,7 @@ export default function Tailscale() {
               </Card>
             </Show>
 
-            <Show when={data().installed && !data().configured}>
+            <Show when={status()!.installed && !status()!.configured}>
               <Card>
                 <h3 class="font-semibold text-fg">Configure authentication</h3>
                 <p class="mt-2 text-sm text-fg-secondary">
@@ -273,7 +272,7 @@ export default function Tailscale() {
               </Card>
             </Show>
 
-            <Show when={data().installed && data().configured && !(iface()?.found && iface()?.assigned && iface()?.enabled)}>
+            <Show when={status()!.installed && status()!.configured && !(iface()?.found && iface()?.assigned && iface()?.enabled)}>
               <Card variant="elevated" class="border-l-4 border-l-warning">
                 <div class="flex items-start justify-between gap-4">
                   <div>
@@ -282,9 +281,9 @@ export default function Tailscale() {
                       Tailscale is installed and running, but OPNsense needs the interface assigned manually. Gator can't do this programmatically yet.
                     </p>
                   </div>
-                  <Show when={data().opnsense_host}>
+                  <Show when={status()!.opnsense_host}>
                     <a
-                      href={`${data().opnsense_host}/interfaces_assign.php`}
+                      href={`${status()!.opnsense_host}/interfaces_assign.php`}
                       target="_blank"
                       rel="noopener noreferrer"
                       class="shrink-0 rounded-md border border-warning/30 bg-warning/10 px-3 py-1.5 text-[12px] font-medium text-warning hover:bg-warning/20"
@@ -304,7 +303,7 @@ export default function Tailscale() {
               </Card>
             </Show>
 
-            <Show when={data().installed && data().configured && iface()?.found && iface()?.assigned && iface()?.enabled}>
+            <Show when={status()!.installed && status()!.configured && iface()?.found && iface()?.assigned && iface()?.enabled}>
               <Card variant="elevated" class="border-l-4 border-l-success">
                 <h3 class="font-semibold text-fg">Setup complete</h3>
                 <p class="mt-1 text-sm text-fg-secondary">
@@ -313,11 +312,10 @@ export default function Tailscale() {
               </Card>
             </Show>
 
-            <Show when={data().installed && data().configured}>
+            <Show when={status()!.installed && status()!.configured}>
               <AdvertisedRoutes />
             </Show>
           </>
-        )}
       </Show>
     </div>
   );

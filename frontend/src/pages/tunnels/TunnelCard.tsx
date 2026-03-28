@@ -166,8 +166,6 @@ function TunnelCard(props: {
   /** When > 0, legacy rules exist — deploy/readopt actions are blocked until migration. */
   legacyRuleCount?: number;
 }) {
-  const t = props.tunnel;
-
   // Action busy state (delete, restart, teardown, lockdown).
   const [busy, setBusy] = createSignal(false);
 
@@ -188,7 +186,7 @@ function TunnelCard(props: {
     props.onError("");
     setBusy(true);
     try {
-      const { ok, data } = await apiDelete(`/api/tunnels/${t.id}`);
+      const { ok, data } = await apiDelete(`/api/tunnels/${props.tunnel.id}`);
       if (ok) {
         props.onMessage("Tunnel deleted.");
         props.onUpdated();
@@ -207,7 +205,7 @@ function TunnelCard(props: {
     props.onError("");
     setBusy(true);
     try {
-      const { ok, data } = await apiPost(`/api/tunnels/${t.id}/teardown`);
+      const { ok, data } = await apiPost(`/api/tunnels/${props.tunnel.id}/teardown`);
       if (ok) {
         props.onMessage("Tunnel torn down.");
         props.onUpdated();
@@ -226,7 +224,7 @@ function TunnelCard(props: {
     props.onError("");
     setBusy(true);
     try {
-      const { ok, data } = await apiPost(`/api/tunnels/${t.id}/restart`);
+      const { ok, data } = await apiPost(`/api/tunnels/${props.tunnel.id}/restart`);
       if (ok) {
         props.onMessage("Tunnel restarted.");
         props.onUpdated();
@@ -245,7 +243,7 @@ function TunnelCard(props: {
     props.onError("");
     setBusy(true);
     try {
-      const { ok, data } = await apiPost(`/api/tunnels/${t.id}/lockdown-ssh`);
+      const { ok, data } = await apiPost(`/api/tunnels/${props.tunnel.id}/lockdown-ssh`);
       if (ok) {
         props.onMessage("SSH locked down to tunnel subnet.");
       } else {
@@ -264,7 +262,7 @@ function TunnelCard(props: {
     setCrossChecking(true);
     setCrossCheckResult(null);
     try {
-      const { ok, data } = await apiPost<{ cross_check: Record<string, unknown> }>(`/api/tunnels/${t.id}/cross-check`);
+      const { ok, data } = await apiPost<{ cross_check: Record<string, unknown> }>(`/api/tunnels/${props.tunnel.id}/cross-check`);
       if (ok) {
         setCrossCheckResult(data.cross_check);
       } else {
@@ -280,7 +278,7 @@ function TunnelCard(props: {
   // ─── Edit ────────────────────────────────────────────────────
 
   const startEdit = async () => {
-    const { ok, data } = await apiGet<TunnelDetail>(`/api/tunnels/${t.id}`);
+    const { ok, data } = await apiGet<TunnelDetail>(`/api/tunnels/${props.tunnel.id}`);
     if (!ok) return;
     setEditData({
       name: data.name,
@@ -299,7 +297,7 @@ function TunnelCard(props: {
     setEditSaving(true);
     setEditErr("");
     try {
-      const { ok, data } = await apiPut(`/api/tunnels/${t.id}`, editData());
+      const { ok, data } = await apiPut(`/api/tunnels/${props.tunnel.id}`, editData());
       if (ok) {
         setEditing(false);
         props.onMessage("Tunnel updated.");
@@ -319,19 +317,19 @@ function TunnelCard(props: {
       <div class="flex items-start justify-between">
         <div>
           <div class="flex items-center gap-3">
-            <h3 class="text-lg font-semibold text-fg">{t.name}</h3>
-            {getStatusBadge(t)}
+            <h3 class="text-lg font-semibold text-fg">{props.tunnel.name}</h3>
+            {getStatusBadge(props.tunnel)}
           </div>
-          <Show when={t.description}>
-            <p class="mt-1 text-sm text-fg-tertiary">{t.description}</p>
+          <Show when={props.tunnel.description}>
+            <p class="mt-1 text-sm text-fg-tertiary">{props.tunnel.description}</p>
           </Show>
         </div>
 
         <TunnelActions
-          deployed={t.deployed}
+          deployed={props.tunnel.deployed}
           busy={busy()}
           crossChecking={crossChecking()}
-          ownershipStatus={t.ownership_status ?? "local_only"}
+          ownershipStatus={props.tunnel.ownership_status ?? "local_only"}
           onDeploy={(mode) => props.onDeploy(mode)}
           onRestart={() => void restartTunnel()}
           onLockSSH={() => void lockdownSSH()}
@@ -345,12 +343,12 @@ function TunnelCard(props: {
       </div>
 
       {/* Drift / reimport warning */}
-      <Show when={t.ownership_status === "managed_drifted"}>
+      <Show when={props.tunnel.ownership_status === "managed_drifted"}>
         <div class="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-          OPNsense state has drifted from Gator config{t.drift_reason ? ` (${t.drift_reason})` : ""}. Re-deploy to fix.
+          OPNsense state has drifted from Gator config{props.tunnel.drift_reason ? ` (${props.tunnel.drift_reason})` : ""}. Re-deploy to fix.
         </div>
       </Show>
-      <Show when={t.ownership_status === "needs_reimport"}>
+      <Show when={props.tunnel.ownership_status === "needs_reimport"}>
         <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
           OPNsense resources not found. Re-scan OPNsense or delete this tunnel.
         </div>
@@ -360,40 +358,40 @@ function TunnelCard(props: {
       <div class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
         <div>
           <span class="text-fg-tertiary">Remote</span>
-          <p class="font-mono text-fg">{t.remote_host}</p>
+          <p class="font-mono text-fg">{props.tunnel.remote_host}</p>
         </div>
         <div>
           <span class="text-fg-tertiary">Tunnel</span>
-          <p class="font-mono text-fg">{t.tunnel_subnet || "-"}</p>
+          <p class="font-mono text-fg">{props.tunnel.tunnel_subnet || "-"}</p>
         </div>
         <div>
           <span class="text-fg-tertiary">Firewall IP</span>
-          <p class="font-mono text-fg">{t.firewall_ip || "-"}</p>
+          <p class="font-mono text-fg">{props.tunnel.firewall_ip || "-"}</p>
         </div>
         <div>
           <span class="text-fg-tertiary">Remote IP</span>
-          <p class="font-mono text-fg">{t.remote_ip || "-"}</p>
+          <p class="font-mono text-fg">{props.tunnel.remote_ip || "-"}</p>
         </div>
       </div>
 
       {/* Live status (when deployed) */}
-      <Show when={t.deployed}>
+      <Show when={props.tunnel.deployed}>
         <div class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-line pt-3 text-sm md:grid-cols-4">
           <div>
             <span class="text-fg-tertiary">Interface</span>
-            <p class="font-mono text-fg">{t.remote_wg_interface}</p>
+            <p class="font-mono text-fg">{props.tunnel.remote_wg_interface}</p>
           </div>
           <div>
             <span class="text-fg-tertiary">Handshake</span>
-            <p class="text-fg">{t.handshake || "none"}</p>
+            <p class="text-fg">{props.tunnel.handshake || "none"}</p>
           </div>
           <div>
             <span class="text-fg-tertiary">Received</span>
-            <p class="text-fg">{t.transfer_rx || "-"}</p>
+            <p class="text-fg">{props.tunnel.transfer_rx || "-"}</p>
           </div>
           <div>
             <span class="text-fg-tertiary">Sent</span>
-            <p class="text-fg">{t.transfer_tx || "-"}</p>
+            <p class="text-fg">{props.tunnel.transfer_tx || "-"}</p>
           </div>
         </div>
       </Show>

@@ -1,4 +1,4 @@
-import { Show, createSignal, createEffect, onMount, onCleanup } from "solid-js";
+import { For, Show, createSignal, createEffect, onMount, onCleanup } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -22,6 +22,8 @@ type Overview = {
   datetime?: string;
   load_avg?: string;
   cpu_count?: number;
+  cpu_usage?: number;
+  temperature?: Array<{ device: string; temp_c: string }>;
   memory?: {
     used_mb: number;
     total_mb: number;
@@ -349,15 +351,14 @@ export default function Dashboard(props: Props) {
       </Show>
 
       <Show when={!loading() && !loadError() && overview()}>
-        {(data) => (
           <>
             {/* Firewall identity card */}
-            <Card class={["relative overflow-hidden", !data().connected ? "border border-error/25 bg-error-subtle/40" : ""].join(" ")}>
-              <div class={["absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r", data().connected ? "from-accent to-transparent" : "from-error to-transparent"].join(" ")} />
+            <Card class={["relative overflow-hidden", !overview()!.connected ? "border border-error/25 bg-error-subtle/40" : ""].join(" ")}>
+              <div class={["absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r", overview()!.connected ? "from-accent to-transparent" : "from-error to-transparent"].join(" ")} />
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-3">
-                  <div class={["flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", data().connected ? "bg-hover" : "bg-error/10"].join(" ")}>
-                    <svg class={["h-5 w-5", data().connected ? "text-accent" : "text-error"].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <div class={["flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", overview()!.connected ? "bg-hover" : "bg-error/10"].join(" ")}>
+                    <svg class={["h-5 w-5", overview()!.connected ? "text-accent" : "text-error"].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                       <line x1="8" y1="21" x2="16" y2="21" />
                       <line x1="12" y1="17" x2="12" y2="21" />
@@ -366,30 +367,30 @@ export default function Dashboard(props: Props) {
                   <div>
                     <div class="flex items-center gap-2">
                       <h2 class="text-[18px] font-semibold text-fg">
-                        {(data().host || "Firewall").replace(/^https?:\/\//, "")}
+                        {(overview()!.host || "Firewall").replace(/^https?:\/\//, "")}
                       </h2>
-                      <StatusDot status={data().connected ? "success" : "error"} pulse={data().connected} />
+                      <StatusDot status={overview()!.connected ? "success" : "error"} pulse={overview()!.connected} />
                     </div>
                     <p class="text-[12px] text-fg-tertiary">
-                      {data().name || "OPNsense"}{data().version ? ` ${data().version}` : ""}
+                      {overview()!.name || "OPNsense"}{overview()!.version ? ` ${overview()!.version}` : ""}
                     </p>
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
-                  <Show when={!data().connected}>
+                  <Show when={!overview()!.connected}>
                     <Badge variant="error" size="sm">Instance down</Badge>
                   </Show>
-                  <Show when={data().connected && data().updates}>
-                    <Badge variant="warning" size="sm">{data().updates}</Badge>
+                  <Show when={overview()!.connected && overview()!.updates}>
+                    <Badge variant="warning" size="sm">{overview()!.updates}</Badge>
                   </Show>
-                  <Show when={data().connected && !data().updates}>
+                  <Show when={overview()!.connected && !overview()!.updates}>
                     <Badge variant="muted" size="sm">Up to date</Badge>
                   </Show>
                 </div>
               </div>
             </Card>
 
-            <Show when={!data().connected}>
+            <Show when={!overview()!.connected}>
               <Card class="border-l-2 border-l-error bg-surface-secondary">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div class="flex items-start gap-3">
@@ -405,8 +406,8 @@ export default function Dashboard(props: Props) {
                       <p class="mt-1 text-[13px] text-fg-secondary">
                         Gator can see the saved instance, but it cannot reach the live firewall right now. Start the VM or switch to another instance before making changes.
                       </p>
-                      <Show when={data().error}>
-                        <p class="mt-2 text-[12px] text-error">{data().error}</p>
+                      <Show when={overview()!.error}>
+                        <p class="mt-2 text-[12px] text-error">{overview()!.error}</p>
                       </Show>
                     </div>
                   </div>
@@ -417,7 +418,7 @@ export default function Dashboard(props: Props) {
               </Card>
             </Show>
 
-            <Show when={data().connected}>
+            <Show when={overview()!.connected}>
               <>
 
             {/* Stats grid -- 2 cols on mobile, 4 on desktop */}
@@ -425,8 +426,8 @@ export default function Dashboard(props: Props) {
               {/* Uptime */}
               <Card padding="sm">
                 {(() => {
-                  const up = formatUptime(data().uptime);
-                  const load = formatLoad(data().load_avg, data().cpu_count);
+                  const up = formatUptime(overview()!.uptime);
+                  const load = formatLoad(overview()!.load_avg, overview()!.cpu_count);
                   return (
                     <StatTile
                       icon="clock"
@@ -435,11 +436,11 @@ export default function Dashboard(props: Props) {
                       value={up.value}
                       sub={up.unit || undefined}
                     >
-                      <Show when={data().load_avg}>
+                      <Show when={overview()!.load_avg}>
                         <div class="mt-1 flex items-center gap-1.5">
                           <span class={`text-[11px] font-medium ${load.color}`}>{load.label}</span>
-                          <span class="text-[11px] text-fg-muted" title={`Load: ${data().load_avg}`}>
-                            {data().cpu_count ? `${data().cpu_count}-core` : ""}
+                          <span class="text-[11px] text-fg-muted" title={`Load: ${overview()!.load_avg}`}>
+                            {overview()!.cpu_count ? `${overview()!.cpu_count}-core` : ""}
                           </span>
                         </div>
                       </Show>
@@ -454,13 +455,13 @@ export default function Dashboard(props: Props) {
                   icon="gateway"
                   iconColor="text-info"
                   label="Gateways"
-                  value={`${data().gateways?.online || 0}/${data().gateways?.total || 0}`}
+                  value={`${overview()!.gateways?.online || 0}/${overview()!.gateways?.total || 0}`}
                 >
-                  <Show when={(data().gateways?.total || 0) > 0}>
+                  <Show when={(overview()!.gateways?.total || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
                       <StatusDot status={gwStatus()} />
                       <span class="text-[11px] text-fg-tertiary">
-                        {data().gateways?.offline ? `${data().gateways!.offline} offline` : "All online"}
+                        {overview()!.gateways?.offline ? `${overview()!.gateways!.offline} offline` : "All online"}
                       </span>
                     </div>
                   </Show>
@@ -473,14 +474,14 @@ export default function Dashboard(props: Props) {
                   icon="wireguard"
                   iconColor="text-warning"
                   label="WireGuard"
-                  value={`${data().wireguard?.online || 0}/${data().wireguard?.peers || 0}`}
-                  sub={`${data().wireguard?.interfaces || 0} interface${(data().wireguard?.interfaces || 0) !== 1 ? "s" : ""}`}
+                  value={`${overview()!.wireguard?.online || 0}/${overview()!.wireguard?.peers || 0}`}
+                  sub={`${overview()!.wireguard?.interfaces || 0} interface${(overview()!.wireguard?.interfaces || 0) !== 1 ? "s" : ""}`}
                 >
-                  <Show when={(data().wireguard?.peers || 0) > 0}>
+                  <Show when={(overview()!.wireguard?.peers || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
                       <StatusDot status={wgStatus()} />
                       <span class="text-[11px] text-fg-tertiary">
-                        {data().wireguard?.online === data().wireguard?.peers ? "All peers up" : `${(data().wireguard?.peers || 0) - (data().wireguard?.online || 0)} peer${((data().wireguard?.peers || 0) - (data().wireguard?.online || 0)) !== 1 ? "s" : ""} down`}
+                        {overview()!.wireguard?.online === overview()!.wireguard?.peers ? "All peers up" : `${(overview()!.wireguard?.peers || 0) - (overview()!.wireguard?.online || 0)} peer${((overview()!.wireguard?.peers || 0) - (overview()!.wireguard?.online || 0)) !== 1 ? "s" : ""} down`}
                       </span>
                     </div>
                   </Show>
@@ -493,19 +494,19 @@ export default function Dashboard(props: Props) {
                   icon="tunnel"
                   iconColor="text-accent"
                   label="Tunnels"
-                  value={String(data().tunnels?.total || 0)}
+                  value={String(overview()!.tunnels?.total || 0)}
                 >
-                  <Show when={(data().tunnels?.total || 0) > 0}>
+                  <Show when={(overview()!.tunnels?.total || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
-                      <StatusDot status={data().tunnels?.errors ? "error" : data().tunnels?.deployed === data().tunnels?.total ? "success" : "warning"} />
+                      <StatusDot status={overview()!.tunnels?.errors ? "error" : overview()!.tunnels?.deployed === overview()!.tunnels?.total ? "success" : "warning"} />
                       <span class="text-[11px] text-fg-tertiary">
-                        {data().tunnels?.errors
-                          ? `${data().tunnels!.errors} error${data().tunnels!.errors !== 1 ? "s" : ""}`
-                          : `${data().tunnels?.deployed || 0} deployed`}
+                        {overview()!.tunnels?.errors
+                          ? `${overview()!.tunnels!.errors} error${overview()!.tunnels!.errors !== 1 ? "s" : ""}`
+                          : `${overview()!.tunnels?.deployed || 0} deployed`}
                       </span>
                     </div>
                   </Show>
-                  <Show when={(data().tunnels?.total || 0) === 0}>
+                  <Show when={(overview()!.tunnels?.total || 0) === 0}>
                     <div class="mt-1 text-[11px] text-fg-muted">No tunnels</div>
                   </Show>
                 </StatTile>
@@ -513,23 +514,58 @@ export default function Dashboard(props: Props) {
             </div>
 
             {/* Resources row */}
-            <div class="grid gap-3 sm:grid-cols-2">
+            <div class="grid gap-3 sm:grid-cols-3">
+              <Card padding="sm">
+                <ResourceBar
+                  label="CPU"
+                  pct={overview()!.cpu_usage || 0}
+                  detail={overview()!.cpu_count ? `${overview()!.cpu_count}-core` : undefined}
+                  color="bg-warning"
+                />
+              </Card>
               <Card padding="sm">
                 <ResourceBar
                   label="Memory"
                   pct={memPct()}
-                  detail={data().memory?.total_mb ? `${formatMB(data().memory!.used_mb)} / ${formatMB(data().memory!.total_mb)}` : undefined}
+                  detail={overview()!.memory?.total_mb ? `${formatMB(overview()!.memory!.used_mb)} / ${formatMB(overview()!.memory!.total_mb)}` : undefined}
                 />
               </Card>
               <Card padding="sm">
                 <ResourceBar
                   label="Disk"
-                  pct={data().disk?.used_pct || 0}
-                  detail={data().disk?.used && data().disk?.size ? `${data().disk!.used} / ${data().disk!.size}` : data().disk?.mountpoint || undefined}
+                  pct={overview()!.disk?.used_pct || 0}
+                  detail={overview()!.disk?.used && overview()!.disk?.size ? `${overview()!.disk!.used} / ${overview()!.disk!.size}` : overview()!.disk?.mountpoint || undefined}
                   color="bg-info"
                 />
               </Card>
             </div>
+
+            {/* Temperature */}
+            <Show when={overview()!.temperature && overview()!.temperature!.length > 0}>
+              <Card padding="sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-[12px] text-fg-secondary">Temperature</span>
+                  <div class="flex items-center gap-3">
+                    <For each={overview()!.temperature}>
+                      {(sensor) => {
+                        const temp = parseFloat(sensor.temp_c);
+                        const color = temp > 85 ? "text-error" : temp > 70 ? "text-warning" : "text-fg";
+                        const name = sensor.device
+                          .replace("hw.acpi.thermal.", "")
+                          .replace("dev.cpu.", "CPU ")
+                          .replace(".temperature", "");
+                        return (
+                          <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] text-fg-muted">{name}</span>
+                            <span class={`text-[12px] font-mono ${color}`}>{sensor.temp_c}&deg;C</span>
+                          </div>
+                        );
+                      }}
+                    </For>
+                  </div>
+                </div>
+              </Card>
+            </Show>
 
             {/* VPN Status */}
             <Card class="relative overflow-hidden">
@@ -538,18 +574,18 @@ export default function Dashboard(props: Props) {
                 <div class="flex items-center gap-4">
                   <div class={[
                     "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
-                    data().vpn?.routing_applied
+                    overview()!.vpn?.routing_applied
                       ? "bg-success-subtle"
-                      : data().vpn?.applied
+                      : overview()!.vpn?.applied
                         ? "bg-warning-subtle"
                         : "bg-hover"
                   ].join(" ")}>
                     <svg
                       class={[
                         "h-6 w-6",
-                        data().vpn?.routing_applied
+                        overview()!.vpn?.routing_applied
                           ? "text-success"
-                          : data().vpn?.applied
+                          : overview()!.vpn?.applied
                             ? "text-warning"
                             : "text-fg-muted"
                       ].join(" ")}
@@ -564,22 +600,22 @@ export default function Dashboard(props: Props) {
                   <div>
                     <div class="flex items-center gap-2.5">
                       <h2 class="text-[18px] font-semibold text-fg">
-                        {data().vpn?.name || "VPN"}
+                        {overview()!.vpn?.name || "VPN"}
                       </h2>
-                      {data().vpn?.routing_applied ? (
+                      {overview()!.vpn?.routing_applied ? (
                         <Badge variant="success" size="sm">Active</Badge>
-                      ) : data().vpn?.applied ? (
+                      ) : overview()!.vpn?.applied ? (
                         <Badge variant="warning" size="sm">Partial</Badge>
-                      ) : data().vpn?.configured ? (
+                      ) : overview()!.vpn?.configured ? (
                         <Badge variant="info" size="sm">Ready</Badge>
                       ) : (
                         <Badge variant="muted" size="sm">Not configured</Badge>
                       )}
                     </div>
                     <p class="mt-1 text-[13px] text-fg-tertiary">
-                      {data().vpn?.configured
-                        ? data().vpn?.applied
-                          ? data().vpn?.routing_applied
+                      {overview()!.vpn?.configured
+                        ? overview()!.vpn?.applied
+                          ? overview()!.vpn?.routing_applied
                             ? "Routing traffic through VPN"
                             : "Tunnel connected, routing pending"
                           : "Deployed to OPNsense, activation needed"
@@ -588,14 +624,14 @@ export default function Dashboard(props: Props) {
                   </div>
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
-                  <Show when={(data().vpn_count || 0) > 1}>
+                  <Show when={(overview()!.vpn_count || 0) > 1}>
                     <span class="text-[11px] text-fg-muted">
-                      {data().vpn_count} VPN profile{data().vpn_count !== 1 ? "s" : ""}
+                      {overview()!.vpn_count} VPN profile{overview()!.vpn_count !== 1 ? "s" : ""}
                     </span>
                   </Show>
-                  <Show when={data().vpn?.last_applied_at}>
+                  <Show when={overview()!.vpn?.last_applied_at}>
                     <span class="text-[11px] font-mono text-fg-muted">
-                      {new Date(data().vpn!.last_applied_at!).toLocaleDateString()}
+                      {new Date(overview()!.vpn!.last_applied_at!).toLocaleDateString()}
                     </span>
                   </Show>
                 </div>
@@ -603,7 +639,7 @@ export default function Dashboard(props: Props) {
             </Card>
 
             {/* Permission warning */}
-            <Show when={data().error && data().connected}>
+            <Show when={overview()!.error && overview()!.connected}>
               <Card class="border-l-2 border-l-warning">
                 <div class="flex items-start gap-3">
                   <svg class="mt-0.5 h-4 w-4 shrink-0 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -611,14 +647,13 @@ export default function Dashboard(props: Props) {
                     <line x1="12" y1="9" x2="12" y2="13" />
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
-                  <span class="text-[12px] text-fg-secondary">{data().error}</span>
+                  <span class="text-[12px] text-fg-secondary">{overview()!.error}</span>
                 </div>
               </Card>
             </Show>
               </>
             </Show>
           </>
-        )}
       </Show>
     </div>
   );

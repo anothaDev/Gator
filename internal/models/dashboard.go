@@ -13,7 +13,12 @@ type OPNsenseOverview struct {
 	DateTime     string `json:"datetime,omitempty"`
 	LoadAvg      string `json:"load_avg,omitempty"`
 	CPUCount     int    `json:"cpu_count,omitempty"`
-	Memory       struct {
+	CPUUsage     int    `json:"cpu_usage"`
+	Temperature  []struct {
+		Device string `json:"device"`
+		TempC  string `json:"temp_c"`
+	} `json:"temperature,omitempty"`
+	Memory struct {
 		UsedMB  int `json:"used_mb"`
 		TotalMB int `json:"total_mb"`
 	} `json:"memory"`

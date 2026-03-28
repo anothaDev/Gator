@@ -631,14 +631,12 @@ export default function Routing() {
 
       {/* IP Ranges Upload Modal */}
       <Show when={uploadHint()}>
-        {(hint) => (
           <IpRangeUploadModal
-            appName={hint().appName}
-            hint={hint().hint}
+            appName={uploadHint()!.appName}
+            hint={uploadHint()!.hint}
             onClose={() => setUploadHint(null)}
             onUploaded={() => { const h = uploadHint(); setUploadHint(null); if (h) void toggleApp(h.appId); }}
           />
-        )}
       </Show>
 
       {/* Add Custom Profile Modal */}

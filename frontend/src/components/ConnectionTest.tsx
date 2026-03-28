@@ -129,10 +129,9 @@ export default function ConnectionTest(props: Props) {
       </button>
 
       <Show when={result()}>
-        {(r) => (
           <div
             class={`rounded-lg border p-4 ${
-              r().success
+              result()!.success
                 ? "border-success/30 bg-success-subtle"
                 : "border-error/30 bg-error-subtle"
             }`}
@@ -140,24 +139,10 @@ export default function ConnectionTest(props: Props) {
             <div class="flex items-start gap-3">
               <div
                 class={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${
-                  r().success ? "bg-success" : "bg-error"
+                  result()!.success ? "bg-success" : "bg-error"
                 }`}
               >
-                {r().success ? (
-                  <svg
-                    class="h-3 w-3 text-surface"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="3"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : (
+                <Show when={result()!.success} fallback={
                   <svg
                     class="h-3 w-3 text-white"
                     fill="none"
@@ -171,31 +156,44 @@ export default function ConnectionTest(props: Props) {
                       d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
-                )}
+                }>
+                  <svg
+                    class="h-3 w-3 text-surface"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="3"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </Show>
               </div>
               <div>
                 <p
                   class={`text-sm font-medium ${
-                    r().success ? "text-success" : "text-error"
+                    result()!.success ? "text-success" : "text-error"
                   }`}
                 >
-                  {r().success ? "Connection successful" : "Connection failed"}
+                  {result()!.success ? "Connection successful" : "Connection failed"}
                 </p>
-                <p class="mt-1 text-sm text-fg-secondary">{r().message}</p>
-                <Show when={r().version}>
+                <p class="mt-1 text-sm text-fg-secondary">{result()!.message}</p>
+                <Show when={result()!.version}>
                   <p class="mt-1 text-xs text-fg-tertiary">
-                    Version: {r().version}
+                    Version: {result()!.version}
                   </p>
                 </Show>
-                <Show when={r().hostname}>
+                <Show when={result()!.hostname}>
                   <p class="text-xs text-fg-tertiary">
-                    Hostname: {r().hostname}
+                    Hostname: {result()!.hostname}
                   </p>
                 </Show>
               </div>
             </div>
           </div>
-        )}
       </Show>
 
       <Show when={status() === "success"}>

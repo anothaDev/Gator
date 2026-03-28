@@ -120,9 +120,9 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
           </h1>
           <p class="mt-1 text-sm text-fg-tertiary">
             Firewall filter rules.
-            {gatorCount() > 0 && (
+            <Show when={gatorCount() > 0}>
               <span class="ml-2 text-success">{gatorCount()} managed by Gator</span>
-            )}
+            </Show>
           </p>
         </div>
         <Button variant="secondary" size="md" onClick={() => void loadRules()} loading={loading()}>

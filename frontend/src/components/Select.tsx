@@ -34,11 +34,11 @@ export default function Select(props: SelectProps) {
 
   return (
     <div class={["w-full", props.class ?? ""].join(" ")} ref={ref}>
-      {props.label && (
+      <Show when={props.label}>
         <label class="mb-1.5 block text-sm font-medium text-fg-secondary">
           {props.label}
         </label>
-      )}
+      </Show>
       <div class="relative">
         <button
           type="button"

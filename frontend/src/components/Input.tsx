@@ -1,4 +1,4 @@
-import type { JSX } from "solid-js";
+import { Show, type JSX } from "solid-js";
 
 interface InputProps {
   label?: string;
@@ -21,11 +21,11 @@ export default function Input(props: InputProps) {
 
   return (
     <div class={["w-full", props.class ?? ""].join(" ")}>
-      {props.label && (
+      <Show when={props.label}>
         <label class="mb-1.5 block text-sm font-medium text-fg-secondary">
           {props.label}
         </label>
-      )}
+      </Show>
       <input
         type={props.type ?? "text"}
         value={props.value}
@@ -46,16 +46,16 @@ export default function Input(props: InputProps) {
           props.readOnly && "cursor-default bg-surface-tertiary",
         ].join(" ")}
       />
-      {props.error && (
+      <Show when={props.error}>
         <p class="mt-1.5 text-xs text-error">
           {props.error}
         </p>
-      )}
-      {props.hint && !props.error && (
+      </Show>
+      <Show when={props.hint && !props.error}>
         <p class="mt-1.5 text-xs text-fg-tertiary">
           {props.hint}
         </p>
-      )}
+      </Show>
     </div>
   );
 }
