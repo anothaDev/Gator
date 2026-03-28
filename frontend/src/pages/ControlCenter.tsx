@@ -611,6 +611,18 @@ export default function ControlCenter(props: Props) {
               </Switch>
             </Suspense>
           </div>
+
+          {/* Footer */}
+          <footer class="mt-auto border-t border-line px-4 py-4 lg:px-6">
+            <div class="mx-auto flex max-w-7xl items-center justify-between text-[11px] text-fg-muted">
+              <span>Gator is under active development. Found a bug or have a suggestion? <a
+                href="https://github.com/anothaDev/Gator/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-fg-secondary hover:text-fg underline underline-offset-2"
+              >Report it on GitHub</a>.</span>
+            </div>
+          </footer>
         </main>
       </div>
     </div>
