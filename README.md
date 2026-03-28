@@ -8,23 +8,23 @@ A self-hosted web app for managing VPN routing, site-to-site WireGuard tunnels, 
 
 Website: https://usegator.dev
 
-Gator gives you a clean dashboard to deploy WireGuard VPN configs, set up per-protocol/per-service selective routing (e.g. route only Netflix or gaming traffic through your VPN), manage site-to-site tunnels to remote VPS nodes, and keep track of what's happening on your firewall -- all through a browser UI instead of clicking through OPNsense menus.
+Gator gives you a clean dashboard to deploy WireGuard VPN configs, set up per-protocol/per-service selective routing (e.g. route only Netflix or gaming traffic through your VPN), manage site-to-site tunnels to remote VPS nodes, and keep track of what's happening on your firewall: all through a browser UI instead of clicking through OPNsense menus.
 
 Some documentation is still missing while the project is moving quickly. More setup, deployment, and operational guides will be added soon.
 
 ## Features
 
-- **VPN Management** -- Import WireGuard configs (e.g. from Mullvad), deploy to OPNsense with one click
-- **Selective Routing** -- Route specific services (Netflix, YouTube, gaming, etc.) through VPN while keeping everything else on your normal connection
-- **Site-to-Site Tunnels** -- Create and manage WireGuard tunnels between your OPNsense box and remote Linux servers (e.g. Hetzner VPS) with automated SSH setup
-- **Live Dashboard** -- Real-time system stats, gateway health, WireGuard peer status, and resource usage via Server-Sent Events
-- **Firewall Rule Management** -- View, create, and clean up filter rules and NAT rules
-- **Migration Assistant** -- Adopt and convert legacy OPNsense rules into Gator-managed rules
-- **Reconciler** -- Background drift detection that flags when firewall state doesn't match what Gator expects
-- **Backup/Restore** -- Download and manage OPNsense configuration backups
-- **Tailscale Integration** -- Guided setup for the OPNsense Tailscale community plugin with auth configuration, interface detection, and advertised route management
-- **Firmware Update Awareness** -- Detects when OPNsense needs updating and shows an app-wide banner with a direct link to apply updates
-- **Multi-Instance** -- Manage multiple OPNsense boxes from a single Gator install
+- **VPN Management**: Import WireGuard configs (e.g. from Mullvad), deploy to OPNsense with one click
+- **Selective Routing**: Route specific services (Netflix, YouTube, gaming, etc.) through VPN while keeping everything else on your normal connection
+- **Site-to-Site Tunnels**: Create and manage WireGuard tunnels between your OPNsense box and remote Linux servers (e.g. Hetzner VPS) with automated SSH setup
+- **Live Dashboard**: Real-time system stats, gateway health, WireGuard peer status, and resource usage via Server-Sent Events
+- **Firewall Rule Management**: View, create, and clean up filter rules and NAT rules
+- **Migration Assistant**: Adopt and convert legacy OPNsense rules into Gator-managed rules
+- **Reconciler**: Background drift detection that flags when firewall state doesn't match what Gator expects
+- **Backup/Restore**: Download and manage OPNsense configuration backups
+- **Tailscale Integration**: Guided setup for the OPNsense Tailscale community plugin with auth configuration, interface detection, and advertised route management
+- **Firmware Update Awareness**: Detects when OPNsense needs updating and shows an app-wide banner with a direct link to apply updates
+- **Multi-Instance**: Manage multiple OPNsense boxes from a single Gator install
 
 ## Prerequisites
 
