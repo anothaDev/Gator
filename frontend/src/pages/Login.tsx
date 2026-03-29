@@ -41,11 +41,11 @@ export default function Login(props: Props) {
 
   return (
     <div class="flex min-h-screen items-center justify-center bg-surface px-4">
-      <div class="w-full max-w-md rounded-2xl border border-line-strong bg-surface-secondary p-8 shadow-2xl">
+      <div class="w-full max-w-md rounded-xl border border-border bg-surface p-8 shadow-2xl">
         <div class="mb-8 text-center">
           <img src="/gator64px.svg" alt="Gator logo" class="mx-auto h-16 w-16 scale-[3.2] object-contain" />
-          <h1 class="mt-4 text-2xl font-semibold tracking-tight text-fg">Sign in to Gator</h1>
-          <p class="mt-2 text-sm text-fg-tertiary">Enter the local admin password to open the control center.</p>
+          <h1 class="mt-4 text-title-h2 font-semibold tracking-tight text-fg">Sign in to Gator</h1>
+          <p class="mt-2 text-body-sm text-fg-muted">Enter the local admin password to open the control center.</p>
         </div>
 
         <div class="space-y-4">

@@ -8,26 +8,26 @@ interface BadgeProps {
 }
 
 export default function Badge(props: BadgeProps) {
-  const variantStyles = {
-    default: "bg-accent-subtle text-accent",
+  const variants: Record<string, string> = {
+    default: "bg-brand-subtle text-brand",
     success: "bg-success-subtle text-success",
     warning: "bg-warning-subtle text-warning",
     error: "bg-error-subtle text-error",
     info: "bg-info-subtle text-info",
-    muted: "bg-active text-fg-tertiary",
+    muted: "bg-hover text-fg-muted",
   };
 
-  const sizeStyles = {
-    sm: "text-[10px] px-1.5 py-0.5",
-    md: "text-[11px] px-2 py-0.5",
+  const sizes: Record<string, string> = {
+    sm: "text-label-xs px-1.5 py-px rounded",
+    md: "text-label-xs px-2 py-0.5 rounded-md",
   };
 
   return (
     <span
       class={[
-        "inline-flex items-center gap-1 rounded-sm font-medium",
-        variantStyles[props.variant ?? "default"],
-        sizeStyles[props.size ?? "md"],
+        "inline-flex items-center gap-1 font-medium whitespace-nowrap",
+        variants[props.variant ?? "default"],
+        sizes[props.size ?? "md"],
         props.class ?? "",
       ].join(" ")}
     >

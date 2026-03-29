@@ -26,7 +26,7 @@ export default function LegacyRulesWarning(props: {
             <p class="text-sm font-medium text-fg">
               Legacy firewall rules detected
             </p>
-            <p class="mt-0.5 text-xs text-fg-tertiary">
+            <p class="mt-0.5 text-xs text-fg-muted">
               Your firewall has {props.count} rule{props.count !== 1 ? "s" : ""} in the old format. {props.detail}
             </p>
           </div>

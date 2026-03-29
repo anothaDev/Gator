@@ -15,7 +15,7 @@ export default function OpnsenseLink(props: { path: string; label?: string }) {
         href={`${host()}${props.path}`}
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface-secondary px-2.5 py-1.5 text-[12px] text-fg-secondary hover:bg-surface-tertiary hover:text-fg"
+        class="inline-flex items-center gap-1.5 rounded-md border border-border-faint bg-surface px-2.5 py-1.5 text-label-sm text-fg-secondary hover:bg-surface-raised hover:text-fg"
         title={`Open ${props.label ?? "this page"} in OPNsense`}
       >
         <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

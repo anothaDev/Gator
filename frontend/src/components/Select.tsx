@@ -35,7 +35,7 @@ export default function Select(props: SelectProps) {
   return (
     <div class={["w-full", props.class ?? ""].join(" ")} ref={ref}>
       <Show when={props.label}>
-        <label class="mb-1.5 block text-sm font-medium text-fg-secondary">
+        <label class="mb-1.5 block text-label-sm text-fg-secondary">
           {props.label}
         </label>
       </Show>
@@ -45,12 +45,12 @@ export default function Select(props: SelectProps) {
           disabled={props.disabled}
           onClick={() => setOpen((v) => !v)}
           class={[
-            "flex w-full items-center justify-between rounded-lg border bg-surface-secondary px-3 py-2 text-left",
+            "flex w-full items-center justify-between rounded-lg border bg-surface px-3 py-2 text-left",
             "text-sm text-fg",
             "transition-all duration-base",
             open()
-              ? "border-accent ring-2 ring-accent/50"
-              : "border-line hover:border-line-strong",
+              ? "border-brand ring-2 ring-brand/20"
+              : "border-border hover:border-border-strong",
             props.disabled ? "cursor-not-allowed opacity-60" : "",
           ].join(" ")}
         >
@@ -58,7 +58,7 @@ export default function Select(props: SelectProps) {
             {selectedLabel()}
           </span>
           <svg
-            class={["h-4 w-4 shrink-0 text-fg-tertiary transition-transform", open() ? "rotate-180" : ""].join(" ")}
+            class={["h-4 w-4 shrink-0 text-fg-muted transition-transform", open() ? "rotate-180" : ""].join(" ")}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -68,7 +68,7 @@ export default function Select(props: SelectProps) {
           </svg>
         </button>
         <Show when={open()}>
-          <div class="absolute left-0 top-full z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-line bg-elevated py-1 shadow-xl shadow-black/40">
+          <div class="absolute left-0 top-full z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-border bg-surface-raised py-1 shadow-lg">
             <For each={props.options}>
               {(option) => (
                 <button
@@ -80,7 +80,7 @@ export default function Select(props: SelectProps) {
                   class={[
                     "flex w-full items-center px-3 py-2 text-left text-sm transition-colors",
                     option.value === props.value
-                      ? "bg-accent/10 font-medium text-accent"
+                      ? "bg-brand/10 font-medium text-brand"
                       : "text-fg hover:bg-hover",
                   ].join(" ")}
                 >

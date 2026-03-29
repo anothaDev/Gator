@@ -142,14 +142,14 @@ export default function TunnelDiscoveryModal(props: {
         <h2 class="text-lg font-semibold text-fg">
           {isReadopt() ? `Re-adopt: ${props.readoptName}` : "Discover Tunnels on OPNsense"}
         </h2>
-        <p class="mt-1 text-xs text-fg-tertiary">
+        <p class="mt-1 text-xs text-fg-muted">
           {isReadopt()
             ? "Select the OPNsense tunnel to link to this profile."
             : "Discover existing WireGuard site-to-site tunnels and import them into Gator."}
         </p>
 
         <Show when={scanning()}>
-          <div class="mt-4 flex items-center gap-3 text-sm text-fg-tertiary">
+          <div class="mt-4 flex items-center gap-3 text-sm text-fg-muted">
             <Spinner />
             Scanning WireGuard tunnels...
           </div>
@@ -162,7 +162,7 @@ export default function TunnelDiscoveryModal(props: {
         </Show>
 
         <Show when={!scanning() && !scanError() && discovered().length === 0}>
-          <div class="mt-4 rounded-lg border border-line-strong bg-surface-tertiary px-3 py-3 text-sm text-fg-secondary">
+          <div class="mt-4 rounded-lg border border-border bg-surface-raised px-3 py-3 text-sm text-fg-secondary">
             No importable WireGuard tunnels found on OPNsense.
           </div>
         </Show>
@@ -176,7 +176,7 @@ export default function TunnelDiscoveryModal(props: {
                   : { score: 0, matched: [] as string[] };
                 const suggested = () => isTunnelSuggestedMatch(details());
                 return (
-                <div class={`rounded-lg border p-3 ${suggested() ? "border-success/50 bg-success/5" : "border-line-strong bg-surface-tertiary"}`}>
+                <div class={`rounded-lg border p-3 ${suggested() ? "border-success/50 bg-success/5" : "border border-border bg-surface-raised"}`}>
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-2">
@@ -192,7 +192,7 @@ export default function TunnelDiscoveryModal(props: {
                           </span>
                         </Show>
                       </div>
-                      <p class="mt-0.5 text-xs text-fg-tertiary">
+                      <p class="mt-0.5 text-xs text-fg-muted">
                         {tunnel.endpoint}
                         <Show when={tunnel.local_cidr}>
                           <span class="text-fg-muted">{" "}&mdash; {tunnel.local_cidr}</span>
@@ -236,7 +236,7 @@ export default function TunnelDiscoveryModal(props: {
 
                   {/* Re-adopt confirmation (shown when this tunnel is selected for re-adopt) */}
                   <Show when={isReadopt() && confirmTarget()?.server_uuid === tunnel.server_uuid}>
-                    <div class="mt-3 border-t border-line pt-3">
+                    <div class="mt-3 border-t border-border-faint pt-3">
                       <p class="text-xs text-fg-secondary">
                         Re-link <strong>{props.readoptName}</strong> to this OPNsense tunnel? This will update all stored UUIDs.
                       </p>

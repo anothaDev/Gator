@@ -2,6 +2,7 @@ import { Suspense, createEffect, createSignal, For, Match, Show, Switch, lazy, o
 import type { JSX } from "solid-js";
 import Button from "../components/Button";
 import IconButton from "../components/IconButton";
+import ThemeToggle from "../components/ThemeToggle";
 import { apiGet, apiPost } from "../lib/api";
 
 const Aliases = lazy(() => import("./Aliases"));
@@ -56,135 +57,176 @@ interface NavItem {
   icon: JSX.Element;
 }
 
-const navItems: NavItem[] = [
+interface NavGroup {
+  id: string;
+  label: string;
+  icon: JSX.Element;
+  items: NavItem[];
+}
+
+// Icons
+const icons = {
+  dashboard: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+    </svg>
+  ),
+  network: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="5" r="3" />
+      <circle cx="19" cy="12" r="3" />
+      <circle cx="5" cy="12" r="3" />
+      <circle cx="12" cy="19" r="3" />
+      <line x1="12" y1="8" x2="12" y2="16" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+  ),
+  infrastructure: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="2" width="20" height="8" rx="2" />
+      <rect x="2" y="14" width="20" height="8" rx="2" />
+      <line x1="6" y1="6" x2="6.01" y2="6" />
+      <line x1="6" y1="18" x2="6.01" y2="18" />
+    </svg>
+  ),
+  security: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  system: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+    </svg>
+  ),
+  vpn: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  tailscale: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="8" cy="8" r="3" />
+      <circle cx="16" cy="8" r="3" />
+      <circle cx="8" cy="16" r="3" />
+      <circle cx="16" cy="16" r="3" />
+    </svg>
+  ),
+  tunnels: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+    </svg>
+  ),
+  routing: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+      <polyline points="2 17 12 22 22 17" />
+      <polyline points="2 12 12 17 22 12" />
+    </svg>
+  ),
+  interfaces: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M6 8h.01M6 12h.01M6 16h.01" />
+    </svg>
+  ),
+  gateways: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  aliases: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  ),
+  nat: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
+    </svg>
+  ),
+  rules: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14,2 14,8 20,8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10,9 9,9 8,9" />
+    </svg>
+  ),
+  migration: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
+  ),
+  backups: (
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7,10 12,15 17,10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+};
+
+// Navigation groups
+const navGroups: NavGroup[] = [
   {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
+    id: "overview",
+    label: "Overview",
+    icon: icons.dashboard,
+    items: [{ id: "dashboard", label: "Dashboard", icon: icons.dashboard }],
   },
   {
-    id: "vpn",
-    label: "VPN",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
-    ),
+    id: "network",
+    label: "Network",
+    icon: icons.network,
+    items: [
+      { id: "vpn", label: "VPN", icon: icons.vpn },
+      { id: "tunnels", label: "Tunnels", icon: icons.tunnels },
+      { id: "tailscale", label: "Tailscale", icon: icons.tailscale },
+      { id: "routing", label: "Routing", icon: icons.routing },
+    ],
   },
   {
-    id: "tailscale",
-    label: "Tailscale",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-        <circle cx="8" cy="8" r="3" />
-        <circle cx="16" cy="8" r="3" />
-        <circle cx="8" cy="16" r="3" />
-        <circle cx="16" cy="16" r="3" />
-      </svg>
-    ),
+    id: "infrastructure",
+    label: "Infrastructure",
+    icon: icons.infrastructure,
+    items: [
+      { id: "interfaces", label: "Interfaces", icon: icons.interfaces },
+      { id: "gateways", label: "Gateways", icon: icons.gateways },
+      { id: "nat", label: "NAT", icon: icons.nat },
+    ],
   },
   {
-    id: "tunnels",
-    label: "Tunnels",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
-      </svg>
-    ),
+    id: "security",
+    label: "Security",
+    icon: icons.security,
+    items: [
+      { id: "rules", label: "Rules", icon: icons.rules },
+      { id: "aliases", label: "Aliases", icon: icons.aliases },
+    ],
   },
   {
-    id: "routing",
-    label: "Routing",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="12 2 2 7 12 12 22 7 12 2" />
-        <polyline points="2 17 12 22 22 17" />
-        <polyline points="2 12 12 17 22 12" />
-      </svg>
-    ),
-  },
-  {
-    id: "interfaces",
-    label: "Interfaces",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="4" width="20" height="16" rx="2" />
-        <path d="M6 8h.01M6 12h.01M6 16h.01" />
-      </svg>
-    ),
-  },
-  {
-    id: "gateways",
-    label: "Gateways",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-    ),
-  },
-  {
-    id: "aliases",
-    label: "Aliases",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-      </svg>
-    ),
-  },
-  {
-    id: "nat",
-    label: "NAT",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-        <polyline points="22,6 12,13 2,6" />
-      </svg>
-    ),
-  },
-  {
-    id: "rules",
-    label: "Rules",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14,2 14,8 20,8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10,9 9,9 8,9" />
-      </svg>
-    ),
-  },
-  {
-    id: "migration",
-    label: "Migration",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-      </svg>
-    ),
-  },
-  {
-    id: "backups",
-    label: "Backups",
-    icon: (
-      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-        <polyline points="7,10 12,15 17,10" />
-        <line x1="12" y1="15" x2="12" y2="3" />
-      </svg>
-    ),
+    id: "system",
+    label: "System",
+    icon: icons.system,
+    items: [
+      { id: "backups", label: "Backups", icon: icons.backups },
+      { id: "migration", label: "Migration", icon: icons.migration },
+    ],
   },
 ];
+
+// Flatten for easy lookup
+const allNavItems = navGroups.flatMap((g) => g.items);
 
 export default function ControlCenter(props: Props) {
   const [section, setSection] = createSignal<Section>("dashboard");
@@ -192,6 +234,7 @@ export default function ControlCenter(props: Props) {
   const [switcherOpen, setSwitcherOpen] = createSignal(false);
   const [switching, setSwitching] = createSignal(false);
   const [mobileNavOpen, setMobileNavOpen] = createSignal(false);
+  const [expandedGroups, setExpandedGroups] = createSignal<string[]>(["overview", "network"]);
   const [runtimeState, setRuntimeState] = createSignal<InstanceRuntimeState | null>(null);
   const [firmwareUpdate, setFirmwareUpdate] = createSignal<{
     needs_update: boolean;
@@ -258,30 +301,22 @@ export default function ControlCenter(props: Props) {
     props.onLogout();
   };
 
-  const getInstanceIcon = (type: string) => {
-    const baseClasses = "h-2.5 w-2.5 rounded-full";
-    if (type === "opnsense") {
-      return <span class={`${baseClasses} bg-warning`} />;
-    }
-    return <span class={`${baseClasses} bg-info`} />;
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((prev) =>
+      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]
+    );
+  };
+
+  const getInstanceIcon = () => {
+    const base = "h-2 w-2 rounded-full";
+    if (instanceUnavailable()) return <span class={`${base} bg-error`} />;
+    return <span class={`${base} bg-success`} />;
   };
 
   return (
-    <div class="min-h-screen bg-surface text-fg">
-      {/* Ambient background gradient */}
-      <div
-        class="pointer-events-none fixed inset-0 opacity-[0.03]"
-        style={{
-          background: `
-            radial-gradient(circle at 20% 20%, rgba(34, 197, 94, 0.25), transparent 40%),
-            radial-gradient(circle at 80% 10%, rgba(96, 165, 250, 0.2), transparent 35%),
-            radial-gradient(circle at 40% 80%, rgba(74, 222, 128, 0.12), transparent 50%)
-          `,
-        }}
-      />
-
+    <div class="min-h-screen bg-bg text-fg">
       {/* Header */}
-      <header class="sticky top-0 z-50 border-b border-line bg-surface-secondary/95 backdrop-blur">
+      <header class="sticky top-0 z-50 border-b border-border-faint bg-bg/95 backdrop-blur-sm">
         <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-6">
           {/* Logo & Title */}
           <div class="flex items-center gap-3">
@@ -303,7 +338,7 @@ export default function ControlCenter(props: Props) {
               <img src="/gator64px.svg" alt="Gator logo" class="h-[3.3rem] w-auto max-w-none object-contain sm:h-[3.7rem]" />
               <div class="hidden sm:block">
                 <h1 class="text-lg font-semibold tracking-tight">Gator</h1>
-                <p class="text-xs text-fg-tertiary">Firewall control plane</p>
+                <p class="text-xs text-fg-muted">Firewall control plane</p>
               </div>
             </div>
           </div>
@@ -319,28 +354,27 @@ export default function ControlCenter(props: Props) {
                   disabled={switching()}
                   class={[
                     "flex items-center gap-2 rounded-lg border px-3 py-1.5",
-                    "text-sm font-medium transition-all duration-base",
+                    "text-label-md transition-all duration-150",
                     instanceUnavailable()
-                      ? "border-error/40 bg-error-subtle text-error"
-                      : "",
-                    switcherOpen()
-                      ? "border-accent bg-accent-subtle text-accent"
-                      : "border-line-strong bg-surface-tertiary text-fg-secondary hover:border-line-focus hover:text-fg",
+                      ? "border-error/30 bg-error-subtle text-error"
+                      : switcherOpen()
+                        ? "border-brand/30 bg-brand-subtle text-brand"
+                        : "border-border bg-surface text-fg-secondary hover:border-border-strong hover:text-fg",
                   ].join(" ")}
                 >
-                  {getInstanceIcon(activeInstance()?.type ?? "")}
+                  {getInstanceIcon()}
                   <span class="hidden max-w-[140px] truncate sm:inline">
                     {activeInstance()?.label ?? "No instance"}
                   </span>
                   <Show when={instanceUnavailable()}>
-                    <span class="hidden rounded-full bg-error/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-error sm:inline">
+                    <span class="hidden rounded-full bg-error/10 px-1.5 py-0.5 text-label-xs font-semibold uppercase tracking-wide text-error sm:inline">
                       Down
                     </span>
                   </Show>
                   <Show when={instances().length > 1}>
                     <svg
                       class={[
-                        "h-3.5 w-3.5 text-fg-tertiary transition-transform duration-base",
+                        "h-3.5 w-3.5 text-fg-muted transition-transform duration-base",
                         switcherOpen() ? "rotate-180" : "",
                       ].join(" ")}
                       viewBox="0 0 24 24"
@@ -356,10 +390,10 @@ export default function ControlCenter(props: Props) {
                 {/* Instance dropdown */}
                 <Show when={switcherOpen()}>
                   <div
-                    class="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-line-strong bg-elevated p-2 shadow-lg"
+                    class="absolute right-0 top-full z-50 mt-2 w-72 rounded-lg border border-border bg-surface p-2 shadow-md animate-scale-in"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <p class="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <p class="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Firewall instances
                     </p>
                     <div class="space-y-1">
@@ -373,19 +407,19 @@ export default function ControlCenter(props: Props) {
                               "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left",
                               "text-sm transition-all duration-fast",
                               inst.active
-                                ? "bg-accent-subtle text-accent"
+                                ? "bg-brand-subtle text-brand"
                                 : "text-fg-secondary hover:bg-hover hover:text-fg",
                             ].join(" ")}
                           >
-                            {getInstanceIcon(inst.type)}
+                            <span class={`h-2 w-2 rounded-full ${inst.active ? "bg-success" : "bg-fg-muted"}`} />
                             <div class="min-w-0 flex-1">
                               <p class="truncate font-medium">{inst.label}</p>
-                              <p class="truncate text-xs text-fg-tertiary">
+                              <p class="truncate text-xs text-fg-muted">
                                 {inst.type}
                               </p>
                             </div>
                             <Show when={inst.active}>
-                              <span class="shrink-0 text-xs font-semibold uppercase text-accent">
+                              <span class="shrink-0 text-xs font-semibold uppercase text-brand">
                                 active
                               </span>
                             </Show>
@@ -393,14 +427,14 @@ export default function ControlCenter(props: Props) {
                         )}
                       </For>
                     </div>
-                    <div class="mt-2 border-t border-line-faint pt-2">
+                    <div class="mt-2 border-t border-border-faint pt-2">
                       <button
                         type="button"
                         onClick={() => {
                           setSwitcherOpen(false);
                           props.onReconfigure();
                         }}
-                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-fg-tertiary transition-colors duration-fast hover:bg-hover hover:text-fg-secondary"
+                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-fg-muted transition-colors duration-fast hover:bg-hover hover:text-fg-secondary"
                       >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M12 5v14M5 12h14" />
@@ -412,6 +446,8 @@ export default function ControlCenter(props: Props) {
                 </Show>
               </div>
             </Show>
+
+            <ThemeToggle />
 
             {/* Reconfigure button */}
             <Button variant="secondary" size="sm" onClick={props.onReconfigure}>
@@ -434,8 +470,8 @@ export default function ControlCenter(props: Props) {
       </header>
 
       <Show when={instanceUnavailable()}>
-        <div class="border-b border-error/20 bg-error-subtle/70">
-          <div class="mx-auto flex max-w-7xl items-start gap-3 px-4 py-3 text-[13px] lg:px-6">
+        <div class="border-b border-error/20 bg-error-subtle/70 animate-fade-in lg:ml-56">
+          <div class="mx-auto flex max-w-5xl items-start gap-3 px-4 py-3 text-body-sm lg:px-6">
             <svg class="mt-0.5 h-4 w-4 shrink-0 text-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
@@ -454,8 +490,8 @@ export default function ControlCenter(props: Props) {
       </Show>
 
       <Show when={firmwareUpdate()?.needs_update && !updateDismissed()}>
-        <div class="border-b border-warning/20 bg-warning-subtle/70">
-          <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 text-[13px] lg:px-6">
+        <div class="border-b border-warning/20 bg-warning-subtle/70 animate-fade-in lg:ml-56">
+          <div class="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3 text-body-sm lg:px-6">
             <svg class="h-4 w-4 shrink-0 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 9v4M12 17h.01" />
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -480,13 +516,13 @@ export default function ControlCenter(props: Props) {
                 href={`${activeInstance()!.host}/ui/core/firmware#updates`}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="shrink-0 rounded-md border border-warning/30 bg-warning/10 px-3 py-1.5 text-[12px] font-medium text-warning hover:bg-warning/20"
+                class="shrink-0 rounded-md border border-warning/30 bg-warning/10 px-3 py-1.5 text-label-sm font-medium text-warning hover:bg-warning/20"
               >
                 Open Updates
               </a>
             </Show>
             <button
-              class="shrink-0 rounded p-1 text-fg-tertiary hover:bg-surface-tertiary hover:text-fg"
+              class="shrink-0 rounded p-1 text-fg-muted hover:bg-surface-raised hover:text-fg"
               onClick={() => setUpdateDismissed(true)}
               title="Dismiss"
             >
@@ -506,7 +542,7 @@ export default function ControlCenter(props: Props) {
       {/* Mobile navigation overlay */}
       <Show when={mobileNavOpen()}>
         <div
-          class="fixed inset-0 z-30 bg-surface/80 backdrop-blur-sm lg:hidden"
+          class="fixed inset-0 z-30 bg-bg/80 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileNavOpen(false)}
         />
       </Show>
@@ -516,44 +552,87 @@ export default function ControlCenter(props: Props) {
         {/* Sidebar navigation - fixed width */}
         <aside
           class={[
-            "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-56 shrink-0 border-r border-line bg-surface-secondary",
+            "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-56 shrink-0 border-r border-border-faint bg-bg",
             "transform transition-transform duration-slow ease-out lg:translate-x-0",
             mobileNavOpen() ? "translate-x-0" : "-translate-x-full",
           ].join(" ")}
         >
           <nav class="h-full overflow-y-auto py-3">
-            <div class="space-y-0.5 px-2">
-              <For each={navItems}>
-                {(item) => {
-                  const isActive = () => section() === item.id;
+            <div class="space-y-1 px-2">
+              <For each={navGroups}>
+                {(group) => {
+                  const isExpanded = () => expandedGroups().includes(group.id);
+                  const hasActiveChild = () => group.items.some((item) => section() === item.id);
+                  
                   return (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSection(item.id);
-                        setMobileNavOpen(false);
-                      }}
-                      class={[
-                        "relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5",
-                        "text-sm font-medium transition-all duration-200",
-                        isSectionDisabled(item.id) ? "cursor-not-allowed opacity-40" : "",
-                        isActive()
-                          ? "bg-accent/8 text-accent"
-                          : "text-fg-secondary hover:bg-hover hover:text-fg",
-                      ].join(" ")}
-                      disabled={isSectionDisabled(item.id)}
-                    >
-                      <span class={[
-                        "transition-colors duration-200",
-                        isActive() ? "text-accent" : "text-fg-tertiary",
-                      ].join(" ")}>
-                        {item.icon}
-                      </span>
-                      {item.label}
-                      <Show when={isActive()}>
-                        <span class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-accent rounded-r-full" />
+                    <div class="space-y-0.5">
+                      {/* Group header */}
+                      <Show when={group.items.length > 1}>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(group.id)}
+                          class={[
+                            "flex w-full items-center gap-2 rounded-lg px-3 py-2",
+                            "text-xs font-semibold uppercase tracking-wider",
+                            "transition-all duration-fast",
+                            hasActiveChild() ? "text-brand" : "text-fg-muted hover:text-fg-secondary",
+                          ].join(" ")}
+                        >
+                          <span class="text-fg-muted">{group.icon}</span>
+                          <span class="flex-1 text-left">{group.label}</span>
+                          <svg
+                            class={[
+                              "h-3.5 w-3.5 transition-transform duration-fast",
+                              isExpanded() ? "rotate-180" : "",
+                            ].join(" ")}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path d="M6 9l6 6 6-6" />
+                          </svg>
+                        </button>
                       </Show>
-                    </button>
+                      
+                      {/* Group items */}
+                      <Show when={isExpanded() || group.items.length === 1}>
+                        <div class="space-y-0.5">
+                          {group.items.map((item) => {
+                            const isActive = () => section() === item.id;
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSection(item.id);
+                                  setMobileNavOpen(false);
+                                }}
+                                disabled={isSectionDisabled(item.id)}
+                                class={[
+                                  "relative flex w-full items-center gap-3 rounded-lg px-3 py-2",
+                                  "text-sm font-medium transition-all duration-fast",
+                                  isSectionDisabled(item.id) ? "cursor-not-allowed opacity-40" : "",
+                                  isActive()
+                                    ? "bg-brand-subtle text-brand"
+                                    : "text-fg-secondary hover:bg-hover hover:text-fg",
+                                ].join(" ")}
+                              >
+                                <span class={[
+                                  "transition-colors duration-fast",
+                                  isActive() ? "text-brand" : "text-fg-muted",
+                                ].join(" ")}>
+                                  {item.icon}
+                                </span>
+                                <span class="truncate">{item.label}</span>
+                                <Show when={isActive()}>
+                                  <span class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-brand rounded-r-full" />
+                                </Show>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </Show>
+                    </div>
                   );
                 }}
               </For>
@@ -566,55 +645,79 @@ export default function ControlCenter(props: Props) {
           <div class="mx-auto max-w-5xl min-h-[calc(100vh-7rem)]">
             <Suspense
               fallback={
-                <div class="flex min-h-[240px] items-center justify-center text-sm text-fg-tertiary">
+                <div class="flex min-h-[240px] items-center justify-center text-sm text-fg-muted animate-fade-in">
                   Loading section...
                 </div>
               }
             >
               <Switch>
                 <Match when={section() === "dashboard"}>
-                  <Dashboard onConnectionStateChange={setRuntimeState} />
+                  <div class="animate-fade-in">
+                    <Dashboard onConnectionStateChange={setRuntimeState} />
+                  </div>
                 </Match>
                 <Match when={section() === "vpn"}>
-                  <VpnSetup onNavigate={(s) => setSection(s as Section)} />
+                  <div class="animate-fade-in">
+                    <VpnSetup onNavigate={(s) => setSection(s as Section)} />
+                  </div>
                 </Match>
                 <Match when={section() === "tailscale"}>
-                  <Tailscale />
+                  <div class="animate-fade-in">
+                    <Tailscale />
+                  </div>
                 </Match>
                 <Match when={section() === "tunnels"}>
-                  <Tunnels />
+                  <div class="animate-fade-in">
+                    <Tunnels />
+                  </div>
                 </Match>
                 <Match when={section() === "routing"}>
-                  <Routing />
+                  <div class="animate-fade-in">
+                    <Routing />
+                  </div>
                 </Match>
                 <Match when={section() === "interfaces"}>
-                  <Interfaces />
+                  <div class="animate-fade-in">
+                    <Interfaces />
+                  </div>
                 </Match>
                 <Match when={section() === "gateways"}>
-                  <Gateways />
+                  <div class="animate-fade-in">
+                    <Gateways />
+                  </div>
                 </Match>
                 <Match when={section() === "aliases"}>
-                  <Aliases />
+                  <div class="animate-fade-in">
+                    <Aliases />
+                  </div>
                 </Match>
                 <Match when={section() === "nat"}>
-                  <Nat />
+                  <div class="animate-fade-in">
+                    <Nat />
+                  </div>
                 </Match>
                 <Match when={section() === "rules"}>
-                  <Rules onNavigate={(s) => setSection(s as Section)} />
+                  <div class="animate-fade-in">
+                    <Rules onNavigate={(s) => setSection(s as Section)} />
+                  </div>
                 </Match>
                 <Match when={section() === "migration"}>
-                  <Migration />
+                  <div class="animate-fade-in">
+                    <Migration />
+                  </div>
                 </Match>
                 <Match when={section() === "backups"}>
-                  <Backups />
+                  <div class="animate-fade-in">
+                    <Backups />
+                  </div>
                 </Match>
               </Switch>
             </Suspense>
           </div>
 
           {/* Footer */}
-          <footer class="mt-auto border-t border-line px-4 py-4 lg:px-6">
-            <div class="mx-auto flex max-w-7xl items-center justify-between text-[11px] text-fg-muted">
+          <footer class="mt-auto border-t border-border-faint px-4 py-4 lg:px-6">
+            <div class="mx-auto flex max-w-5xl items-center justify-between text-body-xs text-fg-muted">
               <span>Gator is under active development. Found a bug or have a suggestion? <a
                 href="https://github.com/anothaDev/Gator/issues"
                 target="_blank"

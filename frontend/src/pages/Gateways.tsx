@@ -1,11 +1,11 @@
 import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
-import Button from "../components/Button";
 import IconButton from "../components/IconButton";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
-import { apiDelete, apiGet } from "../lib/api";
+import { apiDelete, apiGet, getOpnsenseHost } from "../lib/api";
 import Spinner from "../components/Spinner";
 
 type Gateway = {
@@ -52,6 +52,7 @@ export default function Gateways() {
   const [loading, setLoading] = createSignal(true);
   const [loadError, setLoadError] = createSignal("");
   const [deleting, setDeleting] = createSignal<string | null>(null);
+  const [opnHost, setOpnHost] = createSignal("");
   const [actionMsg, setActionMsg] = createSignal("");
   const [actionErr, setActionErr] = createSignal("");
 
@@ -70,6 +71,7 @@ export default function Gateways() {
 
   onMount(() => {
     void loadGateways();
+    void getOpnsenseHost().then(setOpnHost);
   });
 
   const deleteGateway = async (uuid: string, name: string) => {
@@ -96,22 +98,25 @@ export default function Gateways() {
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             Gateways
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             Network gateways. VPN routing creates gateways automatically.
           </p>
         </div>
-        <Button variant="secondary" size="md" onClick={() => void loadGateways()} loading={loading()}>
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          Refresh
-        </Button>
-        <OpnsenseLink path="/ui/routes/gateway" label="Gateways" />
+        <DropdownMenu items={(() => {
+          const items: MenuEntry[] = [
+            { label: "Refresh", onClick: () => void loadGateways(), loading: loading() },
+          ];
+          if (opnHost()) {
+            items.push({ divider: true as const });
+            items.push({ label: "Open in OPNsense", href: `${opnHost()}/ui/routes/gateway`, external: true });
+          }
+          return items;
+        })()} />
       </div>
 
       {/* Action messages */}
@@ -166,26 +171,26 @@ export default function Gateways() {
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-line-strong">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                  <tr class="border-b border-border-faint">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Name
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Interface
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Gateway
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Protocol
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Default
                     </th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Actions
                     </th>
                   </tr>
@@ -193,7 +198,7 @@ export default function Gateways() {
                 <tbody>
                   <For each={gateways()}>
                     {(gw) => (
-                      <tr class="border-b border-line-faint transition-colors duration-fast hover:bg-hover">
+                      <tr class="border-b border-border-faint transition-colors duration-fast hover:bg-hover">
                         <td class="px-4 py-3">
                           <div>
                             <span class="font-medium text-fg">{gw.name}</span>
@@ -204,11 +209,11 @@ export default function Gateways() {
                         </td>
                         <td class="px-4 py-3 text-sm text-fg-secondary">{gw.interface}</td>
                         <td class="px-4 py-3 font-mono text-sm text-fg-secondary">{gw.gateway || "-"}</td>
-                        <td class="px-4 py-3 text-sm text-fg-tertiary">
+                        <td class="px-4 py-3 text-sm text-fg-muted">
                           {gw.ipprotocol === "inet" ? "IPv4" : gw.ipprotocol === "inet6" ? "IPv6" : gw.ipprotocol}
                         </td>
                         <td class="px-4 py-3">{getStatusBadge(gw.status)}</td>
-                        <td class="px-4 py-3 text-sm text-fg-tertiary">
+                        <td class="px-4 py-3 text-sm text-fg-muted">
                           {gw.defaultgw === "1" ? (
                             <span class="text-success">Yes</span>
                           ) : (

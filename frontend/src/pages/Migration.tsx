@@ -168,10 +168,10 @@ export default function Migration() {
       {/* Header */}
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             Migration Assistant
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             Migrate legacy OPNsense firewall rules to the new MVC/API system.
           </p>
         </div>
@@ -183,7 +183,7 @@ export default function Migration() {
         <h2 class="text-sm font-semibold text-fg">Current Status</h2>
 
         <Show when={state() === "loading"}>
-          <div class="mt-3 flex items-center gap-3 text-sm text-fg-tertiary">
+          <div class="mt-3 flex items-center gap-3 text-sm text-fg-muted">
             <Spinner />
             Checking rule status...
           </div>
@@ -191,13 +191,13 @@ export default function Migration() {
 
         <Show when={state() !== "loading"}>
           <div class="mt-3 grid grid-cols-2 gap-4">
-            <div class="rounded-lg border border-line-strong bg-surface-tertiary p-3">
+            <div class="rounded-lg border border-border bg-surface-raised p-3">
               <p class="text-2xl font-bold text-warning">{legacyCount()}</p>
-              <p class="text-xs text-fg-tertiary">Legacy rules</p>
+              <p class="text-xs text-fg-muted">Legacy rules</p>
             </div>
-            <div class="rounded-lg border border-line-strong bg-surface-tertiary p-3">
+            <div class="rounded-lg border border-border bg-surface-raised p-3">
               <p class="text-2xl font-bold text-success">{mvcCount()}</p>
-              <p class="text-xs text-fg-tertiary">MVC rules (API-visible)</p>
+              <p class="text-xs text-fg-muted">MVC rules (API-visible)</p>
             </div>
           </div>
 
@@ -208,7 +208,7 @@ export default function Migration() {
           </Show>
 
           <Show when={legacyAvailable() && legacyCount() === 0 && state() === "ready"}>
-            <div class="mt-3 rounded-lg border border-line-strong bg-hover px-3 py-2 text-sm text-fg-secondary">
+            <div class="mt-3 rounded-lg border border-border-faint bg-hover px-3 py-2 text-sm text-fg-secondary">
               Legacy rule system exists but contains no rules. You can flush it to clean up.
             </div>
           </Show>
@@ -246,7 +246,7 @@ export default function Migration() {
                 Rules applied with savepoint. OPNsense will auto-rollback in{" "}
                 <span class="font-mono font-bold text-fg">{countdown()}s</span> if you don't confirm.
               </p>
-              <p class="mt-1 text-xs text-fg-tertiary">
+              <p class="mt-1 text-xs text-fg-muted">
                 Check that you can still access OPNsense and your network works correctly before confirming.
               </p>
             </div>
@@ -268,7 +268,7 @@ export default function Migration() {
       <Show when={legacyAvailable() && state() !== "loading"}>
         <Card variant="elevated">
           <h2 class="text-sm font-semibold text-fg">Migration Steps</h2>
-          <p class="mt-1 text-xs text-fg-tertiary">
+          <p class="mt-1 text-xs text-fg-muted">
             Run each step in order. A config backup is recommended before starting.
           </p>
 
@@ -349,7 +349,7 @@ export default function Migration() {
           <div class="mt-2 space-y-1">
             <For each={stepsDone()}>
               {(step, i) => (
-                <p class="text-xs text-fg-tertiary">
+                <p class="text-xs text-fg-muted">
                   <span class="font-mono text-fg-muted">{String(i() + 1).padStart(2, " ")}.</span>{" "}
                   {step}
                 </p>
@@ -380,7 +380,7 @@ function StepCard(props: {
         "flex items-center gap-4 rounded-lg border px-4 py-3",
         props.done
           ? "border-success/20 bg-success-subtle"
-          : "border-line-strong bg-surface-tertiary",
+          : "border-transparent bg-surface-raised",
       ].join(" ")}
     >
       <div
@@ -404,7 +404,7 @@ function StepCard(props: {
         <p class={["text-sm font-medium", props.done ? "text-success" : "text-fg"].join(" ")}>
           {props.title}
         </p>
-        <p class="text-xs text-fg-tertiary">
+        <p class="text-xs text-fg-muted">
           {props.done ? props.doneLabel : props.description}
         </p>
       </div>

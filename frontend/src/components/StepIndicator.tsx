@@ -27,7 +27,7 @@ export default function StepIndicator(props: Props) {
                       ? "border-success bg-success-subtle text-success shadow-[0_0_12px_rgba(0,255,157,0.3)]"
                       : isCompleted()
                         ? "border-success bg-success text-surface"
-                        : "border-line text-fg-tertiary"
+                        : "border-transparent text-fg-muted"
                   }`}
                 >
                   {isCompleted() ? (
@@ -65,7 +65,7 @@ export default function StepIndicator(props: Props) {
                       isActive()
                         ? "text-fg-secondary"
                         : isCompleted()
-                          ? "text-fg-tertiary"
+                          ? "text-fg-muted"
                           : "text-fg-muted"
                     }`}
                   >
@@ -77,7 +77,7 @@ export default function StepIndicator(props: Props) {
               {i() < props.steps.length - 1 && (
                 <div
                   class={`mx-1 h-px flex-1 transition-colors duration-300 ${
-                    isCompleted() ? "bg-success/50" : "bg-elevated"
+                    isCompleted() ? "bg-success/50" : "bg-surface-raised"
                   }`}
                 />
               )}

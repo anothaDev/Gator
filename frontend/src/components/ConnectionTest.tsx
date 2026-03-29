@@ -73,38 +73,38 @@ export default function ConnectionTest(props: Props) {
         instance to make sure everything is configured correctly.
       </p>
 
-      <div class="rounded-lg border border-line-faint bg-surface-tertiary p-4">
-        <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+      <div class="rounded-lg border border-border bg-surface-raised p-4">
+        <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-muted">
           Connection Summary
         </h4>
         <dl class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <dt class="text-fg-tertiary">Type</dt>
+            <dt class="text-fg-muted">Type</dt>
             <dd class="font-medium text-fg">
               {props.firewallType === "opnsense" ? "OPNsense" : "pfSense"}
             </dd>
           </div>
           <div class="flex justify-between">
-            <dt class="text-fg-tertiary">Host</dt>
+            <dt class="text-fg-muted">Host</dt>
             <dd class="font-mono text-fg">{props.connection.host}</dd>
           </div>
           {props.firewallType === "opnsense" ? (
             <div class="flex justify-between">
-              <dt class="text-fg-tertiary">API Key</dt>
+              <dt class="text-fg-muted">API Key</dt>
               <dd class="font-mono text-fg">
                 {props.connection.apiKey.slice(0, 8)}...
               </dd>
             </div>
           ) : (
             <div class="flex justify-between">
-              <dt class="text-fg-tertiary">API Token</dt>
+              <dt class="text-fg-muted">API Token</dt>
               <dd class="font-mono text-fg">
                 {props.connection.apiToken.slice(0, 8)}...
               </dd>
             </div>
           )}
           <div class="flex justify-between">
-            <dt class="text-fg-tertiary">TLS Verification</dt>
+            <dt class="text-fg-muted">TLS Verification</dt>
             <dd class="text-fg">
               {props.connection.skipTls ? (
                 <span class="text-amber-400">Skipped</span>
@@ -120,7 +120,7 @@ export default function ConnectionTest(props: Props) {
         type="button"
         onClick={runTest}
         disabled={status() === "testing"}
-        class="flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-elevated px-5 py-3 text-sm font-medium text-fg transition-colors hover:border-line-strong hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
+        class="flex w-full items-center justify-center gap-2 rounded-lg border-transparent bg-surface-raised px-5 py-3 text-sm font-medium text-fg transition-colors hover:border-transparent hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Show when={status() === "testing"}>
           <Spinner />
@@ -182,12 +182,12 @@ export default function ConnectionTest(props: Props) {
                 </p>
                 <p class="mt-1 text-sm text-fg-secondary">{result()!.message}</p>
                 <Show when={result()!.version}>
-                  <p class="mt-1 text-xs text-fg-tertiary">
+                  <p class="mt-1 text-xs text-fg-muted">
                     Version: {result()!.version}
                   </p>
                 </Show>
                 <Show when={result()!.hostname}>
-                  <p class="text-xs text-fg-tertiary">
+                  <p class="text-xs text-fg-muted">
                     Hostname: {result()!.hostname}
                   </p>
                 </Show>
@@ -200,7 +200,7 @@ export default function ConnectionTest(props: Props) {
         <button
           type="button"
           onClick={props.onComplete}
-          class="w-full rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30"
+          class="w-full rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30"
         >
           Save & Continue
         </button>

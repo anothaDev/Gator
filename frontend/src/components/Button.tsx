@@ -14,33 +14,37 @@ interface ButtonProps {
 }
 
 export default function Button(props: ButtonProps) {
-  const variantStyles = {
+  const variants: Record<string, string> = {
     primary: [
-      "bg-accent text-surface",
-      "hover:brightness-110",
-      "active:scale-[0.98]",
+      "bg-brand text-white",
+      "hover:bg-brand-hover",
+      "active:scale-[0.995]",
+      "focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2",
     ].join(" "),
     secondary: [
-      "bg-elevated text-fg border border-line-strong",
-      "hover:bg-hover hover:border-line-focus",
-      "active:scale-[0.98]",
+      "border border-border bg-surface text-fg-secondary",
+      "hover:bg-hover hover:text-fg hover:border-border-strong",
+      "active:scale-[0.99]",
+      "focus-visible:ring-2 focus-visible:ring-border-strong",
     ].join(" "),
     ghost: [
       "bg-transparent text-fg-secondary",
       "hover:bg-hover hover:text-fg",
-      "active:scale-[0.98]",
+      "active:scale-[0.99]",
+      "focus-visible:ring-2 focus-visible:ring-border-strong",
     ].join(" "),
     danger: [
       "bg-error text-white",
-      "hover:brightness-110",
-      "active:scale-[0.98]",
+      "hover:bg-error/90",
+      "active:scale-[0.995]",
+      "focus-visible:ring-2 focus-visible:ring-error/40 focus-visible:ring-offset-2",
     ].join(" "),
   };
 
-  const sizeStyles = {
-    sm: "h-7 px-2.5 text-[12px]",
-    md: "h-8 px-3 text-[13px]",
-    lg: "h-9 px-4 text-[14px]",
+  const sizes: Record<string, string> = {
+    sm: "h-7 px-2.5 text-label-sm rounded-md gap-1.5",
+    md: "h-8 px-3 text-label-md rounded-md gap-2",
+    lg: "h-9 px-4 text-label-md rounded-lg gap-2",
   };
 
   return (
@@ -50,11 +54,12 @@ export default function Button(props: ButtonProps) {
       onClick={props.onClick}
       title={props.title}
       class={[
-        "inline-flex items-center justify-center gap-1.5 rounded-md font-medium",
-        "transition-all duration-fast",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        variantStyles[props.variant ?? "secondary"],
-        sizeStyles[props.size ?? "md"],
+        "inline-flex items-center justify-center font-medium",
+        "transition-all duration-150",
+        "disabled:opacity-50 disabled:pointer-events-none",
+        "focus-visible:outline-none",
+        variants[props.variant ?? "secondary"],
+        sizes[props.size ?? "md"],
         props.class ?? "",
       ].join(" ")}
     >

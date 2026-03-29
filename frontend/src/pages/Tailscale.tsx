@@ -4,9 +4,10 @@ import Badge from "../components/Badge";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import Input from "../components/Input";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import { ErrorStateCard, LoadingStateCard } from "../components/PageState";
-import { apiDelete, apiGet, apiPost } from "../lib/api";
+import { apiDelete, apiGet, apiPost, getOpnsenseHost } from "../lib/api";
 
 type TailscaleStatus = {
   installed: boolean;
@@ -47,6 +48,7 @@ export default function Tailscale() {
 
   const canConfigure = createMemo(() => status()?.installed && preAuthKey().trim() !== "");
   const iface = () => status()?.interface;
+  const [opnHost, setOpnHost] = createSignal("");
 
   const loadStatus = async () => {
     setLoading(true);
@@ -66,6 +68,7 @@ export default function Tailscale() {
 
   onMount(() => {
     void loadStatus();
+    void getOpnsenseHost().then(setOpnHost);
   });
 
   const [installProgress, setInstallProgress] = createSignal("");
@@ -158,19 +161,23 @@ export default function Tailscale() {
 
   return (
     <div class="space-y-5">
-      <div class="flex items-center justify-between gap-4">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">Tailscale</h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">Tailscale</h1>
+          <p class="mt-1 text-body-sm text-fg-muted">
             Guided setup for the OPNsense Tailscale community plugin.
           </p>
         </div>
-        <div class="flex items-center gap-2">
-          <OpnsenseLink path="/ui/tailscale/settings" label="Tailscale" />
-          <Button variant="secondary" size="md" onClick={() => void loadStatus()} loading={loading()}>
-            Refresh
-          </Button>
-        </div>
+        <DropdownMenu items={(() => {
+          const items: MenuEntry[] = [
+            { label: "Refresh", onClick: () => void loadStatus(), loading: loading() },
+          ];
+          if (opnHost()) {
+            items.push({ divider: true as const });
+            items.push({ label: "Open in OPNsense", href: `${opnHost()}/ui/tailscale/settings`, external: true });
+          }
+          return items;
+        })()} />
       </div>
 
       <Show when={loading()}>
@@ -202,12 +209,12 @@ export default function Tailscale() {
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 text-sm lg:min-w-[300px]">
-                  <div class="rounded-md border border-line bg-surface-secondary px-3 py-2">
-                    <div class="text-xs uppercase tracking-wider text-fg-tertiary">Service</div>
+                  <div class="rounded-md border border-border-faint bg-surface px-3 py-2">
+                    <div class="text-xs uppercase tracking-wider text-fg-muted">Service</div>
                     <div class="mt-1 font-medium text-fg">{status()!.service_status || "not installed"}</div>
                   </div>
-                  <div class="rounded-md border border-line bg-surface-secondary px-3 py-2">
-                    <div class="text-xs uppercase tracking-wider text-fg-tertiary">Tailscale IP</div>
+                  <div class="rounded-md border border-border-faint bg-surface px-3 py-2">
+                    <div class="text-xs uppercase tracking-wider text-fg-muted">Tailscale IP</div>
                     <div class="mt-1 font-mono text-fg">{status()!.tailscale_ip || "--"}</div>
                   </div>
                 </div>
@@ -286,7 +293,7 @@ export default function Tailscale() {
                       href={`${status()!.opnsense_host}/interfaces_assign.php`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="shrink-0 rounded-md border border-warning/30 bg-warning/10 px-3 py-1.5 text-[12px] font-medium text-warning hover:bg-warning/20"
+                      class="shrink-0 rounded-md border border-warning/30 bg-warning/10 px-3 py-1.5 text-label-sm font-medium text-warning hover:bg-warning/20"
                     >
                       Open Assignments
                     </a>
@@ -297,7 +304,7 @@ export default function Tailscale() {
                   <StepItem done={!!iface()?.assigned} text="Assign tailscale0 in Interfaces > Assignments" />
                   <StepItem done={!!iface()?.enabled} text="Enable the assigned interface" />
                 </div>
-                <p class="mt-4 text-xs text-fg-tertiary">
+                <p class="mt-4 text-xs text-fg-muted">
                   After completing these steps, click Refresh above.
                 </p>
               </Card>
@@ -393,23 +400,23 @@ function AdvertisedRoutes() {
       </Show>
 
       <div class="mt-4">
-        <Show when={!loadingRoutes()} fallback={<p class="text-sm text-fg-tertiary">Loading...</p>}>
+        <Show when={!loadingRoutes()} fallback={<p class="text-sm text-fg-muted">Loading...</p>}>
           <Show
             when={subnets().length > 0}
-            fallback={<p class="text-sm text-fg-tertiary">No advertised routes configured.</p>}
+            fallback={<p class="text-sm text-fg-muted">No advertised routes configured.</p>}
           >
             <div class="space-y-2">
               <For each={subnets()}>
                 {(entry) => (
-                  <div class="flex items-center justify-between gap-3 rounded-md border border-line bg-surface-secondary px-3 py-2">
+                  <div class="flex items-center justify-between gap-3 rounded-md border border-border-faint bg-surface px-3 py-2">
                     <div class="min-w-0">
                       <span class="font-mono text-sm text-fg">{entry.subnet}</span>
                       <Show when={entry.description}>
-                        <span class="ml-2 text-xs text-fg-tertiary">{entry.description}</span>
+                        <span class="ml-2 text-xs text-fg-muted">{entry.description}</span>
                       </Show>
                     </div>
                     <button
-                      class="shrink-0 rounded p-1 text-fg-tertiary hover:bg-surface-tertiary hover:text-error"
+                      class="shrink-0 rounded p-1 text-fg-muted hover:bg-surface-raised hover:text-error"
                       onClick={() => void handleDelete(entry.uuid)}
                       disabled={deleting() === entry.uuid}
                       title="Remove route"
@@ -426,25 +433,20 @@ function AdvertisedRoutes() {
         </Show>
       </div>
 
-      <div class="mt-4 flex items-end gap-3">
-        <div class="flex-1">
-          <Input
-            label="Subnet"
-            value={subnet()}
-            onInput={setSubnet}
-            placeholder="192.168.1.0/24"
-            hint="CIDR notation"
-          />
-        </div>
-        <div class="flex-1">
-          <Input
-            label="Description"
-            value={description()}
-            onInput={setDescription}
-            placeholder="LAN (optional)"
-          />
-        </div>
-        <Button variant="primary" size="lg" disabled={!subnet().trim()} loading={adding()} onClick={() => void handleAdd()}>
+      <div class="mt-4 grid grid-cols-[1fr_1fr_auto] items-end gap-3">
+        <Input
+          label="Subnet"
+          value={subnet()}
+          onInput={setSubnet}
+          placeholder="192.168.1.0/24"
+        />
+        <Input
+          label="Description"
+          value={description()}
+          onInput={setDescription}
+          placeholder="LAN (optional)"
+        />
+        <Button variant="primary" size="md" disabled={!subnet().trim()} loading={adding()} onClick={() => void handleAdd()}>
           Add
         </Button>
       </div>
@@ -455,7 +457,7 @@ function AdvertisedRoutes() {
 function StepItem(props: { done: boolean; text: string }) {
   return (
     <div class="flex items-center gap-2.5">
-      <div class={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${props.done ? "bg-success/20 text-success" : "border border-line text-fg-tertiary"}`}>
+      <div class={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${props.done ? "bg-success/20 text-success" : "border-transparent text-fg-muted"}`}>
         <Show
           when={props.done}
           fallback={<div class="h-1.5 w-1.5 rounded-full bg-current" />}
@@ -465,7 +467,7 @@ function StepItem(props: { done: boolean; text: string }) {
           </svg>
         </Show>
       </div>
-      <span class={props.done ? "text-fg-tertiary line-through" : "text-fg"}>
+      <span class={props.done ? "text-fg-muted line-through" : "text-fg"}>
         {props.text}
       </span>
     </div>

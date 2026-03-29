@@ -1,14 +1,16 @@
 import { createSignal, createResource, createMemo, For, Show, onMount, onCleanup } from "solid-js";
-import { apiGet, apiPost, apiDelete } from "../lib/api";
+import { apiGet, apiPost, apiDelete, getOpnsenseHost } from "../lib/api";
 import CustomProfileModal from "./routing/CustomProfileModal";
 import IpRangeUploadModal from "./routing/IpRangeUploadModal";
 import AppCard from "./routing/AppCard";
 import RoutingToolbar from "./routing/RoutingToolbar";
 import EmptyState from "../components/EmptyState";
 import Card from "../components/Card";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import Select from "../components/Select";
 import Spinner from "../components/Spinner";
+import { FlowIndicator } from "../components/VisualElements";
 import type { AppProfile, AppPreset, URLTableHint } from "./routing/types";
 
 type AppRouteStatus = {
@@ -96,6 +98,7 @@ export default function Routing() {
 
   // Custom profile modal state.
   const [showAddModal, setShowAddModal] = createSignal(false);
+  const [opnHost, setOpnHost] = createSignal("");
 
   const deleteCustomProfile = async (profileId: string, name: string) => {
     if (!confirm(`Delete custom profile "${name}"?`)) return;
@@ -251,6 +254,7 @@ export default function Routing() {
   };
 
   onMount(async () => {
+    void getOpnsenseHost().then(setOpnHost);
     try {
       const vpns = await fetchVPNList();
       setVpnList(vpns);
@@ -457,18 +461,33 @@ export default function Routing() {
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-[24px] font-semibold tracking-tight text-fg">Routing</h1>
-          <p class="mt-1 text-[14px] text-fg-tertiary">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">Routing</h1>
+          <p class="mt-1 text-body-sm text-fg-muted">
             Route specific apps and protocols through your VPN
           </p>
         </div>
-        <OpnsenseLink path="/ui/routes/gateway" label="Gateways" />
+        <DropdownMenu items={(() => {
+          const items: MenuEntry[] = [];
+          if (opnHost()) {
+            items.push({ label: "Open Gateways", href: `${opnHost()}/ui/routes/gateway`, external: true });
+          }
+          return items;
+        })()} />
       </div>
 
+      {/* Traffic Flow Visualization */}
+      <Show when={selectedVpnId() && vpnList().length > 0}>
+        <FlowIndicator 
+          mode={routingMode()} 
+          activeCount={enabledCount()} 
+          totalCount={totalCount()}
+        />
+      </Show>
+
       {/* Controls Card */}
-      <div class="rounded-xl border border-line bg-surface-tertiary p-4">
+      <div class="rounded-lg border border-border-faint bg-surface-raised p-4">
         <div class="flex flex-wrap items-center gap-4">
 
         {/* VPN selector */}
@@ -498,7 +517,7 @@ export default function Routing() {
             />
           </div>
           <Show when={routingMode() !== "all"}>
-            <p class="mt-3 text-[12px] text-fg-tertiary">
+            <p class="mt-3 text-label-sm text-fg-muted">
               {routingMode() === "selective"
                 ? "Only toggled apps route through VPN. All other traffic uses the default gateway."
                 : "All traffic routes through VPN. Toggled apps bypass it and use the default gateway."}
@@ -520,13 +539,13 @@ export default function Routing() {
 
       {/* Pending confirmation banner */}
       <Show when={pendingRevision()}>
-        <div class="rounded-xl border border-warning/40 bg-warning-subtle px-5 py-4">
+        <div class="rounded-lg border border-warning/40 bg-warning-subtle px-5 py-4">
           <div class="flex items-center justify-between gap-4">
             <div>
-              <p class="text-[14px] font-semibold text-warning">
+              <p class="text-body-md font-semibold text-warning">
                 Firewall changes pending — auto-reverts in {countdown()}s
               </p>
-              <p class="mt-1 text-[12px] text-warning/70">
+              <p class="mt-1 text-label-sm text-warning/70">
                 Verify your connectivity is still working, then confirm or revert.
               </p>
             </div>
@@ -534,14 +553,14 @@ export default function Routing() {
               <button
                 type="button"
                 onClick={() => void confirmChanges()}
-                class="rounded-lg bg-accent px-4 py-2 text-[13px] font-semibold text-surface transition-all hover:brightness-110"
+                class="rounded-lg bg-brand px-4 py-2 text-body-sm font-semibold text-surface transition-all hover:brightness-110"
               >
                 Confirm
               </button>
               <button
                 type="button"
                 onClick={() => void revertChanges()}
-                class="rounded-lg border border-error/30 bg-error-subtle px-4 py-2 text-[13px] font-semibold text-error transition-all hover:bg-error/20"
+                class="rounded-lg border border-error/30 bg-error-subtle px-4 py-2 text-body-sm font-semibold text-error transition-all hover:bg-error/20"
               >
                 Revert
               </button>
@@ -558,12 +577,12 @@ export default function Routing() {
 
       {/* Messages */}
       <Show when={!pendingRevision() && actionMsg()}>
-        <div class="rounded-lg border border-success/30 bg-success-subtle px-4 py-3 text-[14px] text-success">
+        <div class="rounded-lg border border-success/30 bg-success-subtle px-4 py-3 text-body-md text-success">
           {actionMsg()}
         </div>
       </Show>
       <Show when={actionErr()}>
-        <div class="rounded-lg border border-error/30 bg-error-subtle px-4 py-3 text-[14px] text-error">
+        <div class="rounded-lg border border-error/30 bg-error-subtle px-4 py-3 text-body-md text-error">
           {actionErr()}
         </div>
       </Show>
@@ -588,24 +607,24 @@ export default function Routing() {
 
         {/* Loading state */}
         <Show when={routesLoading()}>
-          <div class="flex items-center justify-center gap-3 py-8 text-fg-tertiary">
+          <div class="flex items-center justify-center gap-3 py-8 text-fg-muted">
             <Spinner size="md" />
-            <span class="text-[14px]">Loading app routes...</span>
+            <span class="text-body-md">Loading app routes...</span>
           </div>
         </Show>
 
         {/* App grid by category */}
         <Show when={!routesLoading()}>
           <Show when={filteredApps().length === 0}>
-            <div class="rounded-xl border border-line bg-surface-tertiary p-8 text-center">
-              <p class="text-[14px] text-fg-tertiary">No apps match your search</p>
+            <div class="rounded-lg border border-border-faint bg-surface-raised p-8 text-center">
+              <p class="text-body-md text-fg-muted">No apps match your search</p>
             </div>
           </Show>
 
           <For each={groupByCategory(filteredApps())}>
             {(group) => (
               <div class="space-y-4">
-                <p class="text-[12px] font-semibold uppercase tracking-[0.08em] text-fg-muted">
+                <p class="text-label-sm font-semibold uppercase tracking-[0.08em] text-fg-muted">
                   {group.label}
                 </p>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">

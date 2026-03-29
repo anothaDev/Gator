@@ -1,12 +1,12 @@
 import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
-import Button from "../components/Button";
 import IconButton from "../components/IconButton";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import LegacyRulesWarning from "../components/LegacyRulesWarning";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
-import { apiDelete, apiGet } from "../lib/api";
+import { apiDelete, apiGet, getOpnsenseHost } from "../lib/api";
 import { createLegacyCheck } from "../lib/legacy";
 import Spinner from "../components/Spinner";
 
@@ -70,6 +70,7 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
   const [deleting, setDeleting] = createSignal<string | null>(null);
   const [deleteErr, setDeleteErr] = createSignal("");
   const { legacyCount, legacyChecked, checkLegacyRules } = createLegacyCheck();
+  const [opnHost, setOpnHost] = createSignal("");
 
   const loadRules = async () => {
     setLoading(true);
@@ -106,32 +107,33 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
   onMount(() => {
     void loadRules();
     void checkLegacyRules();
+    void getOpnsenseHost().then(setOpnHost);
   });
 
   const gatorCount = () => rules().filter((r) => r.is_gator).length;
 
+  const menuItems = (): MenuEntry[] => [
+    { label: "Refresh", onClick: () => void loadRules(), loading: loading() },
+    { divider: true as const },
+    ...(opnHost() ? [{ label: "Open in OPNsense", href: `${opnHost()}/ui/firewall/filter`, external: true }] : []),
+  ];
+
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             Rules
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             Firewall filter rules.
             <Show when={gatorCount() > 0}>
               <span class="ml-2 text-success">{gatorCount()} managed by Gator</span>
             </Show>
           </p>
         </div>
-        <Button variant="secondary" size="md" onClick={() => void loadRules()} loading={loading()}>
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          Refresh
-        </Button>
-        <OpnsenseLink path="/ui/firewall/filter" label="Rules" />
+        <DropdownMenu items={menuItems()} />
       </div>
 
       {/* Error banner */}
@@ -196,29 +198,29 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
                   <col class="w-[4%]" />
                 </colgroup>
                 <thead>
-                  <tr class="border-b border-line-strong">
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                  <tr class="border-b border-border-faint">
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Description
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Action
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Iface
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Source
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Destination
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Proto
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Gateway
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
                     <th class="px-3 py-3"></th>
@@ -241,7 +243,7 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
                       return (
                         <tr
                           class={[
-                            "border-b border-line-faint transition-colors duration-fast hover:bg-hover",
+                            "border-b border-border-faint transition-colors duration-fast hover:bg-hover",
                             rule.is_gator ? "bg-success-subtle/30" : "",
                           ].join(" ")}
                         >
@@ -257,9 +259,9 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
                           </td>
                           <td class="px-3 py-3">{getActionBadge(rule.action)}</td>
                           <td class="px-3 py-3 text-sm text-fg-secondary truncate overflow-hidden">{rule.interface || "-"}</td>
-                          <td class="px-3 py-3 font-mono text-xs text-fg-tertiary truncate overflow-hidden" title={src()}>{src()}</td>
-                          <td class="px-3 py-3 font-mono text-xs text-fg-tertiary truncate overflow-hidden" title={dest()}>{dest()}</td>
-                          <td class="px-3 py-3 text-xs text-fg-tertiary truncate overflow-hidden">
+                          <td class="px-3 py-3 font-mono text-xs text-fg-muted truncate overflow-hidden" title={src()}>{src()}</td>
+                          <td class="px-3 py-3 font-mono text-xs text-fg-muted truncate overflow-hidden" title={dest()}>{dest()}</td>
+                          <td class="px-3 py-3 text-xs text-fg-muted truncate overflow-hidden">
                             {rule.protocol || "any"}
                             <Show when={rule.direction}>
                               <span class="ml-0.5 text-fg-muted">({rule.direction})</span>
@@ -270,7 +272,7 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
                               when={rule.gateway}
                               fallback={<span class="text-xs text-fg-muted">default</span>}
                             >
-                              <span class="font-mono text-xs text-accent truncate block" title={rule.gateway}>{rule.gateway}</span>
+                              <span class="font-mono text-xs text-brand truncate block" title={rule.gateway}>{rule.gateway}</span>
                             </Show>
                           </td>
                           <td class="px-3 py-3">

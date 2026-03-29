@@ -1,10 +1,10 @@
 import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
-import Button from "../components/Button";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
-import { apiGet } from "../lib/api";
+import { apiGet, getOpnsenseHost } from "../lib/api";
 
 type NATRule = {
   uuid: string;
@@ -28,6 +28,7 @@ export default function Nat() {
   const [rules, setRules] = createSignal<NATRule[]>([]);
   const [loading, setLoading] = createSignal(true);
   const [loadError, setLoadError] = createSignal("");
+  const [opnHost, setOpnHost] = createSignal("");
 
   const loadRules = async () => {
     setLoading(true);
@@ -44,6 +45,7 @@ export default function Nat() {
 
   onMount(() => {
     void loadRules();
+    void getOpnsenseHost().then(setOpnHost);
   });
 
   const gatorCount = () => rules().filter((r) => r.is_gator).length;
@@ -51,25 +53,28 @@ export default function Nat() {
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             NAT
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             Outbound NAT rules.
             <Show when={gatorCount() > 0}>
               <span class="ml-2 text-success">{gatorCount()} managed by Gator</span>
             </Show>
           </p>
         </div>
-        <Button variant="secondary" size="md" onClick={() => void loadRules()} loading={loading()}>
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          Refresh
-        </Button>
-        <OpnsenseLink path="/firewall_nat_out.php" label="NAT" />
+        <DropdownMenu items={(() => {
+          const items: MenuEntry[] = [
+            { label: "Refresh", onClick: () => void loadRules(), loading: loading() },
+          ];
+          if (opnHost()) {
+            items.push({ divider: true as const });
+            items.push({ label: "Open in OPNsense", href: `${opnHost()}/firewall_nat_out.php`, external: true });
+          }
+          return items;
+        })()} />
       </div>
 
       {/* Loading state */}
@@ -98,26 +103,26 @@ export default function Nat() {
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-line-strong">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                  <tr class="border-b border-border-faint">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Interface
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Source
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Destination
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Protocol
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Target
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
                   </tr>
@@ -127,7 +132,7 @@ export default function Nat() {
                     {(rule) => (
                       <tr
                         class={[
-                          "border-b border-line-faint transition-colors duration-fast hover:bg-hover",
+                          "border-b border-border-faint transition-colors duration-fast hover:bg-hover",
                           rule.is_gator ? "bg-success-subtle/30" : "",
                         ].join(" ")}
                       >
@@ -142,10 +147,10 @@ export default function Nat() {
                           </div>
                         </td>
                         <td class="px-4 py-3 text-sm text-fg-secondary">{rule.interface || "-"}</td>
-                        <td class="px-4 py-3 font-mono text-xs text-fg-tertiary">{rule.source_net || "any"}</td>
-                        <td class="px-4 py-3 font-mono text-xs text-fg-tertiary">{rule.destination || "any"}</td>
-                        <td class="px-4 py-3 text-sm text-fg-tertiary">{rule.protocol || "any"}</td>
-                        <td class="px-4 py-3 font-mono text-xs text-fg-tertiary">{rule.target || "-"}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-fg-muted">{rule.source_net || "any"}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-fg-muted">{rule.destination || "any"}</td>
+                        <td class="px-4 py-3 text-sm text-fg-muted">{rule.protocol || "any"}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-fg-muted">{rule.target || "-"}</td>
                         <td class="px-4 py-3">
                           {rule.enabled === "1" ? (
                             <Badge variant="success" size="sm">enabled</Badge>

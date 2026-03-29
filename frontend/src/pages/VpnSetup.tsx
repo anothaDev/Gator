@@ -4,11 +4,12 @@ import DiscoveryModal from "./vpn-setup/DiscoveryModal";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import AlertBanner from "../components/AlertBanner";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import EmptyState from "../components/EmptyState";
 import LegacyRulesWarning from "../components/LegacyRulesWarning";
 import { SkeletonList } from "../components/Skeleton";
-import { apiGet } from "../lib/api";
+import { apiGet, getOpnsenseHost } from "../lib/api";
 import { createLegacyCheck } from "../lib/legacy";
 import { parseWireGuardConfig as parseWireGuardFields, wireGuardStemFromFile } from "../lib/wireguard";
 
@@ -94,9 +95,13 @@ export default function VpnSetup(props: { onNavigate?: (section: string) => void
   const [newDraftNotice, setNewDraftNotice] = createSignal("");
   const [pageError, setPageError] = createSignal("");
   const { legacyCount, legacyChecked, checkLegacyRules } = createLegacyCheck();
+  const [opnHost, setOpnHost] = createSignal("");
   let importInputRef: HTMLInputElement | undefined;
 
-  onMount(() => void checkLegacyRules());
+  onMount(() => {
+    void checkLegacyRules();
+    void getOpnsenseHost().then(setOpnHost);
+  });
 
   const toggle = (id: number) => setExpandedId((prev) => (prev === id ? null : id));
   const openNew = () => {
@@ -159,24 +164,16 @@ export default function VpnSetup(props: { onNavigate?: (section: string) => void
       />
 
       {/* Header */}
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             VPN
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             Manage WireGuard VPN profiles, deploy them to OPNsense, and switch which one actively routes traffic.
           </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <OpnsenseLink path="/ui/wireguard/general" label="WireGuard" />
-          <Button variant="secondary" size="md" onClick={() => setShowDiscovery(true)}>
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            Scan OPNsense
-          </Button>
+        <div class="flex items-center gap-2">
           <Button variant="primary" size="md" onClick={triggerImport}>
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -185,18 +182,17 @@ export default function VpnSetup(props: { onNavigate?: (section: string) => void
             </svg>
             Import .conf
           </Button>
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={openNew}
-            disabled={expandedId() === "new" && !newDraft()}
-          >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Add manually
-          </Button>
+          <DropdownMenu items={(() => {
+            const items: MenuEntry[] = [
+              { label: "Scan OPNsense", onClick: () => setShowDiscovery(true) },
+              { label: "Add manually", onClick: openNew, disabled: expandedId() === "new" && !newDraft() },
+            ];
+            if (opnHost()) {
+              items.push({ divider: true as const });
+              items.push({ label: "Open in OPNsense", href: `${opnHost()}/ui/wireguard/general`, external: true });
+            }
+            return items;
+          })()} />
         </div>
       </div>
 

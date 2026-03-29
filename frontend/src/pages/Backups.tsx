@@ -3,9 +3,11 @@ import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import IconButton from "../components/IconButton";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import Spinner from "../components/Spinner";
 import { formatBytes } from "../lib/format";
+import { getOpnsenseHost } from "../lib/api";
 
 type Backup = {
   filename: string;
@@ -35,6 +37,7 @@ export default function Backups() {
   const [creating, setCreating] = createSignal(false);
   const [createError, setCreateError] = createSignal("");
   const [deleting, setDeleting] = createSignal<string | null>(null);
+  const [opnHost, setOpnHost] = createSignal("");
 
   const loadBackups = async () => {
     setLoading(true);
@@ -53,6 +56,7 @@ export default function Backups() {
 
   onMount(() => {
     void loadBackups();
+    void getOpnsenseHost().then(setOpnHost);
   });
 
   const createBackup = async () => {
@@ -98,12 +102,12 @@ export default function Backups() {
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             Backups
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             OPNsense configuration snapshots.
             <Show when={backups().length > 0}>
               <span class="ml-2 text-fg-secondary">{backups().length} stored</span>
@@ -111,13 +115,6 @@ export default function Backups() {
           </p>
         </div>
         <div class="flex items-center gap-2">
-          <OpnsenseLink path="/ui/core/backup" label="Backups" />
-          <Button variant="secondary" size="md" onClick={() => void loadBackups()} loading={loading()}>
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            Refresh
-          </Button>
           <Button variant="primary" size="md" onClick={() => void createBackup()} loading={creating()}>
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -126,6 +123,16 @@ export default function Backups() {
             </svg>
             Create backup
           </Button>
+          <DropdownMenu items={(() => {
+            const items: MenuEntry[] = [
+              { label: "Refresh", onClick: () => void loadBackups(), loading: loading() },
+            ];
+            if (opnHost()) {
+              items.push({ divider: true as const });
+              items.push({ label: "Open in OPNsense", href: `${opnHost()}/ui/core/backup`, external: true });
+            }
+            return items;
+          })()} />
         </div>
       </div>
 
@@ -146,7 +153,7 @@ export default function Backups() {
       {/* Loading */}
       <Show when={loading()}>
         <Card class="py-12">
-          <div class="flex items-center justify-center gap-3 text-fg-tertiary">
+          <div class="flex items-center justify-center gap-3 text-fg-muted">
             <Spinner size="md" />
             <span class="text-sm">Loading backups...</span>
           </div>
@@ -177,7 +184,7 @@ export default function Backups() {
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
             <p class="mt-3 text-sm text-fg-secondary">No backups stored yet</p>
-            <p class="mt-1 text-xs text-fg-tertiary">
+            <p class="mt-1 text-xs text-fg-muted">
               Create a backup before making changes to OPNsense.
             </p>
           </Card>
@@ -188,17 +195,17 @@ export default function Backups() {
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-line-strong">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                  <tr class="border-b border-border-faint">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Filename
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Size
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Created
                     </th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Actions
                     </th>
                   </tr>
@@ -206,12 +213,12 @@ export default function Backups() {
                 <tbody>
                   <For each={backups()}>
                     {(backup) => (
-                      <tr class="border-b border-line-faint transition-colors duration-fast hover:bg-hover">
+                      <tr class="border-b border-border-faint transition-colors duration-fast hover:bg-hover">
                         <td class="px-4 py-3">
                           <span class="font-mono text-xs text-fg">{backup.filename}</span>
                         </td>
-                        <td class="px-4 py-3 text-xs text-fg-tertiary">{formatBytes(backup.size)}</td>
-                        <td class="px-4 py-3 text-xs text-fg-tertiary">{formatDate(backup.created)}</td>
+                        <td class="px-4 py-3 text-xs text-fg-muted">{formatBytes(backup.size)}</td>
+                        <td class="px-4 py-3 text-xs text-fg-muted">{formatDate(backup.created)}</td>
                         <td class="px-4 py-3">
                           <div class="flex items-center justify-end gap-2">
                             <Button

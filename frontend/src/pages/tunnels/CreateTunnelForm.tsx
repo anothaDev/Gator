@@ -9,7 +9,7 @@ import AlertBanner from "../../components/AlertBanner";
 // ─── CSS ─────────────────────────────────────────────────────────
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-surface-secondary px-3 py-2.5 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none";
+  "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-fg placeholder-fg-muted hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none";
 const labelClass = "block text-xs font-medium text-fg-secondary mb-1.5";
 
 // ─── Create Tunnel Form ─────────────────────────────────────────
@@ -90,7 +90,7 @@ function CreateTunnelForm(props: {
   return (
     <Card variant="elevated">
       <h2 class="text-lg font-semibold text-fg">New Tunnel</h2>
-      <p class="mb-5 mt-1 text-sm text-fg-tertiary">
+      <p class="mb-5 mt-1 text-sm text-fg-muted">
         Configure a WireGuard tunnel to a remote Linux VPS.
       </p>
 
@@ -121,7 +121,7 @@ function CreateTunnelForm(props: {
 
         {/* SSH connection */}
         <div>
-          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-muted">
             SSH Connection
           </p>
           <div class="grid gap-4 md:grid-cols-3">
@@ -162,7 +162,7 @@ function CreateTunnelForm(props: {
               value={form().ssh_private_key}
               onInput={(e) => setForm((f) => ({ ...f, ssh_private_key: e.currentTarget.value }))}
             />
-            <p class="mt-1 text-xs text-fg-tertiary">
+            <p class="mt-1 text-xs text-fg-muted">
               Paste the full PEM key, or leave empty and use password below.
             </p>
           </div>
@@ -200,7 +200,7 @@ function CreateTunnelForm(props: {
 
         {/* Tunnel addressing */}
         <div>
-          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-muted">
             Tunnel Addressing
           </p>
           <div class="grid gap-4 md:grid-cols-3">
@@ -262,7 +262,7 @@ function CreateTunnelForm(props: {
           <AlertBanner tone="error">{createError()}</AlertBanner>
         </Show>
 
-        <div class="flex items-center gap-3 border-t border-line pt-4">
+        <div class="flex items-center gap-3 border-t border-border-faint pt-4">
           <Button
             variant="primary"
             size="md"

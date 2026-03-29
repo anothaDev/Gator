@@ -11,7 +11,7 @@ import Spinner from "../../components/Spinner";
 // ─── Render helpers ──────────────────────────────────────────────
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-surface-secondary px-3 py-2.5 text-sm text-fg placeholder-fg-muted focus:border-accent focus:outline-none";
+  "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-fg placeholder-fg-muted hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none";
 const labelClass = "block text-xs font-medium text-fg-secondary mb-1.5";
 
 function getStatusBadge(t: TunnelStatus) {
@@ -122,7 +122,7 @@ function TunnelActions(props: {
         </svg>
       </Button>
       <Show when={open()}>
-        <div class="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-line bg-elevated py-1 shadow-xl shadow-black/40">
+        <div class="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-border bg-surface-raised py-1 shadow-lg">
           <For each={actions()}>
             {(item) => (
               <button
@@ -321,7 +321,7 @@ function TunnelCard(props: {
             {getStatusBadge(props.tunnel)}
           </div>
           <Show when={props.tunnel.description}>
-            <p class="mt-1 text-sm text-fg-tertiary">{props.tunnel.description}</p>
+            <p class="mt-1 text-sm text-fg-muted">{props.tunnel.description}</p>
           </Show>
         </div>
 
@@ -355,52 +355,52 @@ function TunnelCard(props: {
       </Show>
 
       {/* Connection details */}
-      <div class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
+      <div class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 md:grid-cols-4">
         <div>
-          <span class="text-fg-tertiary">Remote</span>
-          <p class="font-mono text-fg">{props.tunnel.remote_host}</p>
+          <span class="text-label-xs text-fg-muted">Remote</span>
+          <p class="text-mono-sm text-fg">{props.tunnel.remote_host}</p>
         </div>
         <div>
-          <span class="text-fg-tertiary">Tunnel</span>
-          <p class="font-mono text-fg">{props.tunnel.tunnel_subnet || "-"}</p>
+          <span class="text-label-xs text-fg-muted">Subnet</span>
+          <p class="text-mono-sm text-fg">{props.tunnel.tunnel_subnet || "-"}</p>
         </div>
         <div>
-          <span class="text-fg-tertiary">Firewall IP</span>
-          <p class="font-mono text-fg">{props.tunnel.firewall_ip || "-"}</p>
+          <span class="text-label-xs text-fg-muted">FW IP</span>
+          <p class="text-mono-sm text-fg">{props.tunnel.firewall_ip || "-"}</p>
         </div>
         <div>
-          <span class="text-fg-tertiary">Remote IP</span>
-          <p class="font-mono text-fg">{props.tunnel.remote_ip || "-"}</p>
+          <span class="text-label-xs text-fg-muted">Remote IP</span>
+          <p class="text-mono-sm text-fg">{props.tunnel.remote_ip || "-"}</p>
         </div>
       </div>
 
       {/* Live status (when deployed) */}
       <Show when={props.tunnel.deployed}>
-        <div class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-line pt-3 text-sm md:grid-cols-4">
+        <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 border-t border-border-faint pt-2 md:grid-cols-4">
           <div>
-            <span class="text-fg-tertiary">Interface</span>
-            <p class="font-mono text-fg">{props.tunnel.remote_wg_interface}</p>
+            <span class="text-label-xs text-fg-muted">Iface</span>
+            <p class="text-mono-sm text-fg">{props.tunnel.remote_wg_interface}</p>
           </div>
           <div>
-            <span class="text-fg-tertiary">Handshake</span>
-            <p class="text-fg">{props.tunnel.handshake || "none"}</p>
+            <span class="text-label-xs text-fg-muted">Handshake</span>
+            <p class="text-body-sm text-fg">{props.tunnel.handshake || "none"}</p>
           </div>
           <div>
-            <span class="text-fg-tertiary">Received</span>
-            <p class="text-fg">{props.tunnel.transfer_rx || "-"}</p>
+            <span class="text-label-xs text-fg-muted">RX</span>
+            <p class="text-body-sm text-fg">{props.tunnel.transfer_rx || "-"}</p>
           </div>
           <div>
-            <span class="text-fg-tertiary">Sent</span>
-            <p class="text-fg">{props.tunnel.transfer_tx || "-"}</p>
+            <span class="text-label-xs text-fg-muted">TX</span>
+            <p class="text-body-sm text-fg">{props.tunnel.transfer_tx || "-"}</p>
           </div>
         </div>
       </Show>
 
       {/* Cross-check results */}
       <Show when={crossCheckResult()}>
-        <div class="mt-3 border-t border-line pt-3">
+        <div class="mt-3 border-t border-border-faint pt-3">
           <div class="flex items-center justify-between">
-            <p class="text-xs font-semibold uppercase tracking-wider text-fg-tertiary">Cross-check results</p>
+            <p class="text-xs font-semibold uppercase tracking-wider text-fg-muted">Cross-check results</p>
             <Button variant="ghost" size="sm" onClick={() => setCrossCheckResult(null)}>
               Dismiss
             </Button>
@@ -435,8 +435,8 @@ function TunnelCard(props: {
 
       {/* Inline edit form */}
       <Show when={editing()}>
-        <div class="mt-4 border-t border-line pt-4">
-          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-tertiary">Edit Tunnel</p>
+        <div class="mt-4 border-t border-border-faint pt-4">
+          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-muted">Edit Tunnel</p>
           <Show when={editErr()}>
             <div class="mb-3">
               <AlertBanner tone="error">{editErr()}</AlertBanner>

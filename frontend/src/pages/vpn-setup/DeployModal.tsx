@@ -295,7 +295,7 @@ export default function DeployModal(props: {
   return (
     <Modal size="md" onBackdropClick={stage() === "confirm" ? props.onClose : undefined}>
       <h2 class="text-lg font-semibold text-fg">{props.vpnName} deployment</h2>
-      <p class="mt-1 text-xs text-fg-tertiary">
+      <p class="mt-1 text-xs text-fg-muted">
         {stage() === "confirm"
           ? "This will save the current profile and run the OPNsense deployment steps automatically."
           : "Running the OPNsense deployment flow..."}
@@ -320,7 +320,7 @@ export default function DeployModal(props: {
       </Show>
 
       <Show when={natModeLoading()}>
-        <div class="mt-3 rounded-lg border border-line-strong bg-surface-tertiary px-3 py-2 text-xs text-fg-tertiary">
+        <div class="mt-3 rounded-lg border border-border-faint bg-surface-raised px-3 py-2 text-xs text-fg-muted">
           Checking outbound NAT mode...
         </div>
       </Show>
@@ -365,13 +365,13 @@ export default function DeployModal(props: {
 
       {/* Source interface selection — shown during confirm stage */}
       <Show when={stage() === "confirm"}>
-        <div class="mt-4 rounded-lg border border-line-strong bg-surface-tertiary p-3">
+        <div class="mt-4 rounded-lg border border-border-faint bg-surface-raised p-3">
           <p class="text-xs font-semibold text-fg-secondary">Source interfaces</p>
-          <p class="mt-1 text-xs text-fg-tertiary">
+          <p class="mt-1 text-xs text-fg-muted">
             Select which interfaces should route traffic through this VPN.
           </p>
           <Show when={ifacesLoading()}>
-            <p class="mt-2 text-xs text-fg-tertiary">Loading interfaces...</p>
+            <p class="mt-2 text-xs text-fg-muted">Loading interfaces...</p>
           </Show>
           <Show when={!ifacesLoading() && selectableIfaces().length === 0}>
             <p class="mt-2 text-xs text-warning">
@@ -387,7 +387,7 @@ export default function DeployModal(props: {
                       type="checkbox"
                       checked={selectedIfaces().includes(iface.identifier)}
                       onChange={() => toggleIface(iface.identifier)}
-                      class="h-3.5 w-3.5 rounded border-line-strong bg-surface-secondary text-accent focus:ring-accent/30"
+                      class="h-3.5 w-3.5 rounded border-transparent bg-surface text-brand focus:ring-brand/30"
                     />
                     <span class="text-xs font-medium text-fg">{iface.description}</span>
                     <span class="text-xs text-fg-muted">({iface.identifier} / {iface.device})</span>
@@ -438,10 +438,10 @@ export default function DeployModal(props: {
               <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
                 <Switch>
                   <Match when={step.status === "pending"}>
-                    <div class="h-4 w-4 rounded-full border-2 border-line-strong" />
+                    <div class="h-4 w-4 rounded-full border-2 border-transparent" />
                   </Match>
                   <Match when={step.status === "running"}>
-                    <Spinner size="md" class="text-accent" />
+                    <Spinner size="md" class="text-brand" />
                   </Match>
                   <Match when={step.status === "done"}>
                     <svg class="h-5 w-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -460,7 +460,7 @@ export default function DeployModal(props: {
                   step.status === "done" ? "text-success" :
                   step.status === "error" ? "text-error" :
                   step.status === "running" ? "text-fg" :
-                  "text-fg-tertiary"
+                  "text-fg-muted"
                 }`}>
                   {step.status === "done" ? step.doneLabel : step.label}
                   {step.status === "running" ? "..." : ""}
@@ -511,7 +511,7 @@ export default function DeployModal(props: {
 
       {/* Post-deploy stale rule cleanup (fallback for rules not auto-adopted) */}
       <Show when={finished() && staleLoading()}>
-        <div class="mt-3 rounded-lg border border-line-strong bg-surface-tertiary px-3 py-2 text-xs text-fg-tertiary">
+        <div class="mt-3 rounded-lg border border-border-faint bg-surface-raised px-3 py-2 text-xs text-fg-muted">
           Checking for redundant rules...
         </div>
       </Show>
@@ -548,13 +548,13 @@ export default function DeployModal(props: {
                     <For each={staleRules()}>
                       {(rule) => (
                         <Show when={!handledUuids().has(rule.uuid)}>
-                          <div class="rounded border border-line bg-surface-secondary px-2.5 py-2">
+                          <div class="rounded border-transparent bg-surface px-2.5 py-2">
                             <div class="flex items-start gap-2">
                               <div class="min-w-0 flex-1">
                                 <p class="text-xs text-fg-secondary">
                                   {rule.source || "any"} {"\u2192"} <span class="font-medium">{rule.destination || "any"}</span>
                                   <Show when={rule.protocol && rule.protocol !== "any"}>
-                                    {" "}<span class="rounded bg-hover px-1 py-0.5 text-[10px] text-fg-tertiary">{rule.protocol}</span>
+                                    {" "}<span class="rounded bg-hover px-1 py-0.5 text-label-xs text-fg-muted">{rule.protocol}</span>
                                   </Show>
                                   <Show when={rule.destination_port}>
                                     {" "}:{rule.destination_port}
@@ -640,7 +640,7 @@ export default function DeployModal(props: {
         </Show>
 
         <Show when={stage() === "running"}>
-          <div class="rounded-lg border border-line-strong bg-surface-tertiary px-4 py-2 text-sm font-medium text-fg-secondary">
+          <div class="rounded-lg border border-border-faint bg-surface-raised px-4 py-2 text-sm font-medium text-fg-secondary">
             Deploying...
           </div>
         </Show>

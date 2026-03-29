@@ -1,5 +1,5 @@
 import { createSignal, For, onMount, Show } from "solid-js";
-import { apiGet } from "../lib/api";
+import { apiGet, getOpnsenseHost } from "../lib/api";
 import { createLegacyCheck } from "../lib/legacy";
 import TunnelDeployModal from "./tunnels/TunnelDeployModal";
 import TunnelDiscoveryModal from "./tunnels/TunnelDiscoveryModal";
@@ -7,8 +7,9 @@ import TunnelCard from "./tunnels/TunnelCard";
 import CreateTunnelForm from "./tunnels/CreateTunnelForm";
 import type { TunnelStatus } from "./tunnels/types";
 import Card from "../components/Card";
-import OpnsenseLink from "../components/OpnsenseLink";
 import Button from "../components/Button";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import AlertBanner from "../components/AlertBanner";
 import EmptyState from "../components/EmptyState";
 import LegacyRulesWarning from "../components/LegacyRulesWarning";
@@ -35,6 +36,7 @@ export default function Tunnels() {
 
   // Legacy rules state.
   const { legacyCount, legacyChecked, checkLegacyRules } = createLegacyCheck();
+  const [opnHost, setOpnHost] = createSignal("");
 
   // Import/discover state.
   const [showImport, setShowImport] = createSignal(false);
@@ -61,45 +63,22 @@ export default function Tunnels() {
   onMount(() => {
     void loadTunnels();
     void checkLegacyRules();
+    void getOpnsenseHost().then(setOpnHost);
   });
 
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             Site-to-Site Tunnels
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             WireGuard tunnels between your firewall and remote VPS endpoints.
           </p>
         </div>
         <div class="flex items-center gap-2">
-          <OpnsenseLink path="/ui/wireguard/general" label="WireGuard" />
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => void loadTunnels()}
-            loading={loading()}
-          >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            Refresh
-          </Button>
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => setShowImport(true)}
-          >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17,8 12,3 7,8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            Import from OPNsense
-          </Button>
           <Button
             variant="primary"
             size="md"
@@ -111,6 +90,17 @@ export default function Tunnels() {
             </svg>
             New Tunnel
           </Button>
+          <DropdownMenu items={(() => {
+            const items: MenuEntry[] = [
+              { label: "Refresh", onClick: () => void loadTunnels(), loading: loading() },
+              { label: "Import from OPNsense", onClick: () => setShowImport(true) },
+            ];
+            if (opnHost()) {
+              items.push({ divider: true as const });
+              items.push({ label: "Open in OPNsense", href: `${opnHost()}/ui/wireguard/general`, external: true });
+            }
+            return items;
+          })()} />
         </div>
       </div>
 

@@ -17,32 +17,21 @@ interface TableProps<T = unknown> {
 }
 
 export default function Table<T>(props: TableProps<T>) {
-  const getAlignment = (align?: "left" | "center" | "right") => {
-    switch (align) {
-      case "center":
-        return "text-center";
-      case "right":
-        return "text-right";
-      default:
-        return "text-left";
-    }
-  };
+  const align = (a?: "left" | "center" | "right") =>
+    a === "center" ? "text-center" : a === "right" ? "text-right" : "text-left";
 
   return (
-    <div class={["overflow-x-auto", props.class ?? ""].join(" ")}>
+    <div class={["overflow-x-auto rounded-lg border border-border-faint", props.class ?? ""].join(" ")}>
       <table class="w-full border-collapse">
         <thead>
-          <tr class="border-b border-line-strong">
+          <tr class="border-b border-border-faint bg-hover">
             <For each={props.columns}>
-              {(column) => (
+              {(col) => (
                 <th
-                  class={[
-                    "py-3 px-4 text-xs font-semibold uppercase tracking-wider text-fg-tertiary",
-                    getAlignment(column.align),
-                  ].join(" ")}
-                  style={column.width ? { width: column.width } : undefined}
+                  class={["py-2.5 px-4 text-label-xs uppercase tracking-wider text-fg-muted", align(col.align)].join(" ")}
+                  style={col.width ? { width: col.width } : undefined}
                 >
-                  {column.header}
+                  {col.header}
                 </th>
               )}
             </For>
@@ -53,10 +42,7 @@ export default function Table<T>(props: TableProps<T>) {
             when={props.data.length > 0}
             fallback={
               <tr>
-                <td
-                  colSpan={props.columns.length}
-                  class="py-8 px-4 text-center text-fg-tertiary"
-                >
+                <td colSpan={props.columns.length} class="py-8 px-4 text-center text-body-sm text-fg-muted">
                   {props.emptyMessage ?? "No data available"}
                 </td>
               </tr>
@@ -64,22 +50,13 @@ export default function Table<T>(props: TableProps<T>) {
           >
             <For each={props.data}>
               {(row) => (
-                <tr
-                  class="border-b border-line-faint transition-colors duration-fast hover:bg-hover"
-                >
+                <tr class="border-b border-border-faint last:border-b-0 transition-colors hover:bg-hover">
                   <For each={props.columns}>
-                    {(column) => (
+                    {(col) => (
                       <td
-                        class={[
-                          "py-3 px-4 text-sm text-fg-secondary",
-                          getAlignment(column.align),
-                          column.key === "actions" ? "whitespace-nowrap" : "",
-                        ].join(" ")}
+                        class={["py-2.5 px-4 text-body-sm text-fg-secondary", align(col.align)].join(" ")}
                       >
-                        {column.render
-                          ? column.render(row)
-                          : (row[column.key as keyof T] as unknown as string) ??
-                            "-"}
+                        {col.render ? col.render(row) : (row[col.key as keyof T] as unknown as string) ?? "-"}
                       </td>
                     )}
                   </For>

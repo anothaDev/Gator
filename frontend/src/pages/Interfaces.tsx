@@ -1,10 +1,10 @@
 import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
-import Button from "../components/Button";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
-import { apiGet } from "../lib/api";
+import { apiGet, getOpnsenseHost } from "../lib/api";
 
 type OPNInterface = {
   identifier: string;
@@ -67,6 +67,7 @@ export default function Interfaces() {
   const [interfaces, setInterfaces] = createSignal<OPNInterface[]>([]);
   const [loading, setLoading] = createSignal(true);
   const [loadError, setLoadError] = createSignal("");
+  const [opnHost, setOpnHost] = createSignal("");
 
   const loadInterfaces = async () => {
     setLoading(true);
@@ -89,6 +90,7 @@ export default function Interfaces() {
 
   onMount(() => {
     void loadInterfaces();
+    void getOpnsenseHost().then(setOpnHost);
   });
 
   const wgInterfaces = () => interfaces().filter((i) => i.is_wireguard);
@@ -97,22 +99,25 @@ export default function Interfaces() {
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             Interfaces
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             Network interfaces. WireGuard devices must be assigned before routing.
           </p>
         </div>
-        <Button variant="secondary" size="md" onClick={() => void loadInterfaces()} loading={loading()}>
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          Refresh
-        </Button>
-        <OpnsenseLink path="/ui/interfaces/overview" label="Interfaces" />
+        <DropdownMenu items={(() => {
+          const items: MenuEntry[] = [
+            { label: "Refresh", onClick: () => void loadInterfaces(), loading: loading() },
+          ];
+          if (opnHost()) {
+            items.push({ divider: true as const });
+            items.push({ label: "Open in OPNsense", href: `${opnHost()}/ui/interfaces/overview`, external: true });
+          }
+          return items;
+        })()} />
       </div>
 
       {/* Warning banner */}
@@ -166,23 +171,23 @@ export default function Interfaces() {
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr class="border-b border-line-strong">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                  <tr class="border-b border-border-faint">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Identifier
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Device
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Address
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Assigned
                     </th>
                   </tr>
@@ -192,7 +197,7 @@ export default function Interfaces() {
                     {(iface) => (
                       <tr
                         class={[
-                          "border-b border-line-faint transition-colors duration-fast hover:bg-hover",
+                          "border-b border-border-faint transition-colors duration-fast hover:bg-hover",
                           iface.is_wireguard ? "bg-info-subtle/30" : "",
                         ].join(" ")}
                       >
@@ -210,7 +215,7 @@ export default function Interfaces() {
                         <td class="px-4 py-3 text-sm text-fg-secondary">
                           {iface.description || "-"}
                         </td>
-                        <td class="px-4 py-3 font-mono text-xs text-fg-tertiary">
+                        <td class="px-4 py-3 font-mono text-xs text-fg-muted">
                           <Show when={iface.addresses.length > 0} fallback="-">
                             <For each={iface.addresses}>
                               {(addr) => <div>{addr}</div>}

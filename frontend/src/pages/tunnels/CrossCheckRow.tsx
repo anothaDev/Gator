@@ -6,7 +6,7 @@ function CrossCheckRow(props: { label: string; ok: boolean; detail?: string }) {
       <span class={`inline-block h-2 w-2 rounded-full ${props.ok ? "bg-success" : "bg-error"}`} />
       <span class={props.ok ? "text-fg-secondary" : "text-red-300"}>{props.label}</span>
       <Show when={props.detail}>
-        <span class="text-xs text-fg-tertiary">— {props.detail}</span>
+        <span class="text-xs text-fg-muted">— {props.detail}</span>
       </Show>
     </div>
   );

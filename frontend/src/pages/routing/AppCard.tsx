@@ -16,15 +16,15 @@ function AppCard(props: {
   const protocolColors: Record<string, string> = {
     tcp: "text-info",
     udp: "text-warning",
-    both: "text-accent",
+    both: "text-brand",
   };
 
   return (
     <div
       class={`group relative flex items-center gap-3 rounded-lg border px-4 py-3.5 transition-all ${
         props.enabled
-          ? "border-success/30 bg-success-subtle"
-          : "border-line bg-surface-tertiary hover:border-line-strong"
+          ? "border-success/20 bg-success-subtle"
+          : "border-border-faint bg-surface hover:border-border hover:bg-hover"
       }`}
     >
       <Show when={props.enabled}>
@@ -33,7 +33,7 @@ function AppCard(props: {
 
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
-          <span class="text-[14px] font-medium text-fg truncate">
+          <span class="text-body-md font-medium text-fg truncate">
             {props.app.name}
           </span>
           <Show when={props.app.is_custom}>
@@ -47,8 +47,8 @@ function AppCard(props: {
         <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
           <For each={props.app.rules}>
             {(rule) => (
-              <span class="inline-flex items-center gap-1 rounded bg-hover px-1.5 py-0.5 text-[10px] font-mono">
-                <span class={protocolColors[rule.protocol] || "text-fg-tertiary"}>
+              <span class="inline-flex items-center gap-1 rounded bg-hover px-1.5 py-0.5 text-label-xs font-mono">
+                <span class={protocolColors[rule.protocol] || "text-fg-muted"}>
                   {rule.protocol.toUpperCase()}
                 </span>
                 <span class="text-fg-secondary">{rule.ports}</span>
@@ -56,12 +56,12 @@ function AppCard(props: {
             )}
           </For>
           <Show when={props.app.asns && props.app.asns.length > 0}>
-            <span class="inline-flex items-center gap-1 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">
+            <span class="inline-flex items-center gap-1 rounded bg-brand/10 px-1.5 py-0.5 text-label-xs text-brand">
               {props.app.asns!.length} ASN{props.app.asns!.length > 1 ? "s" : ""}
             </span>
           </Show>
           <Show when={props.app.url_table_hint}>
-            <span class="inline-flex items-center gap-1 rounded bg-info/10 px-1.5 py-0.5 text-[10px] text-info">
+            <span class="inline-flex items-center gap-1 rounded bg-info/10 px-1.5 py-0.5 text-label-xs text-info">
               IP ranges
             </span>
           </Show>

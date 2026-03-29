@@ -33,28 +33,20 @@ export default function Modal(props: {
   return (
     <div
       class="fixed inset-0 z-50 flex items-center justify-center px-4 animate-fade-in"
-      style={{ background: "rgba(5, 5, 7, 0.85)" }}
+      style={{ background: "rgba(0, 0, 0, 0.5)", "backdrop-filter": "blur(4px)" }}
       onClick={(e) => {
         if (e.target === e.currentTarget && props.onBackdropClick) {
           props.onBackdropClick();
         }
       }}
     >
-      <div class="fixed inset-0 pointer-events-none" style={{ "backdrop-filter": "blur(8px)" }} />
       <div
-        class={`relative w-full rounded-2xl border border-line-strong bg-surface-secondary shadow-2xl animate-scale-up ${sizeClasses[props.size ?? "lg"]}`}
-        style={{
-          background: "linear-gradient(180deg, rgba(16, 16, 20, 1) 0%, rgba(10, 10, 12, 1) 100%)",
-        }}
+        class={[
+          "relative w-full rounded-lg border border-border bg-surface-raised shadow-lg animate-scale-in p-6",
+          sizeClasses[props.size ?? "lg"],
+        ].join(" ")}
       >
-        <div class="absolute inset-0 rounded-2xl pointer-events-none" 
-          style={{
-            background: "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 50%)",
-          }}
-        />
-        <div class="relative p-6">
-          {props.children}
-        </div>
+        {props.children}
       </div>
     </div>
   );

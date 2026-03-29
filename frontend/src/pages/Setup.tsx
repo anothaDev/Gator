@@ -109,10 +109,10 @@ export default function Setup(props: Props) {
       <div class="w-full max-w-xl">
         {/* Logo / Header */}
         <div class="mb-10 text-center">
-          <h1 class="text-3xl font-bold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             gator
           </h1>
-          <p class="mt-2 text-sm text-fg-tertiary">
+          <p class="mt-2 text-body-sm text-fg-muted">
             Firewall management, simplified
           </p>
         </div>
@@ -123,7 +123,7 @@ export default function Setup(props: Props) {
         </div>
 
         {/* Card */}
-        <div class="rounded-2xl border border-line-strong bg-surface-secondary p-8 shadow-2xl backdrop-blur">
+        <div class="rounded-xl border border-border bg-surface p-8 shadow-2xl backdrop-blur">
           {/* Step title */}
           <h2 class="mb-1 text-lg font-semibold text-fg">
             <Switch>
@@ -132,7 +132,7 @@ export default function Setup(props: Props) {
               <Match when={step() === 2}>Verify connection</Match>
             </Switch>
           </h2>
-          <p class="mb-6 text-sm text-fg-tertiary">
+          <p class="mb-6 text-sm text-fg-muted">
             <Switch>
               <Match when={step() === 0}>
                 Select the firewall platform you want to manage.
@@ -169,9 +169,9 @@ export default function Setup(props: Props) {
                   onComplete={handleComplete}
                 />
 
-                <div class="rounded-xl border border-line-faint bg-surface-tertiary p-4">
+                <div class="rounded-lg border border-border bg-surface-raised p-4">
                   <h4 class="mb-1 text-sm font-semibold text-fg">Create admin password</h4>
-                  <p class="mb-4 text-sm text-fg-tertiary">Gator will require authentication for the UI and API after setup.</p>
+                  <p class="mb-4 text-sm text-fg-muted">Gator will require authentication for the UI and API after setup.</p>
 
                   <div class="grid gap-4 sm:grid-cols-2">
                     <Input
@@ -219,7 +219,7 @@ export default function Setup(props: Props) {
                 type="button"
                 onClick={next}
                 disabled={step() === 0 ? !canProceedStep0() : !canProceedStep1()}
-                class="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                class="rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
               >
                 Continue
               </button>

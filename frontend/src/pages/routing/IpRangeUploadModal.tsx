@@ -59,16 +59,16 @@ function IpRangeUploadModal(props: {
   };
 
   return (
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}>
-      <div class="mx-4 w-full max-w-lg rounded-2xl border border-line bg-surface-secondary p-6 shadow-2xl">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}>
+      <div class="mx-4 w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-2xl">
         <h2 class="text-lg font-bold text-fg">IP Ranges Required</h2>
-        <p class="mt-1 text-sm text-fg-tertiary">
+        <p class="mt-1 text-sm text-fg-muted">
           <span class="font-medium text-fg-secondary">{props.appName}</span> uses a large number of IP ranges that need to be loaded from a file for precise routing.
         </p>
 
-        <div class="mt-4 rounded-lg border border-line bg-surface-tertiary/50 p-4 space-y-3">
+        <div class="mt-4 rounded-lg border border-border bg-surface-raised/50 p-4 space-y-3">
           <div>
-            <p class="text-xs font-medium text-fg-tertiary">Step 1: Download the IP ranges file</p>
+            <p class="text-xs font-medium text-fg-muted">Step 1: Download the IP ranges file</p>
             <a
               href={props.hint.download_url}
               target="_blank"
@@ -84,15 +84,15 @@ function IpRangeUploadModal(props: {
           </div>
 
           <div>
-            <p class="text-xs font-medium text-fg-tertiary">Step 2: Upload to Gator</p>
-            <p class="mt-0.5 text-[11px] text-fg-tertiary">
+            <p class="text-xs font-medium text-fg-muted">Step 2: Upload to Gator</p>
+            <p class="mt-0.5 text-label-xs text-fg-muted">
               The file will be stored locally and served to OPNsense. No cloud dependency.
             </p>
           </div>
         </div>
 
         <Show when={props.hint.description}>
-          <p class="mt-3 text-xs text-fg-tertiary">{props.hint.description}</p>
+          <p class="mt-3 text-xs text-fg-muted">{props.hint.description}</p>
         </Show>
 
         <Show when={uploadErr()}>
@@ -110,7 +110,7 @@ function IpRangeUploadModal(props: {
           <button
             type="button"
             onClick={props.onClose}
-            class="rounded-lg border border-line bg-surface-tertiary px-4 py-2 text-[13px] font-medium text-fg-secondary hover:bg-hover"
+            class="rounded-lg border border-border bg-surface-raised px-4 py-2 text-body-sm font-medium text-fg-secondary hover:bg-hover"
           >
             Cancel
           </button>
@@ -118,7 +118,7 @@ function IpRangeUploadModal(props: {
             type="button"
             onClick={() => void handleUploadFile()}
             disabled={uploading()}
-            class="rounded-lg bg-accent px-4 py-2 text-[13px] font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 disabled:opacity-50"
+            class="rounded-lg bg-brand px-4 py-2 text-body-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 disabled:opacity-50"
           >
             {uploading() ? "Uploading..." : "Choose File & Upload"}
           </button>

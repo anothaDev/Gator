@@ -40,7 +40,7 @@ export default function ConnectionForm(props: Props) {
           value={props.value.host}
           onInput={(e) => update("host", e.currentTarget.value)}
           placeholder="10.0.0.2 or https://10.0.0.2"
-          class="w-full rounded-lg border border-line bg-surface-tertiary px-4 py-2.5 text-sm text-fg placeholder-fg-muted transition-colors focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+          class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
         />
         <p class="mt-1.5 text-xs text-fg-muted">
           Hostname/IP accepted. If protocol is omitted, https:// is assumed.
@@ -61,7 +61,7 @@ export default function ConnectionForm(props: Props) {
             value={props.value.apiKey}
             onInput={(e) => update("apiKey", e.currentTarget.value)}
             placeholder="e.g. w86XNZob/8Oq..."
-            class="w-full rounded-lg border border-line bg-surface-tertiary px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
           />
           <p class="mt-1.5 text-xs text-fg-muted">
             Found under System &rarr; Access &rarr; Users &rarr; API keys
@@ -77,7 +77,7 @@ export default function ConnectionForm(props: Props) {
             value={props.value.apiSecret}
             onInput={(e) => update("apiSecret", e.currentTarget.value)}
             placeholder="••••••••••••"
-            class="w-full rounded-lg border border-line bg-surface-tertiary px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
           />
         </div>
       </Show>
@@ -92,7 +92,7 @@ export default function ConnectionForm(props: Props) {
             value={props.value.apiToken}
             onInput={(e) => update("apiToken", e.currentTarget.value)}
             placeholder="••••••••••••"
-            class="w-full rounded-lg border border-line bg-surface-tertiary px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
+            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
           />
           <p class="mt-1.5 text-xs text-fg-muted">
             Requires the pfSense API package. Generate a token under System
@@ -101,7 +101,7 @@ export default function ConnectionForm(props: Props) {
         </div>
       </Show>
 
-      <div class="flex items-center gap-3 rounded-lg border border-line-faint bg-surface-tertiary px-4 py-3">
+      <div class="flex items-center gap-3 rounded-lg border border-border-faint bg-surface-raised px-4 py-3">
         <button
           type="button"
           role="switch"

@@ -1,10 +1,10 @@
 import { createSignal, For, Show, onMount } from "solid-js";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
-import Button from "../components/Button";
-import OpnsenseLink from "../components/OpnsenseLink";
+import DropdownMenu from "../components/DropdownMenu";
+import type { MenuEntry } from "../components/DropdownMenu";
 import { EmptyStateCard, ErrorStateCard, LoadingStateCard } from "../components/PageState";
-import { apiGet } from "../lib/api";
+import { apiGet, getOpnsenseHost } from "../lib/api";
 
 type Alias = {
   uuid: string;
@@ -52,6 +52,7 @@ export default function Aliases() {
   const [aliases, setAliases] = createSignal<Alias[]>([]);
   const [loading, setLoading] = createSignal(true);
   const [loadError, setLoadError] = createSignal("");
+  const [opnHost, setOpnHost] = createSignal("");
 
   const loadAliases = async () => {
     setLoading(true);
@@ -68,6 +69,7 @@ export default function Aliases() {
 
   onMount(() => {
     void loadAliases();
+    void getOpnsenseHost().then(setOpnHost);
   });
 
   const gatorCount = () => aliases().filter((a) => a.is_gator).length;
@@ -75,25 +77,28 @@ export default function Aliases() {
   return (
     <div class="space-y-5">
       {/* Header */}
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             Aliases
           </h1>
-          <p class="mt-1 text-sm text-fg-tertiary">
+          <p class="mt-1 text-body-sm text-fg-muted">
             Firewall aliases for IP ranges, port groups, and network lists.
             <Show when={gatorCount() > 0}>
               <span class="ml-2 text-success">{gatorCount()} managed by Gator</span>
             </Show>
           </p>
         </div>
-        <Button variant="secondary" size="md" onClick={() => void loadAliases()} loading={loading()}>
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          Refresh
-        </Button>
-        <OpnsenseLink path="/ui/firewall/alias" label="Aliases" />
+        <DropdownMenu items={(() => {
+          const items: MenuEntry[] = [
+            { label: "Refresh", onClick: () => void loadAliases(), loading: loading() },
+          ];
+          if (opnHost()) {
+            items.push({ divider: true as const });
+            items.push({ label: "Open in OPNsense", href: `${opnHost()}/ui/firewall/alias`, external: true });
+          }
+          return items;
+        })()} />
       </div>
 
       {/* Loading state */}
@@ -128,20 +133,20 @@ export default function Aliases() {
                   <col class="w-[10%]" />
                 </colgroup>
                 <thead>
-                  <tr class="border-b border-line-strong">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                  <tr class="border-b border-border-faint">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Name
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Type
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Content
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-tertiary">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
                   </tr>
@@ -151,7 +156,7 @@ export default function Aliases() {
                     {(alias) => (
                       <tr
                         class={[
-                          "border-b border-line-faint transition-colors duration-fast hover:bg-hover",
+                          "border-b border-border-faint transition-colors duration-fast hover:bg-hover",
                           alias.is_gator ? "bg-success-subtle/30" : "",
                         ].join(" ")}
                       >
@@ -165,13 +170,13 @@ export default function Aliases() {
                         </td>
                         <td class="px-4 py-3">{getTypeBadge(alias.type)}</td>
                         <td
-                          class="px-4 py-3 font-mono text-xs text-fg-tertiary truncate overflow-hidden"
+                          class="px-4 py-3 font-mono text-xs text-fg-muted truncate overflow-hidden"
                           title={alias.content}
                         >
                           {formatContent(alias.content)}
                         </td>
                         <td
-                          class="px-4 py-3 text-xs text-fg-tertiary truncate overflow-hidden"
+                          class="px-4 py-3 text-xs text-fg-muted truncate overflow-hidden"
                           title={alias.description}
                         >
                           {alias.description || "-"}

@@ -118,17 +118,17 @@ function ResourceBar(props: {
   color?: string;
 }) {
   const pct = Math.min(100, Math.round(props.pct));
-  const barColor = pct > 90 ? "bg-error" : pct > 70 ? "bg-warning" : (props.color || "bg-accent");
+  const barColor = pct > 90 ? "bg-error" : pct > 70 ? "bg-warning" : (props.color || "bg-brand");
 
   return (
     <div class="space-y-2">
       <div class="flex items-center justify-between">
-        <span class="text-[12px] text-fg-secondary">{props.label}</span>
+        <span class="text-label-sm text-fg-secondary">{props.label}</span>
         <div class="flex items-center gap-2">
           <Show when={props.detail}>
-            <span class="text-[11px] text-fg-muted">{props.detail}</span>
+            <span class="text-label-xs text-fg-muted">{props.detail}</span>
           </Show>
-          <span class="text-[12px] font-mono text-fg">{pct}%</span>
+          <span class="text-label-sm font-mono text-fg">{pct}%</span>
         </div>
       </div>
       <div class="h-1.5 overflow-hidden rounded-full bg-hover">
@@ -186,12 +186,12 @@ function StatTile(props: {
         {IconComponent && <IconComponent />}
       </div>
       <div class="flex-1 min-w-0">
-        <div class="text-[11px] uppercase tracking-[0.12em] text-fg-muted">{props.label}</div>
-        <div class="mt-0.5 text-[20px] font-semibold tracking-tight text-fg leading-tight">
+        <div class="text-label-xs uppercase tracking-[0.12em] text-fg-muted">{props.label}</div>
+        <div class="mt-0.5 text-title-h3 font-semibold tracking-tight text-fg leading-tight">
           {props.value}
         </div>
         <Show when={props.sub}>
-          <div class="mt-1 text-[12px] text-fg-tertiary">{props.sub}</div>
+          <div class="mt-1 text-label-sm text-fg-muted">{props.sub}</div>
         </Show>
         {props.children}
       </div>
@@ -314,26 +314,26 @@ export default function Dashboard(props: Props) {
       {/* Header */}
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <h1 class="text-[24px] font-semibold tracking-tight text-fg">
+          <h1 class="text-title-h2 font-semibold tracking-tight text-fg">
             Overview
           </h1>
           <Show when={live()}>
             <span class="flex items-center gap-1.5 rounded-full bg-success-subtle px-2 py-0.5">
               <span class="h-1.5 w-1.5 rounded-full bg-success animate-pulse-subtle" />
-              <span class="text-[10px] font-medium text-success">LIVE</span>
+              <span class="text-label-xs font-medium text-success">LIVE</span>
             </span>
           </Show>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
+        <button
+          type="button"
           onClick={() => void loadOverview()}
-          loading={loading()}
+          class="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition-all hover:bg-hover hover:text-fg"
+          title="Refresh"
         >
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class={`h-4 w-4 ${loading() ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
           </svg>
-        </Button>
+        </button>
       </div>
 
       {/* Error state */}
@@ -345,7 +345,7 @@ export default function Dashboard(props: Props) {
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-[14px] text-error">Failed to reach OPNsense API</span>
+            <span class="text-body-md text-error">Failed to reach OPNsense API</span>
           </div>
         </Card>
       </Show>
@@ -354,11 +354,11 @@ export default function Dashboard(props: Props) {
           <>
             {/* Firewall identity card */}
             <Card class={["relative overflow-hidden", !overview()!.connected ? "border border-error/25 bg-error-subtle/40" : ""].join(" ")}>
-              <div class={["absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r", overview()!.connected ? "from-accent to-transparent" : "from-error to-transparent"].join(" ")} />
+              <div class={["absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r", overview()!.connected ? "from-brand to-transparent" : "from-error to-transparent"].join(" ")} />
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-3">
                   <div class={["flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", overview()!.connected ? "bg-hover" : "bg-error/10"].join(" ")}>
-                    <svg class={["h-5 w-5", overview()!.connected ? "text-accent" : "text-error"].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class={["h-5 w-5", overview()!.connected ? "text-brand" : "text-error"].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                       <line x1="8" y1="21" x2="16" y2="21" />
                       <line x1="12" y1="17" x2="12" y2="21" />
@@ -366,12 +366,12 @@ export default function Dashboard(props: Props) {
                   </div>
                   <div>
                     <div class="flex items-center gap-2">
-                      <h2 class="text-[18px] font-semibold text-fg">
+                      <h2 class="text-title-h3 font-semibold text-fg">
                         {(overview()!.host || "Firewall").replace(/^https?:\/\//, "")}
                       </h2>
                       <StatusDot status={overview()!.connected ? "success" : "error"} pulse={overview()!.connected} />
                     </div>
-                    <p class="text-[12px] text-fg-tertiary">
+                    <p class="text-label-sm text-fg-muted">
                       {overview()!.name || "OPNsense"}{overview()!.version ? ` ${overview()!.version}` : ""}
                     </p>
                   </div>
@@ -391,7 +391,7 @@ export default function Dashboard(props: Props) {
             </Card>
 
             <Show when={!overview()!.connected}>
-              <Card class="border-l-2 border-l-error bg-surface-secondary">
+              <Card class="border-l-2 border-l-error bg-surface">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div class="flex items-start gap-3">
                     <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-error/10">
@@ -402,16 +402,16 @@ export default function Dashboard(props: Props) {
                       </svg>
                     </div>
                     <div>
-                      <h3 class="text-[16px] font-semibold text-fg">This firewall is offline</h3>
-                      <p class="mt-1 text-[13px] text-fg-secondary">
+                      <h3 class="text-body-lg font-semibold text-fg">This firewall is offline</h3>
+                      <p class="mt-1 text-body-sm text-fg-secondary">
                         Gator can see the saved instance, but it cannot reach the live firewall right now. Start the VM or switch to another instance before making changes.
                       </p>
                       <Show when={overview()!.error}>
-                        <p class="mt-2 text-[12px] text-error">{overview()!.error}</p>
+                        <p class="mt-2 text-label-sm text-error">{overview()!.error}</p>
                       </Show>
                     </div>
                   </div>
-                  <div class="rounded-lg border border-line bg-surface-tertiary px-3 py-2 text-[12px] text-fg-tertiary">
+                  <div class="rounded-lg border border-border-faint bg-surface-raised px-3 py-2 text-label-sm text-fg-muted">
                     Management actions are temporarily disabled
                   </div>
                 </div>
@@ -438,8 +438,8 @@ export default function Dashboard(props: Props) {
                     >
                       <Show when={overview()!.load_avg}>
                         <div class="mt-1 flex items-center gap-1.5">
-                          <span class={`text-[11px] font-medium ${load.color}`}>{load.label}</span>
-                          <span class="text-[11px] text-fg-muted" title={`Load: ${overview()!.load_avg}`}>
+                          <span class={`text-label-xs font-medium ${load.color}`}>{load.label}</span>
+                          <span class="text-label-xs text-fg-muted" title={`Load: ${overview()!.load_avg}`}>
                             {overview()!.cpu_count ? `${overview()!.cpu_count}-core` : ""}
                           </span>
                         </div>
@@ -460,7 +460,7 @@ export default function Dashboard(props: Props) {
                   <Show when={(overview()!.gateways?.total || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
                       <StatusDot status={gwStatus()} />
-                      <span class="text-[11px] text-fg-tertiary">
+                      <span class="text-label-xs text-fg-muted">
                         {overview()!.gateways?.offline ? `${overview()!.gateways!.offline} offline` : "All online"}
                       </span>
                     </div>
@@ -480,7 +480,7 @@ export default function Dashboard(props: Props) {
                   <Show when={(overview()!.wireguard?.peers || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
                       <StatusDot status={wgStatus()} />
-                      <span class="text-[11px] text-fg-tertiary">
+                      <span class="text-label-xs text-fg-muted">
                         {overview()!.wireguard?.online === overview()!.wireguard?.peers ? "All peers up" : `${(overview()!.wireguard?.peers || 0) - (overview()!.wireguard?.online || 0)} peer${((overview()!.wireguard?.peers || 0) - (overview()!.wireguard?.online || 0)) !== 1 ? "s" : ""} down`}
                       </span>
                     </div>
@@ -492,14 +492,14 @@ export default function Dashboard(props: Props) {
               <Card padding="sm">
                 <StatTile
                   icon="tunnel"
-                  iconColor="text-accent"
+                  iconColor="text-brand"
                   label="Tunnels"
                   value={String(overview()!.tunnels?.total || 0)}
                 >
                   <Show when={(overview()!.tunnels?.total || 0) > 0}>
                     <div class="mt-1 flex items-center gap-1.5">
                       <StatusDot status={overview()!.tunnels?.errors ? "error" : overview()!.tunnels?.deployed === overview()!.tunnels?.total ? "success" : "warning"} />
-                      <span class="text-[11px] text-fg-tertiary">
+                      <span class="text-label-xs text-fg-muted">
                         {overview()!.tunnels?.errors
                           ? `${overview()!.tunnels!.errors} error${overview()!.tunnels!.errors !== 1 ? "s" : ""}`
                           : `${overview()!.tunnels?.deployed || 0} deployed`}
@@ -507,7 +507,7 @@ export default function Dashboard(props: Props) {
                     </div>
                   </Show>
                   <Show when={(overview()!.tunnels?.total || 0) === 0}>
-                    <div class="mt-1 text-[11px] text-fg-muted">No tunnels</div>
+                    <div class="mt-1 text-label-xs text-fg-muted">No tunnels</div>
                   </Show>
                 </StatTile>
               </Card>
@@ -544,7 +544,7 @@ export default function Dashboard(props: Props) {
             <Show when={overview()!.temperature && overview()!.temperature!.length > 0}>
               <Card padding="sm">
                 <div class="flex items-center justify-between">
-                  <span class="text-[12px] text-fg-secondary">Temperature</span>
+                  <span class="text-label-sm text-fg-secondary">Temperature</span>
                   <div class="flex items-center gap-3">
                     <For each={overview()!.temperature}>
                       {(sensor) => {
@@ -556,8 +556,8 @@ export default function Dashboard(props: Props) {
                           .replace(".temperature", "");
                         return (
                           <div class="flex items-center gap-1.5">
-                            <span class="text-[11px] text-fg-muted">{name}</span>
-                            <span class={`text-[12px] font-mono ${color}`}>{sensor.temp_c}&deg;C</span>
+                            <span class="text-label-xs text-fg-muted">{name}</span>
+                            <span class={`text-label-sm font-mono ${color}`}>{sensor.temp_c}&deg;C</span>
                           </div>
                         );
                       }}
@@ -569,11 +569,11 @@ export default function Dashboard(props: Props) {
 
             {/* VPN Status */}
             <Card class="relative overflow-hidden">
-              <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-accent-subtle to-transparent opacity-20 pointer-events-none" />
+              <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-brand-subtle to-transparent opacity-20 pointer-events-none" />
               <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4">
                   <div class={[
-                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg",
                     overview()!.vpn?.routing_applied
                       ? "bg-success-subtle"
                       : overview()!.vpn?.applied
@@ -599,7 +599,7 @@ export default function Dashboard(props: Props) {
                   </div>
                   <div>
                     <div class="flex items-center gap-2.5">
-                      <h2 class="text-[18px] font-semibold text-fg">
+                      <h2 class="text-title-h3 font-semibold text-fg">
                         {overview()!.vpn?.name || "VPN"}
                       </h2>
                       {overview()!.vpn?.routing_applied ? (
@@ -612,7 +612,7 @@ export default function Dashboard(props: Props) {
                         <Badge variant="muted" size="sm">Not configured</Badge>
                       )}
                     </div>
-                    <p class="mt-1 text-[13px] text-fg-tertiary">
+                    <p class="mt-1 text-body-sm text-fg-muted">
                       {overview()!.vpn?.configured
                         ? overview()!.vpn?.applied
                           ? overview()!.vpn?.routing_applied
@@ -625,12 +625,12 @@ export default function Dashboard(props: Props) {
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
                   <Show when={(overview()!.vpn_count || 0) > 1}>
-                    <span class="text-[11px] text-fg-muted">
+                    <span class="text-label-xs text-fg-muted">
                       {overview()!.vpn_count} VPN profile{overview()!.vpn_count !== 1 ? "s" : ""}
                     </span>
                   </Show>
                   <Show when={overview()!.vpn?.last_applied_at}>
-                    <span class="text-[11px] font-mono text-fg-muted">
+                    <span class="text-label-xs font-mono text-fg-muted">
                       {new Date(overview()!.vpn!.last_applied_at!).toLocaleDateString()}
                     </span>
                   </Show>
@@ -647,7 +647,7 @@ export default function Dashboard(props: Props) {
                     <line x1="12" y1="9" x2="12" y2="13" />
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
-                  <span class="text-[12px] text-fg-secondary">{overview()!.error}</span>
+                  <span class="text-label-sm text-fg-secondary">{overview()!.error}</span>
                 </div>
               </Card>
             </Show>

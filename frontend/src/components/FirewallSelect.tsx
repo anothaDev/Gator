@@ -14,17 +14,17 @@ function FirewallCard(props: {
     <button
       type="button"
       onClick={props.onSelect}
-      class={`group relative flex flex-col items-center gap-4 rounded-xl border-2 px-8 py-10 text-center transition-all duration-200 ${
+      class={`group relative flex flex-col items-center gap-4 rounded-lg border-2 px-8 py-10 text-center transition-all duration-200 ${
         props.selected
           ? "border-success bg-success-subtle shadow-[0_0_24px_rgba(0,255,157,0.08)]"
-          : "border-line bg-surface-tertiary hover:border-line-strong hover:bg-hover"
+          : "border-transparent bg-surface-raised hover:border-transparent hover:bg-hover"
       }`}
     >
       <div
-        class={`flex h-16 w-16 items-center justify-center rounded-xl transition-colors ${
+        class={`flex h-16 w-16 items-center justify-center rounded-lg transition-colors ${
           props.selected
             ? "bg-success-subtle text-success"
-            : "bg-elevated text-fg-tertiary group-hover:text-fg-secondary"
+            : "bg-surface-raised text-fg-muted group-hover:text-fg-secondary"
         }`}
       >
         {props.id === "opnsense" ? (
@@ -46,14 +46,14 @@ function FirewallCard(props: {
         >
           {props.name}
         </h3>
-        <p class="mt-1.5 text-sm text-fg-tertiary">{props.description}</p>
+        <p class="mt-1.5 text-sm text-fg-muted">{props.description}</p>
       </div>
 
       <div
         class={`absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all ${
           props.selected
             ? "border-success bg-success"
-            : "border-line"
+            : "border-transparent"
         }`}
       >
         {props.selected && (

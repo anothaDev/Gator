@@ -9,13 +9,15 @@ interface CardProps {
 }
 
 export default function Card(props: CardProps) {
-  const variantStyles = {
-    default: "bg-surface-tertiary border-line",
-    elevated: "bg-elevated border-line-strong shadow-md",
+  const base = "rounded-lg border";
+
+  const variants: Record<string, string> = {
+    default: "bg-surface border-border-faint",
+    elevated: "bg-surface-raised border-border shadow-sm",
     ghost: "bg-transparent border-transparent",
   };
 
-  const paddingStyles = {
+  const paddings: Record<string, string> = {
     none: "",
     sm: "p-3",
     md: "p-4",
@@ -25,11 +27,10 @@ export default function Card(props: CardProps) {
   return (
     <div
       class={[
-        "rounded-lg border",
-        "transition-all duration-base",
-        variantStyles[props.variant ?? "default"],
-        paddingStyles[props.padding ?? "md"],
-        props.interactive && "cursor-pointer hover:border-line-focus hover:shadow-md",
+        base,
+        variants[props.variant ?? "default"],
+        paddings[props.padding ?? "md"],
+        props.interactive ? "cursor-pointer transition-shadow duration-200 hover:shadow-md" : "",
         props.class ?? "",
       ].join(" ")}
     >
