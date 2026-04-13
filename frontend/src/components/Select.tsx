@@ -46,7 +46,7 @@ export default function Select(props: SelectProps) {
           onClick={() => setOpen((v) => !v)}
           class={[
             "flex w-full items-center justify-between rounded-lg border bg-surface px-3 py-2 text-left",
-            "text-sm text-fg",
+            "text-body-sm text-fg",
             "transition-all duration-base",
             open()
               ? "border-brand ring-2 ring-brand/20"
@@ -78,7 +78,7 @@ export default function Select(props: SelectProps) {
                     setOpen(false);
                   }}
                   class={[
-                    "flex w-full items-center px-3 py-2 text-left text-sm transition-colors",
+                    "flex w-full items-center px-3 py-2 text-left text-body-sm transition-colors",
                     option.value === props.value
                       ? "bg-brand/10 font-medium text-brand"
                       : "text-fg hover:bg-hover",

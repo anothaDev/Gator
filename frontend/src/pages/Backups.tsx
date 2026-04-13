@@ -145,7 +145,7 @@ export default function Backups() {
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-sm">{createError()}</span>
+            <span class="text-body-sm">{createError()}</span>
           </div>
         </Card>
       </Show>
@@ -155,7 +155,7 @@ export default function Backups() {
         <Card class="py-12">
           <div class="flex items-center justify-center gap-3 text-fg-muted">
             <Spinner size="md" />
-            <span class="text-sm">Loading backups...</span>
+            <span class="text-body-sm">Loading backups...</span>
           </div>
         </Card>
       </Show>
@@ -169,7 +169,7 @@ export default function Backups() {
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-sm">{loadError()}</span>
+            <span class="text-body-sm">{loadError()}</span>
           </div>
         </Card>
       </Show>
@@ -183,8 +183,8 @@ export default function Backups() {
               <polyline points="7,10 12,15 17,10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            <p class="mt-3 text-sm text-fg-secondary">No backups stored yet</p>
-            <p class="mt-1 text-xs text-fg-muted">
+            <p class="mt-3 text-body-sm text-fg-secondary">No backups stored yet</p>
+            <p class="mt-1 text-body-xs text-fg-muted">
               Create a backup before making changes to OPNsense.
             </p>
           </Card>
@@ -196,16 +196,16 @@ export default function Backups() {
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-border-faint">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Filename
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Size
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Created
                     </th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-right text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Actions
                     </th>
                   </tr>
@@ -215,10 +215,10 @@ export default function Backups() {
                     {(backup) => (
                       <tr class="border-b border-border-faint transition-colors duration-fast hover:bg-hover">
                         <td class="px-4 py-3">
-                          <span class="font-mono text-xs text-fg">{backup.filename}</span>
+                          <span class="text-mono-sm text-fg">{backup.filename}</span>
                         </td>
-                        <td class="px-4 py-3 text-xs text-fg-muted">{formatBytes(backup.size)}</td>
-                        <td class="px-4 py-3 text-xs text-fg-muted">{formatDate(backup.created)}</td>
+                        <td class="px-4 py-3 text-body-xs text-fg-muted">{formatBytes(backup.size)}</td>
+                        <td class="px-4 py-3 text-body-xs text-fg-muted">{formatDate(backup.created)}</td>
                         <td class="px-4 py-3">
                           <div class="flex items-center justify-end gap-2">
                             <Button

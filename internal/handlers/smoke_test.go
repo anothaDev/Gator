@@ -45,6 +45,7 @@ func TestSwitchInstanceSmoke(t *testing.T) {
 	router := gin.New()
 	setupHandler := NewSetupHandler(store)
 	router.POST("/api/instances/:id/activate", setupHandler.SwitchInstance)
+	router.GET("/api/instances", setupHandler.ListInstances)
 	router.GET("/api/setup/status", setupHandler.GetStatus)
 
 	rec := httptest.NewRecorder()
@@ -90,6 +91,60 @@ func TestSwitchInstanceSmoke(t *testing.T) {
 	}
 	if activeID != firstID {
 		t.Fatalf("active instance not updated, got %d want %d", activeID, firstID)
+	}
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/instances", nil)
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list instances returned %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var listResp struct {
+		Instances []struct {
+			ID     int64 `json:"id"`
+			Active bool  `json:"active"`
+		} `json:"instances"`
+	}
+	decodeJSON(t, rec.Body.Bytes(), &listResp)
+	if len(listResp.Instances) != 2 {
+		t.Fatalf("expected 2 instances after switch, got %+v", listResp)
+	}
+	for _, inst := range listResp.Instances {
+		switch inst.ID {
+		case firstID:
+			if !inst.Active {
+				t.Fatalf("expected first instance to be active after switch: %+v", listResp)
+			}
+		case secondID:
+			if inst.Active {
+				t.Fatalf("expected second instance to be inactive after switch: %+v", listResp)
+			}
+		default:
+			t.Fatalf("unexpected instance ID in response: %+v", listResp)
+		}
+	}
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/instances/%d/activate", secondID), nil)
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("switch back returned %d: %s", rec.Code, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/setup/status", nil)
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("get status after switching back returned %d: %s", rec.Code, rec.Body.String())
+	}
+
+	decodeJSON(t, rec.Body.Bytes(), &statusResp)
+	if !statusResp.Configured || statusResp.InstanceID != secondID {
+		t.Fatalf("unexpected status after switching back: %+v", statusResp)
+	}
+	if statusResp.Host != "https://fw-b.local" || statusResp.FirewallType != "pfsense" {
+		t.Fatalf("unexpected second active instance details: %+v", statusResp)
 	}
 }
 

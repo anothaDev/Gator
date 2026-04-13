@@ -183,17 +183,17 @@ export default function DiscoveryModal(props: {
 
   return (
     <Modal size="lg" onBackdropClick={props.onClose}>
-      <h2 class="text-lg font-semibold text-fg">
+      <h2 class="text-title-h3 text-fg">
         {isReadopt() ? `Re-adopt: ${props.readoptName}` : "Scan OPNsense"}
       </h2>
-      <p class="mt-1 text-xs text-fg-muted">
+      <p class="mt-1 text-body-xs text-fg-muted">
         {isReadopt()
           ? "Select the OPNsense resource to link to this profile."
           : "Discover existing WireGuard VPN setups and import them into Gator."}
       </p>
 
       <Show when={scanning()}>
-        <div class="mt-4 flex items-center gap-3 text-sm text-fg-muted">
+        <div class="mt-4 flex items-center gap-3 text-body-sm text-fg-muted">
           <Spinner />
           Scanning WireGuard, gateways, rules...
         </div>
@@ -206,7 +206,7 @@ export default function DiscoveryModal(props: {
       </Show>
 
       <Show when={!scanning() && !scanError() && discovered().length === 0}>
-        <div class="mt-4 rounded-lg border border-border bg-surface-raised px-3 py-3 text-sm text-fg-secondary">
+        <div class="mt-4 rounded-lg border border-border bg-surface-raised px-3 py-3 text-body-sm text-fg-secondary">
           No WireGuard VPN setups found on OPNsense. Make sure WireGuard is configured with at least one server and peer.
         </div>
       </Show>
@@ -229,12 +229,12 @@ export default function DiscoveryModal(props: {
                         <Badge variant="success" size="sm">Suggested match</Badge>
                       </Show>
                       <Show when={isReadopt() && details().matched.length > 0}>
-                        <span class="text-xs text-fg-muted">
+                        <span class="text-body-xs text-fg-muted">
                           matched: {details().matched.join(", ")}
                         </span>
                       </Show>
                     </div>
-                    <p class="mt-0.5 text-xs text-fg-muted">
+                    <p class="mt-0.5 text-body-xs text-fg-muted">
                       {vpn.endpoint}
                       <Show when={vpn.local_cidr}>
                         <span class="text-fg-muted">{" "}&mdash; {vpn.local_cidr}</span>
@@ -289,11 +289,11 @@ export default function DiscoveryModal(props: {
                 {/* Re-adopt confirmation (shown when this VPN is selected for re-adopt) */}
                 <Show when={isReadopt() && confirmTarget()?.server_uuid === vpn.server_uuid}>
                   <div class="mt-3 border-t border-border-faint pt-3">
-                    <p class="text-xs text-fg-secondary">
+                    <p class="text-body-xs text-fg-secondary">
                       Re-link <strong>{props.readoptName}</strong> to this OPNsense entry? This will update all stored UUIDs.
                     </p>
                     <Show when={importError() && failedUUID() === vpn.server_uuid}>
-                      <p class="mt-1 text-xs text-error">{importError()}</p>
+                      <p class="mt-1 text-body-xs text-error">{importError()}</p>
                     </Show>
                     <div class="mt-2 flex justify-end gap-2">
                       <Button variant="secondary" size="sm" onClick={() => setConfirmTarget(null)}>
@@ -314,24 +314,24 @@ export default function DiscoveryModal(props: {
 
                 {/* Re-adopt error (scoped, shown only when NOT in confirmation panel) */}
                 <Show when={isReadopt() && importError() && failedUUID() === vpn.server_uuid && confirmTarget()?.server_uuid !== vpn.server_uuid}>
-                  <p class="mt-2 text-xs text-error">{importError()}</p>
+                  <p class="mt-2 text-body-xs text-error">{importError()}</p>
                 </Show>
 
                 {/* Import name input (shown when this VPN is the import target, not in readopt mode) */}
                 <Show when={!isReadopt() && importTarget()?.server_uuid === vpn.server_uuid}>
                   <div class="mt-3 border-t border-border-faint pt-3">
-                    <label class="text-xs font-medium text-fg-secondary">
+                    <label class="text-label-sm text-fg-secondary">
                       Name for this VPN profile
                     </label>
                     <input
                       type="text"
                       value={importName()}
                       onInput={(e) => setImportName(e.currentTarget.value)}
-                      class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
+                      class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
                       placeholder="e.g. Mullvad NL"
                     />
                     <Show when={importError()}>
-                      <p class="mt-1 text-xs text-error">{importError()}</p>
+                      <p class="mt-1 text-body-xs text-error">{importError()}</p>
                     </Show>
                     <div class="mt-2 flex justify-end gap-2">
                       <Button

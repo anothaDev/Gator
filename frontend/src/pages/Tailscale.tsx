@@ -194,7 +194,7 @@ export default function Tailscale() {
               <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-lg font-semibold text-fg">Setup status</h2>
+                    <h2 class="text-title-h3 text-fg">Setup status</h2>
                     <Badge variant={status()!.installed ? "success" : "warning"} size="sm">
                       {status()!.installed ? "plugin installed" : "plugin missing"}
                     </Badge>
@@ -205,17 +205,17 @@ export default function Tailscale() {
                       <Badge variant="success" size="sm">service running</Badge>
                     </Show>
                   </div>
-                  <p class="mt-2 text-sm text-fg-secondary">{status()!.message}</p>
+                  <p class="mt-2 text-body-sm text-fg-secondary">{status()!.message}</p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 text-sm lg:min-w-[300px]">
+                <div class="grid grid-cols-2 gap-3 text-body-sm lg:min-w-[300px]">
                   <div class="rounded-md border border-border-faint bg-surface px-3 py-2">
-                    <div class="text-xs uppercase tracking-wider text-fg-muted">Service</div>
-                    <div class="mt-1 font-medium text-fg">{status()!.service_status || "not installed"}</div>
+                    <div class="text-label-xs font-semibold uppercase tracking-wider text-fg-muted">Service</div>
+                    <div class="mt-1 text-label-md text-fg">{status()!.service_status || "not installed"}</div>
                   </div>
                   <div class="rounded-md border border-border-faint bg-surface px-3 py-2">
-                    <div class="text-xs uppercase tracking-wider text-fg-muted">Tailscale IP</div>
-                    <div class="mt-1 font-mono text-fg">{status()!.tailscale_ip || "--"}</div>
+                    <div class="text-label-xs font-semibold uppercase tracking-wider text-fg-muted">Tailscale IP</div>
+                    <div class="mt-1 text-mono-md text-fg">{status()!.tailscale_ip || "--"}</div>
                   </div>
                 </div>
               </div>
@@ -230,8 +230,8 @@ export default function Tailscale() {
               <Card>
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <h3 class="font-semibold text-fg">Install plugin</h3>
-                    <p class="mt-2 text-sm text-fg-secondary">
+                    <h3 class="text-title-h4 text-fg">Install plugin</h3>
+                    <p class="mt-2 text-body-sm text-fg-secondary">
                       The OPNsense Tailscale community plugin needs to be installed before setup can continue.
                     </p>
                   </div>
@@ -240,15 +240,15 @@ export default function Tailscale() {
                   </Button>
                 </div>
                 <Show when={installProgress()}>
-                  <p class="mt-3 text-sm text-fg-secondary">{installProgress()}</p>
+                  <p class="mt-3 text-body-sm text-fg-secondary">{installProgress()}</p>
                 </Show>
               </Card>
             </Show>
 
             <Show when={status()!.installed && !status()!.configured}>
               <Card>
-                <h3 class="font-semibold text-fg">Configure authentication</h3>
-                <p class="mt-2 text-sm text-fg-secondary">
+                <h3 class="text-title-h4 text-fg">Configure authentication</h3>
+                <p class="mt-2 text-body-sm text-fg-secondary">
                   Gator enables Tailscale with the default control plane and your pre-authentication key.
                 </p>
 
@@ -283,8 +283,8 @@ export default function Tailscale() {
               <Card variant="elevated" class="border-l-4 border-l-warning">
                 <div class="flex items-start justify-between gap-4">
                   <div>
-                    <h3 class="font-semibold text-fg">Manual configuration needed</h3>
-                    <p class="mt-1 text-sm text-fg-secondary">
+                    <h3 class="text-title-h4 text-fg">Manual configuration needed</h3>
+                    <p class="mt-1 text-body-sm text-fg-secondary">
                       Tailscale is installed and running, but OPNsense needs the interface assigned manually. Gator can't do this programmatically yet.
                     </p>
                   </div>
@@ -299,12 +299,12 @@ export default function Tailscale() {
                     </a>
                   </Show>
                 </div>
-                <div class="mt-4 grid gap-2 text-sm">
+                <div class="mt-4 grid gap-2 text-body-sm">
                   <StepItem done={!!iface()?.found} text="tailscale0 device detected" />
                   <StepItem done={!!iface()?.assigned} text="Assign tailscale0 in Interfaces > Assignments" />
                   <StepItem done={!!iface()?.enabled} text="Enable the assigned interface" />
                 </div>
-                <p class="mt-4 text-xs text-fg-muted">
+                <p class="mt-4 text-body-xs text-fg-muted">
                   After completing these steps, click Refresh above.
                 </p>
               </Card>
@@ -312,8 +312,8 @@ export default function Tailscale() {
 
             <Show when={status()!.installed && status()!.configured && iface()?.found && iface()?.assigned && iface()?.enabled}>
               <Card variant="elevated" class="border-l-4 border-l-success">
-                <h3 class="font-semibold text-fg">Setup complete</h3>
-                <p class="mt-1 text-sm text-fg-secondary">
+                <h3 class="text-title-h4 text-fg">Setup complete</h3>
+                <p class="mt-1 text-body-sm text-fg-secondary">
                   Tailscale is installed, configured, and the interface is assigned and enabled.
                 </p>
               </Card>
@@ -390,29 +390,29 @@ function AdvertisedRoutes() {
 
   return (
     <Card>
-      <h3 class="font-semibold text-fg">Advertised routes</h3>
-      <p class="mt-1 text-sm text-fg-secondary">
+      <h3 class="text-title-h4 text-fg">Advertised routes</h3>
+      <p class="mt-1 text-body-sm text-fg-secondary">
         Subnets this OPNsense node advertises to your Tailscale network.
       </p>
 
       <Show when={routeError()}>
-        <p class="mt-3 text-sm text-error">{routeError()}</p>
+        <p class="mt-3 text-body-sm text-error">{routeError()}</p>
       </Show>
 
       <div class="mt-4">
-        <Show when={!loadingRoutes()} fallback={<p class="text-sm text-fg-muted">Loading...</p>}>
+        <Show when={!loadingRoutes()} fallback={<p class="text-body-sm text-fg-muted">Loading...</p>}>
           <Show
             when={subnets().length > 0}
-            fallback={<p class="text-sm text-fg-muted">No advertised routes configured.</p>}
+            fallback={<p class="text-body-sm text-fg-muted">No advertised routes configured.</p>}
           >
             <div class="space-y-2">
               <For each={subnets()}>
                 {(entry) => (
                   <div class="flex items-center justify-between gap-3 rounded-md border border-border-faint bg-surface px-3 py-2">
                     <div class="min-w-0">
-                      <span class="font-mono text-sm text-fg">{entry.subnet}</span>
+                      <span class="text-mono-md text-fg">{entry.subnet}</span>
                       <Show when={entry.description}>
-                        <span class="ml-2 text-xs text-fg-muted">{entry.description}</span>
+                        <span class="ml-2 text-body-xs text-fg-muted">{entry.description}</span>
                       </Show>
                     </div>
                     <button

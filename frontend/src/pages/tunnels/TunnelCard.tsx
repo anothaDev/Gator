@@ -11,8 +11,8 @@ import Spinner from "../../components/Spinner";
 // ─── Render helpers ──────────────────────────────────────────────
 
 const inputClass =
-  "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-fg placeholder-fg-muted hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none";
-const labelClass = "block text-xs font-medium text-fg-secondary mb-1.5";
+  "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-body-sm text-fg placeholder-fg-muted hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none";
+const labelClass = "block text-label-sm text-fg-secondary mb-1.5";
 
 function getStatusBadge(t: TunnelStatus) {
   const os = t.ownership_status ?? "local_only";
@@ -134,7 +134,7 @@ function TunnelActions(props: {
                   item.onClick();
                 }}
                 class={[
-                  "flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium transition-colors",
+                  "flex w-full items-center gap-2 px-3 py-2 text-left text-label-md transition-colors",
                   item.variant === "danger"
                     ? "text-error hover:bg-error/10"
                     : "text-fg hover:bg-hover",
@@ -317,11 +317,11 @@ function TunnelCard(props: {
       <div class="flex items-start justify-between">
         <div>
           <div class="flex items-center gap-3">
-            <h3 class="text-lg font-semibold text-fg">{props.tunnel.name}</h3>
+            <h3 class="text-title-h3 text-fg">{props.tunnel.name}</h3>
             {getStatusBadge(props.tunnel)}
           </div>
           <Show when={props.tunnel.description}>
-            <p class="mt-1 text-sm text-fg-muted">{props.tunnel.description}</p>
+            <p class="mt-1 text-body-sm text-fg-muted">{props.tunnel.description}</p>
           </Show>
         </div>
 
@@ -344,12 +344,12 @@ function TunnelCard(props: {
 
       {/* Drift / reimport warning */}
       <Show when={props.tunnel.ownership_status === "managed_drifted"}>
-        <div class="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+        <div class="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-body-xs text-amber-200">
           OPNsense state has drifted from Gator config{props.tunnel.drift_reason ? ` (${props.tunnel.drift_reason})` : ""}. Re-deploy to fix.
         </div>
       </Show>
       <Show when={props.tunnel.ownership_status === "needs_reimport"}>
-        <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+        <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-body-xs text-red-300">
           OPNsense resources not found. Re-scan OPNsense or delete this tunnel.
         </div>
       </Show>
@@ -400,12 +400,12 @@ function TunnelCard(props: {
       <Show when={crossCheckResult()}>
         <div class="mt-3 border-t border-border-faint pt-3">
           <div class="flex items-center justify-between">
-            <p class="text-xs font-semibold uppercase tracking-wider text-fg-muted">Cross-check results</p>
+            <p class="text-label-xs font-semibold uppercase tracking-wider text-fg-muted">Cross-check results</p>
             <Button variant="ghost" size="sm" onClick={() => setCrossCheckResult(null)}>
               Dismiss
             </Button>
           </div>
-          <div class="mt-2 space-y-1 text-sm">
+          <div class="mt-2 space-y-1 text-body-sm">
             <CrossCheckRow label="SSH connection" ok={crossCheckResult()!.ssh_ok as boolean} detail={crossCheckResult()!.ssh_error as string} />
             <Show when={crossCheckResult()!.hostname}>
               <p class="text-fg-secondary">Host: {crossCheckResult()!.hostname as string} ({crossCheckResult()!.os as string})</p>
@@ -436,7 +436,7 @@ function TunnelCard(props: {
       {/* Inline edit form */}
       <Show when={editing()}>
         <div class="mt-4 border-t border-border-faint pt-4">
-          <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-muted">Edit Tunnel</p>
+          <p class="mb-3 text-label-xs font-semibold uppercase tracking-wider text-fg-muted">Edit Tunnel</p>
           <Show when={editErr()}>
             <div class="mb-3">
               <AlertBanner tone="error">{editErr()}</AlertBanner>
@@ -494,7 +494,7 @@ function TunnelCard(props: {
           <div class="mt-3">
             <label class={labelClass}>SSH Private Key <span class="text-fg-muted">(leave empty to keep current)</span></label>
             <textarea
-              class={inputClass + " h-20 font-mono text-xs"}
+              class={inputClass + " h-20 text-mono-sm"}
               placeholder="Paste new key to replace, or leave empty"
               value={(editData().ssh_private_key as string) ?? ""}
               onInput={(e) => setEditData((d) => ({ ...d, ssh_private_key: e.currentTarget.value }))}

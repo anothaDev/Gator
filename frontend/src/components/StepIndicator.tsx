@@ -22,7 +22,7 @@ export default function StepIndicator(props: Props) {
             <>
               <div class="flex items-center gap-3">
                 <div
-                  class={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all duration-300 ${
+                  class={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-label-md font-semibold transition-all duration-300 ${
                     isActive()
                       ? "border-success bg-success-subtle text-success shadow-[0_0_12px_rgba(0,255,157,0.3)]"
                       : isCompleted()
@@ -50,7 +50,7 @@ export default function StepIndicator(props: Props) {
                 </div>
                 <div class="hidden sm:block">
                   <p
-                    class={`text-sm font-medium leading-none ${
+                    class={`text-label-md leading-none ${
                       isActive()
                         ? "text-fg"
                         : isCompleted()
@@ -61,7 +61,7 @@ export default function StepIndicator(props: Props) {
                     {step.label}
                   </p>
                   <p
-                    class={`mt-1 text-xs ${
+                    class={`mt-1 text-body-xs ${
                       isActive()
                         ? "text-fg-secondary"
                         : isCompleted()

@@ -125,14 +125,14 @@ export default function Setup(props: Props) {
         {/* Card */}
         <div class="rounded-xl border border-border bg-surface p-8 shadow-2xl backdrop-blur">
           {/* Step title */}
-          <h2 class="mb-1 text-lg font-semibold text-fg">
+          <h2 class="mb-1 text-title-h3 text-fg">
             <Switch>
               <Match when={step() === 0}>Choose your platform</Match>
               <Match when={step() === 1}>Connection details</Match>
               <Match when={step() === 2}>Verify connection</Match>
             </Switch>
           </h2>
-          <p class="mb-6 text-sm text-fg-muted">
+          <p class="mb-6 text-body-sm text-fg-muted">
             <Switch>
               <Match when={step() === 0}>
                 Select the firewall platform you want to manage.
@@ -170,8 +170,8 @@ export default function Setup(props: Props) {
                 />
 
                 <div class="rounded-lg border border-border bg-surface-raised p-4">
-                  <h4 class="mb-1 text-sm font-semibold text-fg">Create admin password</h4>
-                  <p class="mb-4 text-sm text-fg-muted">Gator will require authentication for the UI and API after setup.</p>
+                  <h4 class="mb-1 text-title-h4 text-fg">Create admin password</h4>
+                  <p class="mb-4 text-body-sm text-fg-muted">Gator will require authentication for the UI and API after setup.</p>
 
                   <div class="grid gap-4 sm:grid-cols-2">
                     <Input
@@ -195,7 +195,7 @@ export default function Setup(props: Props) {
           </Switch>
 
           <Show when={step() === 2 && saveError() !== ""}>
-            <div class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-body-sm text-red-300">
               {saveError()}
             </div>
           </Show>
@@ -210,7 +210,7 @@ export default function Setup(props: Props) {
                 <button
                   type="button"
                   onClick={back}
-                  class="rounded-lg px-4 py-2 text-sm font-medium text-fg-secondary transition-colors hover:text-fg"
+                  class="rounded-lg px-4 py-2 text-label-md text-fg-secondary transition-colors hover:text-fg"
                 >
                   Back
                 </button>
@@ -219,7 +219,7 @@ export default function Setup(props: Props) {
                 type="button"
                 onClick={next}
                 disabled={step() === 0 ? !canProceedStep0() : !canProceedStep1()}
-                class="rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                class="rounded-lg bg-brand px-5 py-2.5 text-label-md font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
               >
                 Continue
               </button>
@@ -228,7 +228,7 @@ export default function Setup(props: Props) {
         </div>
 
         {/* Footer */}
-        <p class="mt-6 text-center text-xs text-fg-muted">
+        <p class="mt-6 text-center text-body-xs text-fg-muted">
           You can change these settings later in the configuration panel.
         </p>
       </div>

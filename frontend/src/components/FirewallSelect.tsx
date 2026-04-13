@@ -40,13 +40,13 @@ function FirewallCard(props: {
 
       <div>
         <h3
-          class={`text-lg font-semibold ${
+          class={`text-title-h3 ${
             props.selected ? "text-success" : "text-fg"
           }`}
         >
           {props.name}
         </h3>
-        <p class="mt-1.5 text-sm text-fg-muted">{props.description}</p>
+        <p class="mt-1.5 text-body-sm text-fg-muted">{props.description}</p>
       </div>
 
       <div
@@ -89,7 +89,7 @@ export default function FirewallSelect(props: Props) {
       <FirewallCard
         id="pfsense"
         name="pfSense"
-        description="Trusted open source firewall and router distribution"
+        description="Connection setup is supported today; broader management is still planned"
         selected={props.value === "pfsense"}
         onSelect={() => props.onChange("pfsense")}
       />

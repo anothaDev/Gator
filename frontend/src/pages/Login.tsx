@@ -43,7 +43,7 @@ export default function Login(props: Props) {
     <div class="flex min-h-screen items-center justify-center bg-surface px-4">
       <div class="w-full max-w-md rounded-xl border border-border bg-surface p-8 shadow-2xl">
         <div class="mb-8 text-center">
-          <img src="/gator64px.svg" alt="Gator logo" class="mx-auto h-16 w-16 scale-[3.2] object-contain" />
+          <img src="/gator64px.svg" alt="Gator logo" class="mx-auto h-20 w-20 object-contain" />
           <h1 class="mt-4 text-title-h2 font-semibold tracking-tight text-fg">Sign in to Gator</h1>
           <p class="mt-2 text-body-sm text-fg-muted">Enter the local admin password to open the control center.</p>
         </div>
@@ -58,7 +58,7 @@ export default function Login(props: Props) {
           />
 
           <Show when={error() !== ""}>
-            <div class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error()}</div>
+            <div class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-body-sm text-red-300">{error()}</div>
           </Show>
 
           <Button variant="primary" size="lg" loading={loading()} class="w-full" onClick={() => void handleLogin()}>

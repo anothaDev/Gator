@@ -133,7 +133,7 @@ export default function Interfaces() {
             </div>
             <div>
               <h3 class="font-medium text-fg">Unassigned WireGuard device detected</h3>
-              <p class="mt-1 text-sm text-fg-secondary">
+              <p class="mt-1 text-body-sm text-fg-secondary">
                 To use a WireGuard tunnel for routing, it must be assigned as an OPNsense interface.
                 Go to <span class="font-semibold">Interfaces &gt; Assignments</span> in OPNsense,
                 select the WG device from the "New interface" dropdown, click <span class="font-semibold">+</span> to add it,
@@ -172,22 +172,22 @@ export default function Interfaces() {
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-border-faint">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Identifier
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Device
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Address
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Assigned
                     </th>
                   </tr>
@@ -209,13 +209,13 @@ export default function Interfaces() {
                             </Show>
                           </div>
                         </td>
-                        <td class="px-4 py-3 font-mono text-sm text-fg-secondary">
+                        <td class="px-4 py-3 text-mono-md text-fg-secondary">
                           {iface.device}
                         </td>
-                        <td class="px-4 py-3 text-sm text-fg-secondary">
+                        <td class="px-4 py-3 text-body-sm text-fg-secondary">
                           {iface.description || "-"}
                         </td>
-                        <td class="px-4 py-3 font-mono text-xs text-fg-muted">
+                        <td class="px-4 py-3 text-mono-sm text-fg-muted">
                           <Show when={iface.addresses.length > 0} fallback="-">
                             <For each={iface.addresses}>
                               {(addr) => <div>{addr}</div>}
@@ -226,9 +226,9 @@ export default function Interfaces() {
                         <td class="px-4 py-3">
                           <Show
                             when={iface.assigned}
-                            fallback={<span class="text-xs text-warning">not assigned</span>}
+                            fallback={<span class="text-body-xs text-warning">not assigned</span>}
                           >
-                            <span class="text-xs text-success">yes</span>
+                            <span class="text-body-xs text-success">yes</span>
                           </Show>
                         </td>
                       </tr>

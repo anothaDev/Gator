@@ -180,10 +180,10 @@ export default function Migration() {
 
       {/* Status card */}
       <Card variant="elevated">
-        <h2 class="text-sm font-semibold text-fg">Current Status</h2>
+        <h2 class="text-title-h4 text-fg">Current Status</h2>
 
         <Show when={state() === "loading"}>
-          <div class="mt-3 flex items-center gap-3 text-sm text-fg-muted">
+          <div class="mt-3 flex items-center gap-3 text-body-sm text-fg-muted">
             <Spinner />
             Checking rule status...
           </div>
@@ -193,22 +193,22 @@ export default function Migration() {
           <div class="mt-3 grid grid-cols-2 gap-4">
             <div class="rounded-lg border border-border bg-surface-raised p-3">
               <p class="text-2xl font-bold text-warning">{legacyCount()}</p>
-              <p class="text-xs text-fg-muted">Legacy rules</p>
+              <p class="text-body-xs text-fg-muted">Legacy rules</p>
             </div>
             <div class="rounded-lg border border-border bg-surface-raised p-3">
               <p class="text-2xl font-bold text-success">{mvcCount()}</p>
-              <p class="text-xs text-fg-muted">MVC rules (API-visible)</p>
+              <p class="text-body-xs text-fg-muted">MVC rules (API-visible)</p>
             </div>
           </div>
 
           <Show when={!legacyAvailable() && state() === "ready"}>
-            <div class="mt-3 rounded-lg border border-success/30 bg-success-subtle px-3 py-2 text-sm text-success">
+            <div class="mt-3 rounded-lg border border-success/30 bg-success-subtle px-3 py-2 text-body-sm text-success">
               No legacy rules found. Your firewall is already using the new MVC system.
             </div>
           </Show>
 
           <Show when={legacyAvailable() && legacyCount() === 0 && state() === "ready"}>
-            <div class="mt-3 rounded-lg border border-border-faint bg-hover px-3 py-2 text-sm text-fg-secondary">
+            <div class="mt-3 rounded-lg border border-border-faint bg-hover px-3 py-2 text-body-sm text-fg-secondary">
               Legacy rule system exists but contains no rules. You can flush it to clean up.
             </div>
           </Show>
@@ -225,7 +225,7 @@ export default function Migration() {
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <span class="text-sm">{error()}</span>
+              <span class="text-body-sm">{error()}</span>
             </div>
             <Show when={state() === "error"}>
               <Button variant="secondary" size="sm" onClick={() => { setError(""); void loadStatus(); }}>
@@ -241,12 +241,12 @@ export default function Migration() {
         <Card variant="elevated" class="border-l-4 border-l-warning">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p class="text-sm font-semibold text-warning">Verify your connection</p>
-              <p class="mt-1 text-xs text-fg-secondary">
+              <p class="text-label-md font-semibold text-warning">Verify your connection</p>
+              <p class="mt-1 text-body-xs text-fg-secondary">
                 Rules applied with savepoint. OPNsense will auto-rollback in{" "}
-                <span class="font-mono font-bold text-fg">{countdown()}s</span> if you don't confirm.
+                <span class="text-mono-md font-bold text-fg">{countdown()}s</span> if you don't confirm.
               </p>
-              <p class="mt-1 text-xs text-fg-muted">
+              <p class="mt-1 text-body-xs text-fg-muted">
                 Check that you can still access OPNsense and your network works correctly before confirming.
               </p>
             </div>
@@ -267,8 +267,8 @@ export default function Migration() {
       {/* Steps */}
       <Show when={legacyAvailable() && state() !== "loading"}>
         <Card variant="elevated">
-          <h2 class="text-sm font-semibold text-fg">Migration Steps</h2>
-          <p class="mt-1 text-xs text-fg-muted">
+          <h2 class="text-title-h4 text-fg">Migration Steps</h2>
+          <p class="mt-1 text-body-xs text-fg-muted">
             Run each step in order. A config backup is recommended before starting.
           </p>
 
@@ -337,7 +337,7 @@ export default function Migration() {
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            <span class="text-sm">Migration complete. All rules are now managed through the MVC/API system and visible to Gator.</span>
+            <span class="text-body-sm">Migration complete. All rules are now managed through the MVC/API system and visible to Gator.</span>
           </div>
         </Card>
       </Show>
@@ -345,12 +345,12 @@ export default function Migration() {
       {/* Log */}
       <Show when={stepsDone().length > 0}>
         <Card>
-          <h2 class="text-sm font-semibold text-fg">Log</h2>
+          <h2 class="text-title-h4 text-fg">Log</h2>
           <div class="mt-2 space-y-1">
             <For each={stepsDone()}>
               {(step, i) => (
-                <p class="text-xs text-fg-muted">
-                  <span class="font-mono text-fg-muted">{String(i() + 1).padStart(2, " ")}.</span>{" "}
+                <p class="text-body-xs text-fg-muted">
+                  <span class="text-mono-md text-fg-muted">{String(i() + 1).padStart(2, " ")}.</span>{" "}
                   {step}
                 </p>
               )}
@@ -385,7 +385,7 @@ function StepCard(props: {
     >
       <div
         class={[
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-label-sm font-bold",
           props.done
             ? "bg-success text-surface"
             : "bg-active text-fg-secondary",
@@ -401,10 +401,10 @@ function StepCard(props: {
       </div>
 
       <div class="min-w-0 flex-1">
-        <p class={["text-sm font-medium", props.done ? "text-success" : "text-fg"].join(" ")}>
+        <p class={["text-label-md", props.done ? "text-success" : "text-fg"].join(" ")}>
           {props.title}
         </p>
-        <p class="text-xs text-fg-muted">
+        <p class="text-body-xs text-fg-muted">
           {props.done ? props.doneLabel : props.description}
         </p>
       </div>

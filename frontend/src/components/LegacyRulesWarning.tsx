@@ -23,10 +23,10 @@ export default function LegacyRulesWarning(props: {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <div>
-            <p class="text-sm font-medium text-fg">
+            <p class="text-label-md text-fg">
               Legacy firewall rules detected
             </p>
-            <p class="mt-0.5 text-xs text-fg-muted">
+            <p class="mt-0.5 text-body-xs text-fg-muted">
               Your firewall has {props.count} rule{props.count !== 1 ? "s" : ""} in the old format. {props.detail}
             </p>
           </div>

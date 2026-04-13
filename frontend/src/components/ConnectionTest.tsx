@@ -65,7 +65,7 @@ export default function ConnectionTest(props: Props) {
 
   return (
     <div class="space-y-6">
-      <p class="text-sm text-fg-secondary">
+      <p class="text-body-sm text-fg-secondary">
         Test the connection to your{" "}
         <span class="font-medium text-fg">
           {props.firewallType === "opnsense" ? "OPNsense" : "pfSense"}
@@ -73,11 +73,17 @@ export default function ConnectionTest(props: Props) {
         instance to make sure everything is configured correctly.
       </p>
 
+      <Show when={props.firewallType === "pfsense"}>
+        <div class="rounded-lg border border-border-faint bg-surface-raised px-4 py-3 text-body-xs text-fg-muted">
+          pfSense support currently covers connection setup and saved instances. The main management pages remain OPNsense-first.
+        </div>
+      </Show>
+
       <div class="rounded-lg border border-border bg-surface-raised p-4">
-        <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-muted">
+        <h4 class="mb-3 text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
           Connection Summary
         </h4>
-        <dl class="space-y-2 text-sm">
+        <dl class="space-y-2 text-body-sm">
           <div class="flex justify-between">
             <dt class="text-fg-muted">Type</dt>
             <dd class="font-medium text-fg">
@@ -86,19 +92,19 @@ export default function ConnectionTest(props: Props) {
           </div>
           <div class="flex justify-between">
             <dt class="text-fg-muted">Host</dt>
-            <dd class="font-mono text-fg">{props.connection.host}</dd>
+            <dd class="text-mono-md text-fg">{props.connection.host}</dd>
           </div>
           {props.firewallType === "opnsense" ? (
             <div class="flex justify-between">
               <dt class="text-fg-muted">API Key</dt>
-              <dd class="font-mono text-fg">
+              <dd class="text-mono-md text-fg">
                 {props.connection.apiKey.slice(0, 8)}...
               </dd>
             </div>
           ) : (
             <div class="flex justify-between">
               <dt class="text-fg-muted">API Token</dt>
-              <dd class="font-mono text-fg">
+              <dd class="text-mono-md text-fg">
                 {props.connection.apiToken.slice(0, 8)}...
               </dd>
             </div>
@@ -120,7 +126,7 @@ export default function ConnectionTest(props: Props) {
         type="button"
         onClick={runTest}
         disabled={status() === "testing"}
-        class="flex w-full items-center justify-center gap-2 rounded-lg border-transparent bg-surface-raised px-5 py-3 text-sm font-medium text-fg transition-colors hover:border-transparent hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
+        class="flex w-full items-center justify-center gap-2 rounded-lg border-transparent bg-surface-raised px-5 py-3 text-label-md text-fg transition-colors hover:border-transparent hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Show when={status() === "testing"}>
           <Spinner />
@@ -174,20 +180,20 @@ export default function ConnectionTest(props: Props) {
               </div>
               <div>
                 <p
-                  class={`text-sm font-medium ${
+                  class={`text-label-md ${
                     result()!.success ? "text-success" : "text-error"
                   }`}
                 >
                   {result()!.success ? "Connection successful" : "Connection failed"}
                 </p>
-                <p class="mt-1 text-sm text-fg-secondary">{result()!.message}</p>
+                <p class="mt-1 text-body-sm text-fg-secondary">{result()!.message}</p>
                 <Show when={result()!.version}>
-                  <p class="mt-1 text-xs text-fg-muted">
+                  <p class="mt-1 text-body-xs text-fg-muted">
                     Version: {result()!.version}
                   </p>
                 </Show>
                 <Show when={result()!.hostname}>
-                  <p class="text-xs text-fg-muted">
+                  <p class="text-body-xs text-fg-muted">
                     Hostname: {result()!.hostname}
                   </p>
                 </Show>
@@ -200,7 +206,7 @@ export default function ConnectionTest(props: Props) {
         <button
           type="button"
           onClick={props.onComplete}
-          class="w-full rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30"
+          class="w-full rounded-lg bg-brand px-5 py-3 text-label-md font-semibold text-surface shadow-lg shadow-accent/20 transition-all hover:brightness-110 hover:shadow-accent/30"
         >
           Save & Continue
         </button>

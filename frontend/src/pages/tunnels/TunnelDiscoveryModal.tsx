@@ -127,7 +127,7 @@ export default function TunnelDiscoveryModal(props: {
     <Modal size="lg" onBackdropClick={props.onClose}>
       {/* Import step: show TunnelImportForm for the selected tunnel */}
       <Show when={!isReadopt() && importTarget()}>
-        <h2 class="text-lg font-semibold text-fg">
+        <h2 class="text-title-h3 text-fg">
           Import Tunnel
         </h2>
         <TunnelImportForm
@@ -139,17 +139,17 @@ export default function TunnelDiscoveryModal(props: {
 
       {/* Discovery list */}
       <Show when={isReadopt() || !importTarget()}>
-        <h2 class="text-lg font-semibold text-fg">
+        <h2 class="text-title-h3 text-fg">
           {isReadopt() ? `Re-adopt: ${props.readoptName}` : "Discover Tunnels on OPNsense"}
         </h2>
-        <p class="mt-1 text-xs text-fg-muted">
+        <p class="mt-1 text-body-xs text-fg-muted">
           {isReadopt()
             ? "Select the OPNsense tunnel to link to this profile."
             : "Discover existing WireGuard site-to-site tunnels and import them into Gator."}
         </p>
 
         <Show when={scanning()}>
-          <div class="mt-4 flex items-center gap-3 text-sm text-fg-muted">
+          <div class="mt-4 flex items-center gap-3 text-body-sm text-fg-muted">
             <Spinner />
             Scanning WireGuard tunnels...
           </div>
@@ -162,7 +162,7 @@ export default function TunnelDiscoveryModal(props: {
         </Show>
 
         <Show when={!scanning() && !scanError() && discovered().length === 0}>
-          <div class="mt-4 rounded-lg border border-border bg-surface-raised px-3 py-3 text-sm text-fg-secondary">
+          <div class="mt-4 rounded-lg border border-border bg-surface-raised px-3 py-3 text-body-sm text-fg-secondary">
             No importable WireGuard tunnels found on OPNsense.
           </div>
         </Show>
@@ -187,12 +187,12 @@ export default function TunnelDiscoveryModal(props: {
                           <Badge variant="success" size="sm">Suggested match</Badge>
                         </Show>
                         <Show when={isReadopt() && details().matched.length > 0}>
-                          <span class="text-xs text-fg-muted">
+                          <span class="text-body-xs text-fg-muted">
                             matched: {details().matched.join(", ")}
                           </span>
                         </Show>
                       </div>
-                      <p class="mt-0.5 text-xs text-fg-muted">
+                      <p class="mt-0.5 text-body-xs text-fg-muted">
                         {tunnel.endpoint}
                         <Show when={tunnel.local_cidr}>
                           <span class="text-fg-muted">{" "}&mdash; {tunnel.local_cidr}</span>
@@ -237,11 +237,11 @@ export default function TunnelDiscoveryModal(props: {
                   {/* Re-adopt confirmation (shown when this tunnel is selected for re-adopt) */}
                   <Show when={isReadopt() && confirmTarget()?.server_uuid === tunnel.server_uuid}>
                     <div class="mt-3 border-t border-border-faint pt-3">
-                      <p class="text-xs text-fg-secondary">
+                      <p class="text-body-xs text-fg-secondary">
                         Re-link <strong>{props.readoptName}</strong> to this OPNsense tunnel? This will update all stored UUIDs.
                       </p>
                       <Show when={readoptError() && failedUUID() === tunnel.server_uuid}>
-                        <p class="mt-1 text-xs text-error">{readoptError()}</p>
+                        <p class="mt-1 text-body-xs text-error">{readoptError()}</p>
                       </Show>
                       <div class="mt-2 flex justify-end gap-2">
                         <Button variant="secondary" size="sm" onClick={() => setConfirmTarget(null)}>
@@ -262,7 +262,7 @@ export default function TunnelDiscoveryModal(props: {
 
                   {/* Re-adopt error (scoped, shown only when NOT in confirmation panel) */}
                   <Show when={isReadopt() && readoptError() && failedUUID() === tunnel.server_uuid && confirmTarget()?.server_uuid !== tunnel.server_uuid}>
-                    <p class="mt-2 text-xs text-error">{readoptError()}</p>
+                    <p class="mt-2 text-body-xs text-error">{readoptError()}</p>
                   </Show>
                 </div>
                 );

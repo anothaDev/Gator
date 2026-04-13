@@ -294,8 +294,8 @@ export default function DeployModal(props: {
 
   return (
     <Modal size="md" onBackdropClick={stage() === "confirm" ? props.onClose : undefined}>
-      <h2 class="text-lg font-semibold text-fg">{props.vpnName} deployment</h2>
-      <p class="mt-1 text-xs text-fg-muted">
+      <h2 class="text-title-h3 text-fg">{props.vpnName} deployment</h2>
+      <p class="mt-1 text-body-xs text-fg-muted">
         {stage() === "confirm"
           ? "This will save the current profile and run the OPNsense deployment steps automatically."
           : "Running the OPNsense deployment flow..."}
@@ -320,7 +320,7 @@ export default function DeployModal(props: {
       </Show>
 
       <Show when={natModeLoading()}>
-        <div class="mt-3 rounded-lg border border-border-faint bg-surface-raised px-3 py-2 text-xs text-fg-muted">
+        <div class="mt-3 rounded-lg border border-border-faint bg-surface-raised px-3 py-2 text-body-xs text-fg-muted">
           Checking outbound NAT mode...
         </div>
       </Show>
@@ -352,7 +352,7 @@ export default function DeployModal(props: {
       </Show>
 
       <Show when={!natModeLoading() && natMode()?.compatible}>
-        <div class="mt-3 rounded-lg border border-success/20 bg-success-subtle px-3 py-2 text-xs text-success">
+        <div class="mt-3 rounded-lg border border-success/20 bg-success-subtle px-3 py-2 text-body-xs text-success">
           Outbound NAT: <span class="font-medium">{natMode()!.mode}</span> mode
         </div>
       </Show>
@@ -366,15 +366,15 @@ export default function DeployModal(props: {
       {/* Source interface selection — shown during confirm stage */}
       <Show when={stage() === "confirm"}>
         <div class="mt-4 rounded-lg border border-border-faint bg-surface-raised p-3">
-          <p class="text-xs font-semibold text-fg-secondary">Source interfaces</p>
-          <p class="mt-1 text-xs text-fg-muted">
+          <p class="text-label-xs font-semibold text-fg-secondary">Source interfaces</p>
+          <p class="mt-1 text-body-xs text-fg-muted">
             Select which interfaces should route traffic through this VPN.
           </p>
           <Show when={ifacesLoading()}>
-            <p class="mt-2 text-xs text-fg-muted">Loading interfaces...</p>
+            <p class="mt-2 text-body-xs text-fg-muted">Loading interfaces...</p>
           </Show>
           <Show when={!ifacesLoading() && selectableIfaces().length === 0}>
-            <p class="mt-2 text-xs text-warning">
+            <p class="mt-2 text-body-xs text-warning">
               No selectable interfaces found. Will default to LAN.
             </p>
           </Show>
@@ -389,8 +389,8 @@ export default function DeployModal(props: {
                       onChange={() => toggleIface(iface.identifier)}
                       class="h-3.5 w-3.5 rounded border-transparent bg-surface text-brand focus:ring-brand/30"
                     />
-                    <span class="text-xs font-medium text-fg">{iface.description}</span>
-                    <span class="text-xs text-fg-muted">({iface.identifier} / {iface.device})</span>
+                    <span class="text-label-sm text-fg">{iface.description}</span>
+                    <span class="text-body-xs text-fg-muted">({iface.identifier} / {iface.device})</span>
                   </label>
                 )}
               </For>
@@ -411,7 +411,7 @@ export default function DeployModal(props: {
             <div class="mt-2 max-h-24 space-y-1 overflow-y-auto">
               <For each={conflictInfo()!.conflicts}>
                 {(c) => (
-                  <div class="rounded bg-warning-subtle px-2 py-1 text-xs text-warning">
+                  <div class="rounded bg-warning-subtle px-2 py-1 text-body-xs text-warning">
                     <span class="font-medium">{c.gateway}</span>
                     {" ← "}
                     {c.source} {"\u2192"} {c.destination}
@@ -456,7 +456,7 @@ export default function DeployModal(props: {
                 </Switch>
               </div>
               <div class="min-w-0 flex-1">
-                <p class={`text-sm ${
+                <p class={`text-body-sm ${
                   step.status === "done" ? "text-success" :
                   step.status === "error" ? "text-error" :
                   step.status === "running" ? "text-fg" :
@@ -466,7 +466,7 @@ export default function DeployModal(props: {
                   {step.status === "running" ? "..." : ""}
                 </p>
                 <Show when={step.status === "error" && step.error}>
-                  <p class="mt-1 text-xs text-error">{step.error}</p>
+                  <p class="mt-1 text-body-xs text-error">{step.error}</p>
                 </Show>
               </div>
             </div>
@@ -493,7 +493,7 @@ export default function DeployModal(props: {
             <div class="mt-2 space-y-1">
               <For each={adoptedRules()}>
                 {(rule) => (
-                  <div class="rounded bg-info-subtle px-2 py-1 text-xs text-info">
+                  <div class="rounded bg-info-subtle px-2 py-1 text-body-xs text-info">
                     {rule.source || "any"} {"\u2192"} <span class="font-medium">{rule.destination || "any"}</span>
                     <Show when={rule.protocol && rule.protocol !== "any"}>
                       {" "}<span class="rounded bg-hover px-1 py-0.5 text-fg-secondary">{rule.protocol}</span>
@@ -511,7 +511,7 @@ export default function DeployModal(props: {
 
       {/* Post-deploy stale rule cleanup (fallback for rules not auto-adopted) */}
       <Show when={finished() && staleLoading()}>
-        <div class="mt-3 rounded-lg border border-border-faint bg-surface-raised px-3 py-2 text-xs text-fg-muted">
+        <div class="mt-3 rounded-lg border border-border-faint bg-surface-raised px-3 py-2 text-body-xs text-fg-muted">
           Checking for redundant rules...
         </div>
       </Show>
@@ -551,7 +551,7 @@ export default function DeployModal(props: {
                           <div class="rounded border-transparent bg-surface px-2.5 py-2">
                             <div class="flex items-start gap-2">
                               <div class="min-w-0 flex-1">
-                                <p class="text-xs text-fg-secondary">
+                                <p class="text-body-xs text-fg-secondary">
                                   {rule.source || "any"} {"\u2192"} <span class="font-medium">{rule.destination || "any"}</span>
                                   <Show when={rule.protocol && rule.protocol !== "any"}>
                                     {" "}<span class="rounded bg-hover px-1 py-0.5 text-label-xs text-fg-muted">{rule.protocol}</span>
@@ -561,14 +561,14 @@ export default function DeployModal(props: {
                                   </Show>
                                 </p>
                                 <Show when={rule.description}>
-                                  <p class="mt-0.5 truncate text-xs text-fg-muted">{rule.description}</p>
+                                  <p class="mt-0.5 truncate text-body-xs text-fg-muted">{rule.description}</p>
                                 </Show>
-                                <p class="mt-0.5 text-xs text-fg-muted">
+                                <p class="mt-0.5 text-body-xs text-fg-muted">
                                   {rule.interface} / {rule.direction} / {rule.gateway}
                                   <Show when={!rule.enabled}> / <span class="text-fg-disabled">disabled</span></Show>
                                 </p>
                                 <Show when={actionErrors()[rule.uuid]}>
-                                  <p class="mt-1 text-xs text-error">{actionErrors()[rule.uuid]}</p>
+                                  <p class="mt-1 text-body-xs text-error">{actionErrors()[rule.uuid]}</p>
                                 </Show>
                               </div>
                               <div class="flex shrink-0 gap-1.5">
@@ -640,7 +640,7 @@ export default function DeployModal(props: {
         </Show>
 
         <Show when={stage() === "running"}>
-          <div class="rounded-lg border border-border-faint bg-surface-raised px-4 py-2 text-sm font-medium text-fg-secondary">
+          <div class="rounded-lg border border-border-faint bg-surface-raised px-4 py-2 text-label-md text-fg-secondary">
             Deploying...
           </div>
         </Show>

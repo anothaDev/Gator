@@ -104,25 +104,25 @@ export default function Nat() {
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-border-faint">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Interface
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Source
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Destination
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Protocol
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Target
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
                   </tr>
@@ -138,7 +138,7 @@ export default function Nat() {
                       >
                         <td class="px-4 py-3">
                           <div class="flex items-center gap-2">
-                            <span class="font-medium text-sm text-fg">
+                            <span class="text-label-md text-fg">
                               {rule.description || "(no description)"}
                             </span>
                             <Show when={rule.is_gator}>
@@ -146,11 +146,11 @@ export default function Nat() {
                             </Show>
                           </div>
                         </td>
-                        <td class="px-4 py-3 text-sm text-fg-secondary">{rule.interface || "-"}</td>
-                        <td class="px-4 py-3 font-mono text-xs text-fg-muted">{rule.source_net || "any"}</td>
-                        <td class="px-4 py-3 font-mono text-xs text-fg-muted">{rule.destination || "any"}</td>
-                        <td class="px-4 py-3 text-sm text-fg-muted">{rule.protocol || "any"}</td>
-                        <td class="px-4 py-3 font-mono text-xs text-fg-muted">{rule.target || "-"}</td>
+                        <td class="px-4 py-3 text-body-sm text-fg-secondary">{rule.interface || "-"}</td>
+                        <td class="px-4 py-3 text-mono-sm text-fg-muted">{rule.source_net || "any"}</td>
+                        <td class="px-4 py-3 text-mono-sm text-fg-muted">{rule.destination || "any"}</td>
+                        <td class="px-4 py-3 text-body-sm text-fg-muted">{rule.protocol || "any"}</td>
+                        <td class="px-4 py-3 text-mono-sm text-fg-muted">{rule.target || "-"}</td>
                         <td class="px-4 py-3">
                           {rule.enabled === "1" ? (
                             <Badge variant="success" size="sm">enabled</Badge>

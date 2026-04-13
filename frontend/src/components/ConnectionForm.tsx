@@ -25,14 +25,14 @@ export default function ConnectionForm(props: Props) {
   return (
     <div class="space-y-6">
       <div>
-        <p class="mb-6 text-sm text-fg-secondary">
+        <p class="mb-6 text-body-sm text-fg-secondary">
           Enter the connection details for your{" "}
           <span class="font-medium text-fg">{label()}</span> instance.
         </p>
       </div>
 
       <div>
-        <label class="mb-2 block text-sm font-medium text-fg-secondary">
+        <label class="mb-2 block text-label-md text-fg-secondary">
           Host
         </label>
         <input
@@ -40,12 +40,12 @@ export default function ConnectionForm(props: Props) {
           value={props.value.host}
           onInput={(e) => update("host", e.currentTarget.value)}
           placeholder="10.0.0.2 or https://10.0.0.2"
-          class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
+          class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-body-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
         />
-        <p class="mt-1.5 text-xs text-fg-muted">
+        <p class="mt-1.5 text-body-xs text-fg-muted">
           Hostname/IP accepted. If protocol is omitted, https:// is assumed.
         </p>
-        <p class="mt-1 text-xs text-fg-muted">
+        <p class="mt-1 text-body-xs text-fg-muted">
           With TLS verification enabled, use a hostname that matches the
           certificate SAN/CN.
         </p>
@@ -53,7 +53,7 @@ export default function ConnectionForm(props: Props) {
 
       <Show when={isOPNsense()}>
         <div>
-          <label class="mb-2 block text-sm font-medium text-fg-secondary">
+          <label class="mb-2 block text-label-md text-fg-secondary">
             API Key
           </label>
           <input
@@ -61,15 +61,15 @@ export default function ConnectionForm(props: Props) {
             value={props.value.apiKey}
             onInput={(e) => update("apiKey", e.currentTarget.value)}
             placeholder="e.g. w86XNZob/8Oq..."
-            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
+            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-mono-md text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
           />
-          <p class="mt-1.5 text-xs text-fg-muted">
+          <p class="mt-1.5 text-body-xs text-fg-muted">
             Found under System &rarr; Access &rarr; Users &rarr; API keys
           </p>
         </div>
 
         <div>
-          <label class="mb-2 block text-sm font-medium text-fg-secondary">
+          <label class="mb-2 block text-label-md text-fg-secondary">
             API Secret
           </label>
           <input
@@ -77,14 +77,14 @@ export default function ConnectionForm(props: Props) {
             value={props.value.apiSecret}
             onInput={(e) => update("apiSecret", e.currentTarget.value)}
             placeholder="••••••••••••"
-            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
+            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-mono-md text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
           />
         </div>
       </Show>
 
       <Show when={!isOPNsense()}>
         <div>
-          <label class="mb-2 block text-sm font-medium text-fg-secondary">
+          <label class="mb-2 block text-label-md text-fg-secondary">
             API Token
           </label>
           <input
@@ -92,9 +92,9 @@ export default function ConnectionForm(props: Props) {
             value={props.value.apiToken}
             onInput={(e) => update("apiToken", e.currentTarget.value)}
             placeholder="••••••••••••"
-            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 font-mono text-sm text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
+            class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-mono-md text-fg placeholder-fg-muted transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/50"
           />
-          <p class="mt-1.5 text-xs text-fg-muted">
+          <p class="mt-1.5 text-body-xs text-fg-muted">
             Requires the pfSense API package. Generate a token under System
             &rarr; API.
           </p>
@@ -118,10 +118,10 @@ export default function ConnectionForm(props: Props) {
           />
         </button>
         <div>
-          <p class="text-sm font-medium text-fg-secondary">
+          <p class="text-label-md text-fg-secondary">
             Skip TLS verification
           </p>
-          <p class="text-xs text-fg-muted">
+          <p class="text-body-xs text-fg-muted">
             Enable if using a self-signed certificate
           </p>
         </div>
@@ -129,10 +129,10 @@ export default function ConnectionForm(props: Props) {
 
       <Show when={!props.value.skipTls}>
         <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-          <p class="text-xs font-semibold uppercase tracking-wide text-amber-300">
+          <p class="text-label-xs font-semibold uppercase tracking-wider text-amber-300">
             TLS verification enabled
           </p>
-          <p class="mt-1 text-xs text-amber-200/90">
+          <p class="mt-1 text-body-xs text-amber-200/90">
             Implications: the certificate must be trusted and match the host.
             Using an IP can fail if the certificate does not include an IP SAN.
           </p>

@@ -25,8 +25,8 @@ function TunnelImportForm(props: {
   const [importDone, setImportDone] = createSignal(false);
 
   const inputClass =
-    "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-fg placeholder-fg-muted hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none";
-  const labelClass = "block text-xs font-medium text-fg-muted mb-1.5";
+    "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-body-sm text-fg placeholder-fg-muted hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none";
+  const labelClass = "block text-label-sm text-fg-muted mb-1.5";
 
   const doImport = async () => {
     setImporting(true);
@@ -72,8 +72,8 @@ function TunnelImportForm(props: {
     <div class="mt-4">
       {/* Tunnel summary */}
       <div class="rounded-lg border border-border bg-surface/40 p-4">
-        <p class="text-sm font-medium text-fg-secondary">Importing: {props.tunnel.peer_name || props.tunnel.server_name}</p>
-        <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-fg-muted">
+        <p class="text-label-md text-fg-secondary">Importing: {props.tunnel.peer_name || props.tunnel.server_name}</p>
+        <div class="mt-2 grid grid-cols-2 gap-2 text-body-xs text-fg-muted">
           <span>Endpoint: {props.tunnel.endpoint}</span>
           <span>Tunnel IP: {props.tunnel.local_cidr}</span>
           <span>Device: {props.tunnel.wg_device}</span>
@@ -84,7 +84,7 @@ function TunnelImportForm(props: {
       <Show when={!importDone()}>
         {/* SSH credentials */}
         <div class="mt-4 space-y-3">
-          <p class="text-xs font-semibold uppercase tracking-wide text-fg-muted">
+          <p class="text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
             SSH Credentials (for cross-check and management)
           </p>
           <div class="grid gap-3 md:grid-cols-3">
@@ -92,11 +92,11 @@ function TunnelImportForm(props: {
               <label class={labelClass}>SSH Host</label>
               <input type="text" class={inputClass} value={sshHost()} onInput={(e) => setSSHHost(e.currentTarget.value)} />
               <Show when={remoteTunnelIP && sshHost() !== remoteTunnelIP}>
-                <p class="mt-1 text-xs text-fg-muted">
+                <p class="mt-1 text-body-xs text-fg-muted">
                   Tunnel IP available:{" "}
                   <button
                     type="button"
-                    class="font-mono text-amber-400 hover:text-amber-300"
+                    class="text-mono-md text-amber-400 hover:text-amber-300"
                     onClick={() => setSSHHost(remoteTunnelIP)}
                   >
                     {remoteTunnelIP}
@@ -117,7 +117,7 @@ function TunnelImportForm(props: {
           <div>
             <label class={labelClass}>SSH Private Key</label>
             <textarea
-              class={inputClass + " h-24 font-mono text-xs"}
+              class={inputClass + " h-24 text-mono-sm"}
               placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
               value={sshKey()}
               onInput={(e) => setSSHKey(e.currentTarget.value)}
@@ -127,14 +127,14 @@ function TunnelImportForm(props: {
             <label class={labelClass}>SSH Password (fallback)</label>
             <input type="password" class={inputClass} value={sshPassword()} onInput={(e) => setSSHPassword(e.currentTarget.value)} />
           </div>
-          <p class="text-xs text-fg-muted">
+          <p class="text-body-xs text-fg-muted">
             SSH access is optional for import but required for ongoing management (status, restart, teardown).
             If provided, Gator will cross-check the remote WireGuard config matches OPNsense.
           </p>
         </div>
 
         <Show when={importError()}>
-          <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-body-sm text-red-300">
             {importError()}
           </div>
         </Show>
@@ -144,14 +144,14 @@ function TunnelImportForm(props: {
             type="button"
             onClick={() => void doImport()}
             disabled={importing()}
-            class="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-semibold text-surface hover:bg-amber-400 disabled:opacity-50"
+            class="rounded-lg bg-amber-500 px-5 py-2.5 text-label-md font-semibold text-surface hover:bg-amber-400 disabled:opacity-50"
           >
             {importing() ? "Importing..." : "Import Tunnel"}
           </button>
           <button
             type="button"
             onClick={props.onBack}
-            class="rounded-lg border-transparent bg-surface-raised px-4 py-2.5 text-sm font-medium text-fg-secondary hover:bg-hover"
+            class="rounded-lg border-transparent bg-surface-raised px-4 py-2.5 text-label-md text-fg-secondary hover:bg-hover"
           >
             Back
           </button>
@@ -161,15 +161,15 @@ function TunnelImportForm(props: {
       {/* Cross-check results */}
       <Show when={importDone()}>
         <div class="mt-4 rounded-lg border border-success/30 bg-success/5 p-4">
-          <p class="text-sm font-medium text-success">Tunnel imported successfully.</p>
+          <p class="text-label-md text-success">Tunnel imported successfully.</p>
         </div>
 
         <Show when={crossCheck()}>
           <div class="mt-3 rounded-lg border border-border bg-surface/40 p-4">
-            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-muted">
+            <p class="mb-2 text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
               Cross-check results
             </p>
-            <div class="space-y-1 text-sm">
+            <div class="space-y-1 text-body-sm">
               <CrossCheckRow label="SSH connection" ok={crossCheck()!.ssh_ok as boolean} detail={crossCheck()!.ssh_error as string} />
               <Show when={crossCheck()!.hostname}>
                 <p class="text-fg-muted">Host: {crossCheck()!.hostname as string} ({crossCheck()!.os as string})</p>

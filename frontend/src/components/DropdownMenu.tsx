@@ -62,7 +62,7 @@ export default function DropdownMenu(props: {
                     target={item.external ? "_blank" : undefined}
                     rel={item.external ? "noopener noreferrer" : undefined}
                     onClick={() => setOpen(false)}
-                    class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg"
+                    class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg"
                   >
                     <Show when={item.icon}>
                       <span class="shrink-0 text-fg-muted">{item.icon}</span>
@@ -87,7 +87,7 @@ export default function DropdownMenu(props: {
                     item.onClick?.();
                   }}
                   class={[
-                    "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors",
+                    "flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm transition-colors",
                     item.danger
                       ? "text-error hover:bg-error-subtle"
                       : "text-fg-secondary hover:bg-hover hover:text-fg",

@@ -35,7 +35,7 @@ export function FlowIndicator(props: FlowIndicatorProps) {
               <line x1="12" y1="17" x2="12" y2="21" />
             </svg>
           </div>
-          <span class="text-xs font-medium text-fg-muted">Devices</span>
+          <span class="text-label-sm text-fg-muted">Devices</span>
         </div>
 
         {/* Flow visualization */}
@@ -63,7 +63,7 @@ export function FlowIndicator(props: FlowIndicatorProps) {
             </div>
           </div>
           
-          <div class="mt-2 flex justify-between text-xs text-fg-muted">
+          <div class="mt-2 flex justify-between text-body-xs text-fg-muted">
             <span>{flowPercentage()}% through VPN</span>
             <span>{100 - flowPercentage()}% direct</span>
           </div>
@@ -76,7 +76,7 @@ export function FlowIndicator(props: FlowIndicatorProps) {
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
           </div>
-          <span class="text-xs font-medium text-brand">VPN</span>
+          <span class="text-label-sm text-brand">VPN</span>
         </div>
 
         {/* Internet destination */}
@@ -88,7 +88,7 @@ export function FlowIndicator(props: FlowIndicatorProps) {
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
             </svg>
           </div>
-          <span class="text-xs font-medium text-fg-muted">Internet</span>
+          <span class="text-label-sm text-fg-muted">Internet</span>
         </div>
       </div>
 
@@ -125,10 +125,10 @@ export function StatCard(props: StatCardProps) {
     <div class={`rounded-lg ${colorClasses[props.color ?? "default"]} p-4 transition-all hover:scale-[1.02]`}>
       <div class="flex items-start justify-between">
         <div>
-          <p class="text-xs font-medium uppercase tracking-wider text-fg-muted">{props.label}</p>
+          <p class="text-label-xs font-semibold uppercase tracking-wider text-fg-muted">{props.label}</p>
           <div class="mt-2 flex items-baseline gap-1">
             <span class="text-2xl font-bold text-fg">{props.value}</span>
-            {props.unit && <span class="text-sm text-fg-secondary">{props.unit}</span>}
+            {props.unit && <span class="text-body-sm text-fg-secondary">{props.unit}</span>}
           </div>
         </div>
         <div class="rounded-lg bg-surface p-2 text-fg-secondary">
@@ -137,7 +137,7 @@ export function StatCard(props: StatCardProps) {
       </div>
       
       {props.trend && (
-        <div class="mt-3 flex items-center gap-1 text-xs">
+        <div class="mt-3 flex items-center gap-1 text-body-xs">
           {props.trend === "up" && (
             <>
               <svg class="h-3 w-3 text-success" viewBox="0 0 20 20" fill="currentColor">

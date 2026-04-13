@@ -145,7 +145,7 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-sm">{deleteErr()}</span>
+            <span class="text-body-sm">{deleteErr()}</span>
           </div>
         </Card>
       </Show>
@@ -199,28 +199,28 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
                 </colgroup>
                 <thead>
                   <tr class="border-b border-border-faint">
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-3 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Description
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-3 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Action
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-3 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Iface
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-3 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Source
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-3 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Destination
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-3 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Proto
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-3 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Gateway
                     </th>
-                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-3 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
                     <th class="px-3 py-3"></th>
@@ -249,7 +249,7 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
                         >
                           <td class="px-3 py-3 overflow-hidden">
                             <div class="flex items-center gap-1.5 min-w-0">
-                              <span class="font-medium text-sm text-fg truncate" title={rule.description}>
+                              <span class="text-label-md text-fg truncate" title={rule.description}>
                                 {rule.description || "(no description)"}
                               </span>
                               <Show when={rule.is_gator}>
@@ -258,10 +258,10 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
                             </div>
                           </td>
                           <td class="px-3 py-3">{getActionBadge(rule.action)}</td>
-                          <td class="px-3 py-3 text-sm text-fg-secondary truncate overflow-hidden">{rule.interface || "-"}</td>
-                          <td class="px-3 py-3 font-mono text-xs text-fg-muted truncate overflow-hidden" title={src()}>{src()}</td>
-                          <td class="px-3 py-3 font-mono text-xs text-fg-muted truncate overflow-hidden" title={dest()}>{dest()}</td>
-                          <td class="px-3 py-3 text-xs text-fg-muted truncate overflow-hidden">
+                          <td class="px-3 py-3 text-body-sm text-fg-secondary truncate overflow-hidden">{rule.interface || "-"}</td>
+                          <td class="px-3 py-3 text-mono-sm text-fg-muted truncate overflow-hidden" title={src()}>{src()}</td>
+                          <td class="px-3 py-3 text-mono-sm text-fg-muted truncate overflow-hidden" title={dest()}>{dest()}</td>
+                          <td class="px-3 py-3 text-body-xs text-fg-muted truncate overflow-hidden">
                             {rule.protocol || "any"}
                             <Show when={rule.direction}>
                               <span class="ml-0.5 text-fg-muted">({rule.direction})</span>
@@ -270,9 +270,9 @@ export default function Rules(props: { onNavigate?: (section: string) => void })
                           <td class="px-3 py-3 overflow-hidden">
                             <Show
                               when={rule.gateway}
-                              fallback={<span class="text-xs text-fg-muted">default</span>}
+                              fallback={<span class="text-body-xs text-fg-muted">default</span>}
                             >
-                              <span class="font-mono text-xs text-brand truncate block" title={rule.gateway}>{rule.gateway}</span>
+                              <span class="text-mono-sm text-brand truncate block" title={rule.gateway}>{rule.gateway}</span>
                             </Show>
                           </td>
                           <td class="px-3 py-3">

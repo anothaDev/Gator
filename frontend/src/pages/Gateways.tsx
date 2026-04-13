@@ -127,7 +127,7 @@ export default function Gateways() {
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            <span class="text-sm">{actionMsg()}</span>
+            <span class="text-body-sm">{actionMsg()}</span>
           </div>
         </Card>
       </Show>
@@ -140,7 +140,7 @@ export default function Gateways() {
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span class="text-sm">{actionErr()}</span>
+            <span class="text-body-sm">{actionErr()}</span>
           </div>
         </Card>
       </Show>
@@ -172,25 +172,25 @@ export default function Gateways() {
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-border-faint">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Name
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Interface
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Gateway
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Protocol
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Default
                     </th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-right text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Actions
                     </th>
                   </tr>
@@ -203,17 +203,17 @@ export default function Gateways() {
                           <div>
                             <span class="font-medium text-fg">{gw.name}</span>
                             <Show when={gw.descr}>
-                              <p class="text-xs text-fg-muted">{gw.descr}</p>
+                              <p class="text-body-xs text-fg-muted">{gw.descr}</p>
                             </Show>
                           </div>
                         </td>
-                        <td class="px-4 py-3 text-sm text-fg-secondary">{gw.interface}</td>
-                        <td class="px-4 py-3 font-mono text-sm text-fg-secondary">{gw.gateway || "-"}</td>
-                        <td class="px-4 py-3 text-sm text-fg-muted">
+                        <td class="px-4 py-3 text-body-sm text-fg-secondary">{gw.interface}</td>
+                        <td class="px-4 py-3 text-mono-md text-fg-secondary">{gw.gateway || "-"}</td>
+                        <td class="px-4 py-3 text-body-sm text-fg-muted">
                           {gw.ipprotocol === "inet" ? "IPv4" : gw.ipprotocol === "inet6" ? "IPv6" : gw.ipprotocol}
                         </td>
                         <td class="px-4 py-3">{getStatusBadge(gw.status)}</td>
-                        <td class="px-4 py-3 text-sm text-fg-muted">
+                        <td class="px-4 py-3 text-body-sm text-fg-muted">
                           {gw.defaultgw === "1" ? (
                             <span class="text-success">Yes</span>
                           ) : (

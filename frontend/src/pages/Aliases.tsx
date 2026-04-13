@@ -134,19 +134,19 @@ export default function Aliases() {
                 </colgroup>
                 <thead>
                   <tr class="border-b border-border-faint">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Name
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Type
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Content
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Description
                     </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <th class="px-4 py-3 text-left text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Status
                     </th>
                   </tr>
@@ -162,7 +162,7 @@ export default function Aliases() {
                       >
                         <td class="px-4 py-3 overflow-hidden">
                           <div class="flex items-center gap-2 min-w-0">
-                            <span class="font-mono text-sm text-fg truncate">{alias.name}</span>
+                            <span class="text-mono-md text-fg truncate">{alias.name}</span>
                             <Show when={alias.is_gator}>
                               <Badge variant="success" size="sm" class="shrink-0">Gator</Badge>
                             </Show>
@@ -170,13 +170,13 @@ export default function Aliases() {
                         </td>
                         <td class="px-4 py-3">{getTypeBadge(alias.type)}</td>
                         <td
-                          class="px-4 py-3 font-mono text-xs text-fg-muted truncate overflow-hidden"
+                          class="px-4 py-3 text-mono-sm text-fg-muted truncate overflow-hidden"
                           title={alias.content}
                         >
                           {formatContent(alias.content)}
                         </td>
                         <td
-                          class="px-4 py-3 text-xs text-fg-muted truncate overflow-hidden"
+                          class="px-4 py-3 text-body-xs text-fg-muted truncate overflow-hidden"
                           title={alias.description}
                         >
                           {alias.description || "-"}

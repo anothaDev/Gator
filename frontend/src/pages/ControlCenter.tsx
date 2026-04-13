@@ -3,7 +3,7 @@ import type { JSX } from "solid-js";
 import Button from "../components/Button";
 import IconButton from "../components/IconButton";
 import ThemeToggle from "../components/ThemeToggle";
-import { apiGet, apiPost } from "../lib/api";
+import { apiGet, apiPost, clearOpnsenseHostCache } from "../lib/api";
 
 const Aliases = lazy(() => import("./Aliases"));
 const Backups = lazy(() => import("./Backups"));
@@ -285,8 +285,10 @@ export default function ControlCenter(props: Props) {
     try {
       const { ok } = await apiPost(`/api/instances/${id}/activate`);
       if (ok) {
+        clearOpnsenseHostCache();
         setInstances((prev) => prev.map((inst) => ({ ...inst, active: inst.id === id })));
         setRuntimeState(null);
+        setUpdateDismissed(false);
         props.onInstanceSwitched();
       }
     } catch {}
@@ -337,8 +339,8 @@ export default function ControlCenter(props: Props) {
             <div class="flex items-center gap-3">
               <img src="/gator64px.svg" alt="Gator logo" class="h-[3.3rem] w-auto max-w-none object-contain sm:h-[3.7rem]" />
               <div class="hidden sm:block">
-                <h1 class="text-lg font-semibold tracking-tight">Gator</h1>
-                <p class="text-xs text-fg-muted">Firewall control plane</p>
+                <h1 class="text-title-h3 tracking-tight">Gator</h1>
+                <p class="text-body-xs text-fg-muted">Firewall control plane</p>
               </div>
             </div>
           </div>
@@ -367,7 +369,7 @@ export default function ControlCenter(props: Props) {
                     {activeInstance()?.label ?? "No instance"}
                   </span>
                   <Show when={instanceUnavailable()}>
-                    <span class="hidden rounded-full bg-error/10 px-1.5 py-0.5 text-label-xs font-semibold uppercase tracking-wide text-error sm:inline">
+                    <span class="hidden rounded-full bg-error/10 px-1.5 py-0.5 text-label-xs font-semibold uppercase tracking-wider text-error sm:inline">
                       Down
                     </span>
                   </Show>
@@ -393,7 +395,7 @@ export default function ControlCenter(props: Props) {
                     class="absolute right-0 top-full z-50 mt-2 w-72 rounded-lg border border-border bg-surface p-2 shadow-md animate-scale-in"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <p class="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <p class="px-2 pb-2 text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Firewall instances
                     </p>
                     <div class="space-y-1">
@@ -405,7 +407,7 @@ export default function ControlCenter(props: Props) {
                             onClick={() => void switchInstance(inst.id)}
                             class={[
                               "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left",
-                              "text-sm transition-all duration-fast",
+                              "text-body-sm transition-all duration-fast",
                               inst.active
                                 ? "bg-brand-subtle text-brand"
                                 : "text-fg-secondary hover:bg-hover hover:text-fg",
@@ -414,12 +416,12 @@ export default function ControlCenter(props: Props) {
                             <span class={`h-2 w-2 rounded-full ${inst.active ? "bg-success" : "bg-fg-muted"}`} />
                             <div class="min-w-0 flex-1">
                               <p class="truncate font-medium">{inst.label}</p>
-                              <p class="truncate text-xs text-fg-muted">
+                              <p class="truncate text-body-xs text-fg-muted">
                                 {inst.type}
                               </p>
                             </div>
                             <Show when={inst.active}>
-                              <span class="shrink-0 text-xs font-semibold uppercase text-brand">
+                              <span class="shrink-0 text-label-xs font-semibold uppercase tracking-wider text-brand">
                                 active
                               </span>
                             </Show>
@@ -434,7 +436,7 @@ export default function ControlCenter(props: Props) {
                           setSwitcherOpen(false);
                           props.onReconfigure();
                         }}
-                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-fg-muted transition-colors duration-fast hover:bg-hover hover:text-fg-secondary"
+                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-body-sm text-fg-muted transition-colors duration-fast hover:bg-hover hover:text-fg-secondary"
                       >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M12 5v14M5 12h14" />
@@ -573,7 +575,7 @@ export default function ControlCenter(props: Props) {
                           onClick={() => toggleGroup(group.id)}
                           class={[
                             "flex w-full items-center gap-2 rounded-lg px-3 py-2",
-                            "text-xs font-semibold uppercase tracking-wider",
+                            "text-label-xs font-semibold uppercase tracking-wider",
                             "transition-all duration-fast",
                             hasActiveChild() ? "text-brand" : "text-fg-muted hover:text-fg-secondary",
                           ].join(" ")}
@@ -610,7 +612,7 @@ export default function ControlCenter(props: Props) {
                                 disabled={isSectionDisabled(item.id)}
                                 class={[
                                   "relative flex w-full items-center gap-3 rounded-lg px-3 py-2",
-                                  "text-sm font-medium transition-all duration-fast",
+                                  "text-label-md transition-all duration-fast",
                                   isSectionDisabled(item.id) ? "cursor-not-allowed opacity-40" : "",
                                   isActive()
                                     ? "bg-brand-subtle text-brand"
@@ -645,7 +647,7 @@ export default function ControlCenter(props: Props) {
           <div class="mx-auto max-w-5xl min-h-[calc(100vh-7rem)]">
             <Suspense
               fallback={
-                <div class="flex min-h-[240px] items-center justify-center text-sm text-fg-muted animate-fade-in">
+                <div class="flex min-h-[240px] items-center justify-center text-body-sm text-fg-muted animate-fade-in">
                   Loading section...
                 </div>
               }

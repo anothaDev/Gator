@@ -186,7 +186,7 @@ function StatTile(props: {
         {IconComponent && <IconComponent />}
       </div>
       <div class="flex-1 min-w-0">
-        <div class="text-label-xs uppercase tracking-[0.12em] text-fg-muted">{props.label}</div>
+        <div class="text-label-xs font-semibold uppercase tracking-wider text-fg-muted">{props.label}</div>
         <div class="mt-0.5 text-title-h3 font-semibold tracking-tight text-fg leading-tight">
           {props.value}
         </div>

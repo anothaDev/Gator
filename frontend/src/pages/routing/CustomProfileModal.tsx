@@ -66,24 +66,24 @@ function CustomProfileModal(props: {
   return (
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}>
       <div class="mx-4 w-full max-w-lg rounded-xl border border-border bg-surface p-6 shadow-2xl">
-        <h2 class="text-lg font-bold text-fg">Add Custom Service</h2>
-        <p class="mt-1 text-xs text-fg-muted">Define a custom app or service with its protocol and port rules.</p>
+        <h2 class="text-title-h3 text-fg">Add Custom Service</h2>
+        <p class="mt-1 text-body-xs text-fg-muted">Define a custom app or service with its protocol and port rules.</p>
 
         <Show when={customErr()}>
-          <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+          <div class="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-body-xs text-red-300">
             {customErr()}
           </div>
         </Show>
 
         <div class="mt-4 space-y-3">
           <div>
-            <label class="text-xs font-medium text-fg-muted">Name</label>
+            <label class="text-label-sm text-fg-muted">Name</label>
             <input
               type="text"
               placeholder="e.g. My Game Server"
               value={customName()}
               onInput={(e) => setCustomName(e.currentTarget.value)}
-              class="mt-1 w-full rounded-lg border border-border bg-surface-raised/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
+              class="mt-1 w-full rounded-lg border border-border bg-surface-raised/50 px-3 py-2 text-body-sm text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
             />
           </div>
 
@@ -108,11 +108,11 @@ function CustomProfileModal(props: {
 
           <div>
             <div class="flex items-center justify-between">
-              <label class="text-xs font-medium text-fg-muted">Port Rules</label>
+              <label class="text-label-sm text-fg-muted">Port Rules</label>
               <button
                 type="button"
                 onClick={addRuleRow}
-                class="text-xs text-success hover:text-success"
+                class="text-body-xs text-success hover:text-success"
               >
                 + Add rule
               </button>
@@ -136,7 +136,7 @@ function CustomProfileModal(props: {
                       placeholder="e.g. 8080 or 3000-3100"
                       value={rule.ports}
                       onInput={(e) => updateRuleRow(idx(), "ports", e.currentTarget.value)}
-                      class="flex-1 rounded-lg border border-border bg-surface-raised/50 px-2 py-1.5 text-xs text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
+                      class="flex-1 rounded-lg border border-border bg-surface-raised/50 px-2 py-1.5 text-body-xs text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
                     />
                     <Show when={customRules().length > 1}>
                       <button
@@ -156,13 +156,13 @@ function CustomProfileModal(props: {
           </div>
 
           <div>
-            <label class="text-xs font-medium text-fg-muted">ASN Numbers (optional)</label>
+            <label class="text-label-sm text-fg-muted">ASN Numbers (optional)</label>
             <input
               type="text"
               placeholder="e.g. 2906, 15169 — for IP-based routing precision"
               value={customASNs()}
               onInput={(e) => setCustomASNs(e.currentTarget.value)}
-              class="mt-1 w-full rounded-lg border border-border bg-surface-raised/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
+              class="mt-1 w-full rounded-lg border border-border bg-surface-raised/50 px-3 py-2 text-body-sm text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
             />
             <p class="mt-1 text-label-xs text-fg-muted">
               Comma-separated AS numbers. IP ranges will be resolved automatically for precise routing.
@@ -170,13 +170,13 @@ function CustomProfileModal(props: {
           </div>
 
           <div>
-            <label class="text-xs font-medium text-fg-muted">Note (optional)</label>
+            <label class="text-label-sm text-fg-muted">Note (optional)</label>
             <input
               type="text"
               placeholder="e.g. Custom game server ports"
               value={customNote()}
               onInput={(e) => setCustomNote(e.currentTarget.value)}
-              class="mt-1 w-full rounded-lg border border-border bg-surface-raised/50 px-3 py-2 text-sm text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
+              class="mt-1 w-full rounded-lg border border-border bg-surface-raised/50 px-3 py-2 text-body-sm text-fg placeholder-fg-muted focus:border-brand focus:outline-none"
             />
           </div>
         </div>

@@ -111,10 +111,10 @@ function TunnelDeployModal(props: {
   return (
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm">
       <div class="w-full max-w-lg rounded-xl border border-border-faint bg-surface p-6 shadow-2xl">
-        <h2 class="text-xl font-bold">
+        <h2 class="text-title-h2">
           {props.mode === "setup-remote" ? "Setup Remote: " : "Deploy Tunnel: "}{props.tunnelName}
         </h2>
-        <p class="mt-1 text-sm text-fg-muted">
+        <p class="mt-1 text-body-sm text-fg-muted">
           {props.mode === "setup-remote"
             ? "Install WireGuard and configure the remote VPS. OPNsense peer will be updated automatically."
             : "This will set up WireGuard on the remote VPS and your OPNsense firewall."}
@@ -132,7 +132,7 @@ function TunnelDeployModal(props: {
                   "border-transparent"
                 }`} />
                 <div class="flex-1">
-                  <p class={`text-sm font-medium ${
+                  <p class={`text-label-md ${
                     step.status === "done" ? "text-success" :
                     step.status === "running" ? "text-amber-300" :
                     step.status === "error" ? "text-red-300" :
@@ -141,11 +141,11 @@ function TunnelDeployModal(props: {
                     {step.status === "done" ? step.doneLabel : step.label}
                   </p>
                   <Show when={step.error}>
-                    <p class="mt-1 text-xs text-red-400">{step.error}</p>
+                    <p class="mt-1 text-body-xs text-red-400">{step.error}</p>
                     <button
                       type="button"
                       onClick={() => retryFrom(idx())}
-                      class="mt-1 text-xs font-medium text-amber-400 hover:text-amber-300"
+                      class="mt-1 text-label-sm text-amber-400 hover:text-amber-300"
                     >
                       Retry from here
                     </button>
@@ -153,18 +153,18 @@ function TunnelDeployModal(props: {
                   <Show when={step.status === "done" && step.result}>
                     {/* Show key details for generate-keys step */}
                     <Show when={step.step === "generate-keys" && step.result?.firewall_public_key}>
-                      <p class="mt-1 font-mono text-xs text-fg-muted">
+                      <p class="mt-1 text-mono-sm text-fg-muted">
                         FW pubkey: {(step.result!.firewall_public_key as string).slice(0, 20)}...
                       </p>
                     </Show>
                     <Show when={step.step === "configure-remote" && step.result?.wg_interface}>
-                      <p class="mt-1 text-xs text-fg-muted">
+                      <p class="mt-1 text-body-xs text-fg-muted">
                         Interface: {step.result!.wg_interface as string}
                         {step.result?.wireguard_installed ? " (freshly installed)" : ""}
                       </p>
                     </Show>
                     <Show when={step.step === "migrate-ssh" && step.result?.new_ssh}>
-                      <p class="mt-1 text-xs text-fg-muted">
+                      <p class="mt-1 text-body-xs text-fg-muted">
                         SSH: {step.result!.old_ssh as string} → {step.result!.new_ssh as string}
                         {step.result?.listener_confirmed ? " (confirmed)" : " (check manually)"}
                       </p>
@@ -179,14 +179,14 @@ function TunnelDeployModal(props: {
         {/* Verify results */}
         <Show when={stage() === "done" && verifyResult()}>
           <div class="mt-4 rounded-lg border border-success/30 bg-success/5 p-4">
-            <p class="text-sm font-medium text-success">
+            <p class="text-label-md text-success">
               {(verifyResult() as Record<string, unknown>).remote_ping_ok ? "Tunnel is up and passing traffic." : "Tunnel deployed. Handshake may take a moment."}
             </p>
             <Show when={(verifyResult() as Record<string, unknown>).remote_handshake}>
-              <p class="mt-1 text-xs text-success">Remote handshake confirmed.</p>
+              <p class="mt-1 text-body-xs text-success">Remote handshake confirmed.</p>
             </Show>
             <Show when={(verifyResult() as Record<string, unknown>).issues}>
-              <div class="mt-2 text-xs text-amber-400">
+              <div class="mt-2 text-body-xs text-amber-400">
                 <For each={(verifyResult() as Record<string, unknown>).issues as string[]}>
                   {(issue) => <p>{issue}</p>}
                 </For>
@@ -209,8 +209,8 @@ function TunnelDeployModal(props: {
                 class="h-4 w-4 rounded border border-border bg-surface-raised text-success focus:ring-success"
               />
               <div>
-                <p class="text-sm font-medium text-fg-secondary">Move SSH to tunnel interface</p>
-                <p class="text-xs text-fg-muted">
+                <p class="text-label-md text-fg-secondary">Move SSH to tunnel interface</p>
+                <p class="text-body-xs text-fg-muted">
                   SSH will listen on the tunnel IP with the WireGuard port. Port 22 kept as fallback.
                 </p>
               </div>
@@ -225,26 +225,26 @@ function TunnelDeployModal(props: {
               <button
                 type="button"
                 onClick={props.onClose}
-                class="rounded-lg border border-border bg-surface-raised px-4 py-2 text-body-sm font-medium text-fg-secondary hover:bg-hover"
+                class="rounded-lg border border-border bg-surface-raised px-4 py-2 text-label-md text-fg-secondary hover:bg-hover"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => void run()}
-                class="rounded-lg bg-brand px-4 py-2 text-body-sm font-semibold text-surface hover:brightness-110"
+                class="rounded-lg bg-brand px-4 py-2 text-label-md font-semibold text-surface hover:brightness-110"
               >
                 {props.mode === "setup-remote" ? "Start Setup" : "Start Deploy"}
               </button>
             </Match>
             <Match when={stage() === "running"}>
-              <p class="text-sm text-fg-muted">Deploying...</p>
+              <p class="text-body-sm text-fg-muted">Deploying...</p>
             </Match>
             <Match when={stage() === "done"}>
               <button
                 type="button"
                 onClick={props.onComplete}
-                class="rounded-lg bg-brand px-4 py-2 text-body-sm font-semibold text-surface hover:brightness-110"
+                class="rounded-lg bg-brand px-4 py-2 text-label-md font-semibold text-surface hover:brightness-110"
               >
                 Done
               </button>
@@ -253,7 +253,7 @@ function TunnelDeployModal(props: {
               <button
                 type="button"
                 onClick={props.onClose}
-                class="rounded-lg border border-border bg-surface-raised px-4 py-2 text-body-sm font-medium text-fg-secondary hover:bg-hover"
+                class="rounded-lg border border-border bg-surface-raised px-4 py-2 text-label-md text-fg-secondary hover:bg-hover"
               >
                 Close
               </button>

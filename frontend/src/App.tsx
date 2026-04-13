@@ -85,7 +85,7 @@ export default function App() {
           <div class="flex min-h-screen items-center justify-center bg-surface">
             <div class="flex flex-col items-center gap-4">
               <img src="/gator64px.svg" alt="Gator logo" class="h-18 w-18 drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]" />
-              <p class="text-sm text-fg-muted">Loading Gator...</p>
+              <p class="text-body-sm text-fg-muted">Loading Gator...</p>
             </div>
           </div>
         </Match>
@@ -93,7 +93,7 @@ export default function App() {
         <Match when={statusError()}>
           <div class="flex min-h-screen items-center justify-center bg-surface px-4">
             <div class="w-full max-w-md rounded-lg border border-border bg-surface p-6 text-center">
-              <p class="text-sm text-red-300">Could not load setup status.</p>
+              <p class="text-body-sm text-red-300">Could not load setup status.</p>
               <button
                 type="button"
                 onClick={() => void loadAppState()}

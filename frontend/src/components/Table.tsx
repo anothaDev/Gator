@@ -28,7 +28,7 @@ export default function Table<T>(props: TableProps<T>) {
             <For each={props.columns}>
               {(col) => (
                 <th
-                  class={["py-2.5 px-4 text-label-xs uppercase tracking-wider text-fg-muted", align(col.align)].join(" ")}
+                  class={["py-2.5 px-4 text-label-xs font-semibold uppercase tracking-wider text-fg-muted", align(col.align)].join(" ")}
                   style={col.width ? { width: col.width } : undefined}
                 >
                   {col.header}

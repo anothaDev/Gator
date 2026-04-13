@@ -624,7 +624,7 @@ export default function Routing() {
           <For each={groupByCategory(filteredApps())}>
             {(group) => (
               <div class="space-y-4">
-                <p class="text-label-sm font-semibold uppercase tracking-[0.08em] text-fg-muted">
+                <p class="text-label-xs font-semibold uppercase tracking-wider text-fg-muted">
                   {group.label}
                 </p>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
